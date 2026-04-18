@@ -5,6 +5,11 @@ A high-performance, hierarchical portfolio showcasing 130+ canvas animations, ma
 ## 🚀 Live Demo
 **[View the Live Portal →](https://simplearyan.github.io/vfx-demos/)**
 
+## ✨ Featured Previews
+| Deadpool 3D | Dancing Turtle | Spinel (Steven Universe) |
+| :---: | :---: | :---: |
+| ![Deadpool](https://simplearyan.github.io/vfx-demos/screenshots/Canvas_Animations/Cartoon/Deadpool%203D%20Demo%20Wireframe.png) | ![Turtle](https://simplearyan.github.io/vfx-demos/screenshots/Canvas_Animations/Cartoon/Dancing%20Turtle.png) | ![Spinel](https://simplearyan.github.io/vfx-demos/screenshots/Canvas_Animations/Cartoon/Pure%20CSS%20Spinel%20form%20Steven%20Universe.png) |
+
 ---
 
 ## 🏗️ Project Architecture
