@@ -26,9 +26,8 @@ jobs:
 
       - name: Install Dependencies 📦
         run: npm install
-
-      - name: Install Chrome for Puppeteer 🌐
-        run: npx puppeteer browsers install chrome
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: "false"
 
       - name: Generate Build 🔨
         run: npm run build

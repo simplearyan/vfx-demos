@@ -4,7 +4,7 @@
  */
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 
 const rootDir = __dirname;
 const screenshotsDir = path.join(rootDir, 'screenshots');
