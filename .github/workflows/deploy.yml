@@ -47,4 +47,4 @@ jobs:
           force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
-          commit_message: "chore: deploy vfx lab [skip ci]"
+          commit_message: "deploy: ${{ github.event.head_commit.message }} (build ${{ github.sha }}) [skip ci]"
