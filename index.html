@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFX Lab</title>
+    <meta name="description" content="Hierarchical collection of 130+ canvas and visual effect experiments.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:           #080808;
+            --surface:      #121212;
+            --surface-2:    #181818;
+            --surface-h:    #202020;
+            --border:       #252525;
+            --border-h:     #353535;
+            --accent:       #d4f238;
+            --accent-dim:   rgba(212,242,56,0.1);
+            --text:         #f0f0f0;
+            --text-2:       #a0a0a0;
+            --text-3:       #606060;
+            --radius:       16px;
+            --font:         'Outfit', system-ui, sans-serif;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .wrapper { max-width: 1400px; margin: 0 auto; padding: 0 2rem; }
+
+        /* ── Header ── */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(8,8,8,0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.25rem 0;
+        }
+        .logo { font-size: 1.5rem; font-weight: 700; color: #fff; text-decoration: none; }
+        .logo span { color: var(--accent); }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+            margin: 0 2rem;
+        }
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-3);
+            pointer-events: none;
+        }
+        #search {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.2s;
+        }
+        #search:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-dim); }
+
+        /* ── Hero ── */
+        .hero { padding: 4rem 0; text-align: center; }
+        .hero h1 { font-size: 4rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -0.04em; }
+        .hero p { color: var(--text-2); font-size: 1.25rem; max-width: 600px; margin: 0 auto; }
+        .hero-stats { margin-top: 1.5rem; display: flex; justify-content: center; gap: 1rem; }
+        .stat-pill { background: var(--surface); border: 1px solid var(--border); padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.8rem; color: var(--text-2); }
+
+        /* ── Hierarchy Rendering ── */
+        .section { margin-bottom: 4rem; }
+        .section-header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .section-title-group { display: flex; align-items: center; gap: 1rem; }
+        .section-icon { font-size: 2rem; }
+        .section-title { font-size: 1.75rem; font-weight: 700; }
+        .section-desc { color: var(--text-3); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        .section-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: inherit;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+        }
+        .card-thumb {
+            position: relative;
+            aspect-ratio: 16/10;
+            background: var(--surface-2);
+            overflow: hidden;
+        }
+        .card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+        .card:hover .card-thumb img { transform: scale(1.05); }
+        
+        .card-thumb-placeholder {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; background: linear-gradient(45deg, #111, #181818);
+        }
+        .card-thumb-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            color: var(--accent); font-weight: 600; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s;
+        }
+        .card:hover .card-thumb-overlay { opacity: 1; }
+
+        .card-body { padding: 1.25rem; }
+        .card-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .card-path { font-size: 0.7rem; color: var(--text-3); font-family: monospace; }
+
+        /* Nested section headers */
+        .depth-1 .section-title { font-size: 1.25rem; color: var(--text-2); }
+        .depth-1 .section-icon { font-size: 1.25rem; }
+        .depth-1 .section-content { margin-left: 2rem; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .section-content { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="wrapper header-inner">
+            <a href="#" class="logo">VFX<span>Lab</span></a>
+            <div class="search-wrap">
+                <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="search" placeholder="Find animations…" autocomplete="off">
+            </div>
+            <div></div>
+        </div>
+    </header>
+
+    <main class="wrapper">
+        <div class="hero">
+            <h1>Explorations in Motion</h1>
+            <p>Hierarchical collection of 130+ canvas and visual effect experiments.</p>
+            <div class="hero-stats">
+                <span class="stat-pill">134 Animations</span>
+                <span class="stat-pill">Hierarchical Discovery</span>
+                <span class="stat-pill">Updated April 18, 2026</span>
+            </div>
+        </div>
+
+        <div id="content">
+            
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Animator Vs Animation</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="animator_vs_animation/animation_vs_geo.html" class="card" data-name="animation vs geo" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animation Vs Geo</div>
+                    <code class="card-path">animator_vs_animation/animation_vs_geo.html</code>
+                </div>
+            </a>
+            <a href="animator_vs_animation/animation.html" class="card" data-name="animation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animation</div>
+                    <code class="card-path">animator_vs_animation/animation.html</code>
+                </div>
+            </a>
+            <a href="animator_vs_animation/geometery_studio.html" class="card" data-name="geometery studio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Geometery Studio</div>
+                    <code class="card-path">animator_vs_animation/geometery_studio.html</code>
+                </div>
+            </a>
+            <a href="animator_vs_animation/physic_craft.html" class="card" data-name="physic craft" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Physic Craft</div>
+                    <code class="card-path">animator_vs_animation/physic_craft.html</code>
+                </div>
+            </a>
+            <a href="animator_vs_animation/stick_animator_studio_0.2.html" class="card" data-name="stick animator studio 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stick Animator Studio 0 2</div>
+                    <code class="card-path">animator_vs_animation/stick_animator_studio_0.2.html</code>
+                </div>
+            </a>
+            <a href="animator_vs_animation/stick_animator_studio.html" class="card" data-name="stick animator studio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stick Animator Studio</div>
+                    <code class="card-path">animator_vs_animation/stick_animator_studio.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">🎨</span>
+                        <div>
+                            <h2 class="section-title">Canvas Animations</h2>
+                            <p class="section-desc">Character animations, physics, and interactive sketches.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <div class="section depth-1">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Cartoon</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <div class="section depth-2">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">ComiCSS 09</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <div class="section depth-3">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">25</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="Canvas_Animations/Cartoon/comiCSS 09/25/2023 Building a website in 2003 and 2023.html" class="card" data-name="2023 building a website in 2003 and 2023" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">2023 Building A Website In 2003 And 2023</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/comiCSS 09/25/2023 Building a website in 2003 and 2023.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/comiCSS 09/25/Never Late.html" class="card" data-name="never late" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Never Late</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/comiCSS 09/25/Never Late.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/comiCSS 09/25/Pandora's Box Model.html" class="card" data-name="pandora's box model" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pandora'S Box Model</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/comiCSS 09/25/Pandora's Box Model.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <a href="Canvas_Animations/Cartoon/comiCSS 09/Ghost Costume.html" class="card" data-name="ghost costume" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Ghost Costume</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/comiCSS 09/Ghost Costume.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <a href="Canvas_Animations/Cartoon/2 Div Avocados.html" class="card" data-name="2 div avocados" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">2 Div Avocados</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/2 Div Avocados.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/2 Div Mushroom.html" class="card" data-name="2 div mushroom" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">2 Div Mushroom</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/2 Div Mushroom.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Angel & Demon.html" class="card" data-name="angel & demon" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Angel & Demon</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Angel & Demon.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Bald Rick Sanchez.html" class="card" data-name="bald rick sanchez" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Bald Rick Sanchez</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Bald Rick Sanchez.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Bat.html" class="card" data-name="bat" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Bat</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Bat.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Blender Animation.html" class="card" data-name="blender animation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Blender Animation</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Blender Animation.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Bob the Minion.html" class="card" data-name="bob the minion" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Bob The Minion</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Bob the Minion.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Caillou Animation Pure CSS.html" class="card" data-name="caillou animation pure css" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Caillou Animation Pure CSS</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Caillou Animation Pure CSS.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cartoon 404 Page — Reactive Face with Mood Expressions.html" class="card" data-name="cartoon 404 page — reactive face with mood expressions" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cartoon 404 Page — Reactive Face With Mood Expressions</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cartoon 404 Page — Reactive Face with Mood Expressions.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cartoon character - following you.html" class="card" data-name="cartoon character   following you" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cartoon Character   Following You</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cartoon character - following you.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cartoon character [CSS Art].html" class="card" data-name="cartoon character [css art]" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cartoon Character [CSS Art]</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cartoon character [CSS Art].html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cartoon Character.html" class="card" data-name="cartoon character" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cartoon Character</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cartoon Character.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/cartoon face animation.html" class="card" data-name="cartoon face animation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cartoon Face Animation</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/cartoon face animation.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/CodePen Home Butterfly and Peppa.html" class="card" data-name="codepen home butterfly and peppa" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CodePen Home Butterfly And Peppa</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/CodePen Home Butterfly and Peppa.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Coffee Style Sheet.html" class="card" data-name="coffee style sheet" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Coffee Style Sheet</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Coffee Style Sheet.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/comiCSS New Year's Resolutions.html" class="card" data-name="comicss new year's resolutions" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">ComiCSS New Year'S Resolutions</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/comiCSS New Year's Resolutions.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/CSS Doraemon.html" class="card" data-name="css doraemon" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CSS Doraemon</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/CSS Doraemon.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/CSS Mexican Wrestler.html" class="card" data-name="css mexican wrestler" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CSS Mexican Wrestler</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/CSS Mexican Wrestler.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/CSS Person.html" class="card" data-name="css person" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CSS Person</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/CSS Person.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/CSS Shark.html" class="card" data-name="css shark" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CSS Shark</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/CSS Shark.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cute Dino using pure CSS..html" class="card" data-name="cute dino using pure css " target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cute Dino Using Pure CSS </div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cute Dino using pure CSS..html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Cute Penguin Cartoon Eye Follower.html" class="card" data-name="cute penguin cartoon eye follower" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Cute Penguin Cartoon Eye Follower</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Cute Penguin Cartoon Eye Follower.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Dancing Turtle.html" class="card" data-name="dancing turtle" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Dancing Turtle</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Dancing Turtle.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Deadpool 2D Demo Wireframe.html" class="card" data-name="deadpool 2d demo wireframe" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Deadpool 2D Demo Wireframe</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Deadpool 2D Demo Wireframe.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Deadpool 2D Demo.html" class="card" data-name="deadpool 2d demo" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Deadpool 2D Demo</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Deadpool 2D Demo.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Deadpool 3D Demo Wireframe.html" class="card" data-name="deadpool 3d demo wireframe" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Deadpool 3D Demo Wireframe</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Deadpool 3D Demo Wireframe.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/draw cartoon personal.html" class="card" data-name="draw cartoon personal" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Draw Cartoon Personal</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/draw cartoon personal.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Flamingo.html" class="card" data-name="flamingo" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Flamingo</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Flamingo.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Floating Ghost Animation.html" class="card" data-name="floating ghost animation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Floating Ghost Animation</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Floating Ghost Animation.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Flying Bird.html" class="card" data-name="flying bird" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Flying Bird</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Flying Bird.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Kawaii Cartoon in CSS.html" class="card" data-name="kawaii cartoon in css" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Kawaii Cartoon In CSS</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Kawaii Cartoon in CSS.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Kawaii cat.html" class="card" data-name="kawaii cat" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Kawaii Cat</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Kawaii cat.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/LOVE DOTA Simple Cartoon Animation in pure SVG SMIL with synchronized audio.html" class="card" data-name="love dota simple cartoon animation in pure svg smil with synchronized audio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">LOVE DOTA Simple Cartoon Animation In Pure SVG SMIL With Synchronized Audio</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/LOVE DOTA Simple Cartoon Animation in pure SVG SMIL with synchronized audio.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Marco Diaz (HTML and CSS) with animation.html" class="card" data-name="marco diaz (html and css) with animation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Marco Diaz (HTML And CSS) With Animation</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Marco Diaz (HTML and CSS) with animation.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Mouse.html" class="card" data-name="mouse" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Mouse</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Mouse.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Paperworld.html" class="card" data-name="paperworld" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Paperworld</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Paperworld.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Peppa Pig In CSS.html" class="card" data-name="peppa pig in css" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Peppa Pig In CSS</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Peppa Pig In CSS.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Peter Griffin.html" class="card" data-name="peter griffin" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Peter Griffin</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Peter Griffin.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Pickachu.html" class="card" data-name="pickachu" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pickachu</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Pickachu.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/pure css line friends - brown.html" class="card" data-name="pure css line friends   brown" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pure Css Line Friends   Brown</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/pure css line friends - brown.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Pure CSS Morty.html" class="card" data-name="pure css morty" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pure CSS Morty</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Pure CSS Morty.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Pure CSS Spinel form Steven Universe.html" class="card" data-name="pure css spinel form steven universe" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pure CSS Spinel Form Steven Universe</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Pure CSS Spinel form Steven Universe.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/Rick and Morty Character Search  React JS  app.html" class="card" data-name="rick and morty character search  react js  app" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Rick And Morty Character Search  React JS  App</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/Rick and Morty Character Search  React JS  app.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/studio.html" class="card" data-name="studio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Studio</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/studio.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/SVG - Autumn Girl.html" class="card" data-name="svg   autumn girl" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">SVG   Autumn Girl</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/SVG - Autumn Girl.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Cartoon/SVG - Minimalist cartoon of a disappointed old man.html" class="card" data-name="svg   minimalist cartoon of a disappointed old man" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">SVG   Minimalist Cartoon Of A Disappointed Old Man</div>
+                    <code class="card-path">Canvas_Animations/Cartoon/SVG - Minimalist cartoon of a disappointed old man.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-1">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Illusions</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="Canvas_Animations/illusions/Amulet.html" class="card" data-name="amulet" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Amulet</div>
+                    <code class="card-path">Canvas_Animations/illusions/Amulet.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/billowing scintillation.html" class="card" data-name="billowing scintillation" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Billowing Scintillation</div>
+                    <code class="card-path">Canvas_Animations/illusions/billowing scintillation.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Bouncers.html" class="card" data-name="bouncers" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Bouncers</div>
+                    <code class="card-path">Canvas_Animations/illusions/Bouncers.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Discoid.html" class="card" data-name="discoid" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Discoid</div>
+                    <code class="card-path">Canvas_Animations/illusions/Discoid.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Droste.html" class="card" data-name="droste" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Droste</div>
+                    <code class="card-path">Canvas_Animations/illusions/Droste.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Eye Candy.html" class="card" data-name="eye candy" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Eye Candy</div>
+                    <code class="card-path">Canvas_Animations/illusions/Eye Candy.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/FunBox.html" class="card" data-name="funbox" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">FunBox</div>
+                    <code class="card-path">Canvas_Animations/illusions/FunBox.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/GloppyGoop.html" class="card" data-name="gloppygoop" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">GloppyGoop</div>
+                    <code class="card-path">Canvas_Animations/illusions/GloppyGoop.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/hyperstellar.html" class="card" data-name="hyperstellar" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Hyperstellar</div>
+                    <code class="card-path">Canvas_Animations/illusions/hyperstellar.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Rainbow Road.html" class="card" data-name="rainbow road" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Rainbow Road</div>
+                    <code class="card-path">Canvas_Animations/illusions/Rainbow Road.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Seahorse Valley.html" class="card" data-name="seahorse valley" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Seahorse Valley</div>
+                    <code class="card-path">Canvas_Animations/illusions/Seahorse Valley.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/Symmetric Harmony.html" class="card" data-name="symmetric harmony" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Symmetric Harmony</div>
+                    <code class="card-path">Canvas_Animations/illusions/Symmetric Harmony.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/trinitarian.html" class="card" data-name="trinitarian" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Trinitarian</div>
+                    <code class="card-path">Canvas_Animations/illusions/trinitarian.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/illusions/whirligig.html" class="card" data-name="whirligig" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Whirligig</div>
+                    <code class="card-path">Canvas_Animations/illusions/whirligig.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <a href="Canvas_Animations/A Space Cow's Butthole in HTML5 Canvas.html" class="card" data-name="a space cow's butthole in html5 canvas" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">A Space Cow'S Butthole In HTML5 Canvas</div>
+                    <code class="card-path">Canvas_Animations/A Space Cow's Butthole in HTML5 Canvas.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Beautiful Stars.html" class="card" data-name="beautiful stars" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Beautiful Stars</div>
+                    <code class="card-path">Canvas_Animations/Beautiful Stars.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Bouncing balls!.html" class="card" data-name="bouncing balls!" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Bouncing Balls!</div>
+                    <code class="card-path">Canvas_Animations/Bouncing balls!.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Canvas Solar System.html" class="card" data-name="canvas solar system" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Canvas Solar System</div>
+                    <code class="card-path">Canvas_Animations/Canvas Solar System.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Canvas_background.html" class="card" data-name="canvas background" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Canvas Background</div>
+                    <code class="card-path">Canvas_Animations/Canvas_background.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/canvas-animation-prct.html" class="card" data-name="canvas animation prct" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Canvas Animation Prct</div>
+                    <code class="card-path">Canvas_Animations/canvas-animation-prct.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/CodePen Home Reaction Codevember 4.html" class="card" data-name="codepen home reaction codevember 4" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">CodePen Home Reaction Codevember 4</div>
+                    <code class="card-path">Canvas_Animations/CodePen Home Reaction Codevember 4.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Conffeti gun.html" class="card" data-name="conffeti gun" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Conffeti Gun</div>
+                    <code class="card-path">Canvas_Animations/Conffeti gun.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Gravity #3.html" class="card" data-name="gravity #3" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Gravity #3</div>
+                    <code class="card-path">Canvas_Animations/Gravity #3.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Light_wire.html" class="card" data-name="light wire" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Light Wire</div>
+                    <code class="card-path">Canvas_Animations/Light_wire.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Playing with Canvas. Part 4 - Simple interactivity.html" class="card" data-name="playing with canvas  part 4   simple interactivity" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Playing With Canvas  Part 4   Simple Interactivity</div>
+                    <code class="card-path">Canvas_Animations/Playing with Canvas. Part 4 - Simple interactivity.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Procedural Autumn Leaf Flutter High-Performance Hero Overlay.html" class="card" data-name="procedural autumn leaf flutter high performance hero overlay" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Procedural Autumn Leaf Flutter High Performance Hero Overlay</div>
+                    <code class="card-path">Canvas_Animations/Procedural Autumn Leaf Flutter High-Performance Hero Overlay.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/RGB_wire.html" class="card" data-name="rgb wire" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">RGB Wire</div>
+                    <code class="card-path">Canvas_Animations/RGB_wire.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Squares .html" class="card" data-name="squares " target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Squares </div>
+                    <code class="card-path">Canvas_Animations/Squares .html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/The Singularity.html" class="card" data-name="the singularity" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">The Singularity</div>
+                    <code class="card-path">Canvas_Animations/The Singularity.html</code>
+                </div>
+            </a>
+            <a href="Canvas_Animations/Warp².html" class="card" data-name="warp²" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Warp²</div>
+                    <code class="card-path">Canvas_Animations/Warp².html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Cute Stick Figure</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="cute_stick_figure/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">cute_stick_figure/v1.html</code>
+                </div>
+            </a>
+            <a href="cute_stick_figure/v2.html" class="card" data-name="v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2</div>
+                    <code class="card-path">cute_stick_figure/v2.html</code>
+                </div>
+            </a>
+            <a href="cute_stick_figure/v3.html" class="card" data-name="v3" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V3</div>
+                    <code class="card-path">cute_stick_figure/v3.html</code>
+                </div>
+            </a>
+            <a href="cute_stick_figure/v4.html" class="card" data-name="v4" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V4</div>
+                    <code class="card-path">cute_stick_figure/v4.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">⚡</span>
+                        <div>
+                            <h2 class="section-title">GSAP Motion</h2>
+                            <p class="section-desc">High-performance web animations using GSAP.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="gsap/stats_viz_v1.html" class="card" data-name="stats viz v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stats Viz V1</div>
+                    <code class="card-path">gsap/stats_viz_v1.html</code>
+                </div>
+            </a>
+            <a href="gsap/stats_viz_v2.html" class="card" data-name="stats viz v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stats Viz V2</div>
+                    <code class="card-path">gsap/stats_viz_v2.html</code>
+                </div>
+            </a>
+            <a href="gsap/typography_kinetic_v1.html" class="card" data-name="typography kinetic v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Typography Kinetic V1</div>
+                    <code class="card-path">gsap/typography_kinetic_v1.html</code>
+                </div>
+            </a>
+            <a href="gsap/typography_kinetic_v2.html" class="card" data-name="typography kinetic v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Typography Kinetic V2</div>
+                    <code class="card-path">gsap/typography_kinetic_v2.html</code>
+                </div>
+            </a>
+            <a href="gsap/typography_kinetic_v3.html" class="card" data-name="typography kinetic v3" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Typography Kinetic V3</div>
+                    <code class="card-path">gsap/typography_kinetic_v3.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Handrawn Brush</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="handrawn_brush/ignite-typing.html" class="card" data-name="ignite typing" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Ignite Typing</div>
+                    <code class="card-path">handrawn_brush/ignite-typing.html</code>
+                </div>
+            </a>
+            <a href="handrawn_brush/v2_more_brush.html" class="card" data-name="v2 more brush" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2 More Brush</div>
+                    <code class="card-path">handrawn_brush/v2_more_brush.html</code>
+                </div>
+            </a>
+            <a href="handrawn_brush/v3_more_refined.html" class="card" data-name="v3 more refined" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V3 More Refined</div>
+                    <code class="card-path">handrawn_brush/v3_more_refined.html</code>
+                </div>
+            </a>
+            <a href="handrawn_brush/v4_canvas_pro.html" class="card" data-name="v4 canvas pro" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V4 Canvas Pro</div>
+                    <code class="card-path">handrawn_brush/v4_canvas_pro.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Inverse Kinematics Stick Figure</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="inverse_kinematics_stick_figure/animatior-vs-math-0.6-PRO.html" class="card" data-name="animatior vs math 0 6 pro" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animatior Vs Math 0 6 PRO</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animatior-vs-math-0.6-PRO.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/animator-vs-math-0.2.html" class="card" data-name="animator vs math 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animator Vs Math 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animator-vs-math-0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/animator-vs-math-0.3.html" class="card" data-name="animator vs math 0 3" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animator Vs Math 0 3</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animator-vs-math-0.3.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/animator-vs-math-0.4.html" class="card" data-name="animator vs math 0 4" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animator Vs Math 0 4</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animator-vs-math-0.4.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/animator-vs-math-0.5.html" class="card" data-name="animator vs math 0 5" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animator Vs Math 0 5</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animator-vs-math-0.5.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/animator-vs-math.html" class="card" data-name="animator vs math" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Animator Vs Math</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/animator-vs-math.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/creative-portfolio_0.2.html" class="card" data-name="creative portfolio 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Creative Portfolio 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/creative-portfolio_0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/creative-portfolio.html" class="card" data-name="creative portfolio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Creative Portfolio</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/creative-portfolio.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/expressions-master_0.1.html" class="card" data-name="expressions master 0 1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Expressions Master 0 1</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/expressions-master_0.1.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/expressions-master_0.2.html" class="card" data-name="expressions master 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Expressions Master 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/expressions-master_0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/face-animator-studio.html" class="card" data-name="face animator studio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Face Animator Studio</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/face-animator-studio.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/pro-lips-sync-0.2.html" class="card" data-name="pro lips sync 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pro Lips Sync 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/pro-lips-sync-0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/pro-lips-sync.html" class="card" data-name="pro lips sync" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Pro Lips Sync</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/pro-lips-sync.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/stick-man-graph-plotter.html" class="card" data-name="stick man graph plotter" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stick Man Graph Plotter</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/stick-man-graph-plotter.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/stick-studio_0.1.html" class="card" data-name="stick studio 0 1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stick Studio 0 1</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/stick-studio_0.1.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/stick-studio_0.2.html" class="card" data-name="stick studio 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stick Studio 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/stick-studio_0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/stickmin-studio.html" class="card" data-name="stickmin studio" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Stickmin Studio</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/stickmin-studio.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/v1.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/v2.html" class="card" data-name="v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/v2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/v3_face_and_stick_animator.html" class="card" data-name="v3 face and stick animator" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V3 Face And Stick Animator</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/v3_face_and_stick_animator.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/v4.0.1.html" class="card" data-name="v4 0 1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V4 0 1</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/v4.0.1.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/walk-and-plot_0.2.html" class="card" data-name="walk and plot 0 2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Walk And Plot 0 2</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/walk-and-plot_0.2.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/walk-and-plot.html" class="card" data-name="walk and plot" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Walk And Plot</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/walk-and-plot.html</code>
+                </div>
+            </a>
+            <a href="inverse_kinematics_stick_figure/walk-master.html" class="card" data-name="walk master" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Walk Master</div>
+                    <code class="card-path">inverse_kinematics_stick_figure/walk-master.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Light Trail Vfx</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="light_trail_vfx/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">light_trail_vfx/v1.html</code>
+                </div>
+            </a>
+            <a href="light_trail_vfx/v2.html" class="card" data-name="v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2</div>
+                    <code class="card-path">light_trail_vfx/v2.html</code>
+                </div>
+            </a>
+            <a href="light_trail_vfx/v3.html" class="card" data-name="v3" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V3</div>
+                    <code class="card-path">light_trail_vfx/v3.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">🔢</span>
+                        <div>
+                            <h2 class="section-title">Mathematical VFX</h2>
+                            <p class="section-desc">Visualizing formulas, waves, and geometric systems.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="Math_VFX/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">Math_VFX/v1.html</code>
+                </div>
+            </a>
+            <a href="Math_VFX/v2.html" class="card" data-name="v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2</div>
+                    <code class="card-path">Math_VFX/v2.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Rough Js</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="rough-js/rough_js_stats_generator_v1.html" class="card" data-name="rough js stats generator v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Rough Js Stats Generator V1</div>
+                    <code class="card-path">rough-js/rough_js_stats_generator_v1.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Studio 3d</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="studio_3d/studio_3d_pro.html" class="card" data-name="studio 3d pro" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">Studio 3d Pro</div>
+                    <code class="card-path">studio_3d/studio_3d_pro.html</code>
+                </div>
+            </a>
+            <a href="studio_3d/v2_glass_pro.html" class="card" data-name="v2 glass pro" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2 Glass Pro</div>
+                    <code class="card-path">studio_3d/v2_glass_pro.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Text 3d</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="text_3d/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">text_3d/v1.html</code>
+                </div>
+            </a>
+            <a href="text_3d/v2.html" class="card" data-name="v2" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V2</div>
+                    <code class="card-path">text_3d/v2.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+            <div class="section depth-0">
+                <div class="section-header">
+                    <div class="section-title-group">
+                        <span class="section-icon">📁</span>
+                        <div>
+                            <h2 class="section-title">Vfx Canvas</h2>
+                            
+                        </div>
+                    </div>
+                </div>
+                <div class="section-content">
+                    
+            <a href="vfx_canvas/v1.html" class="card" data-name="v1" target="_blank">
+                <div class="card-thumb">
+                    <div class="card-thumb-placeholder"><span>🎬</span></div>
+                    <div class="card-thumb-overlay">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                        Play Preview
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-name">V1</div>
+                    <code class="card-path">vfx_canvas/v1.html</code>
+                </div>
+            </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const searchInput = document.getElementById('search');
+        const cards = document.querySelectorAll('.card');
+
+        searchInput.addEventListener('input', (e) => {
+            const q = e.target.value.toLowerCase();
+            cards.forEach(card => {
+                const name = card.dataset.name;
+                const match = name.includes(q);
+                card.style.display = match ? 'flex' : 'none';
+            });
+            
+            // Hide empty sections
+            document.querySelectorAll('.section').forEach(section => {
+                const visibleInContent = Array.from(section.querySelectorAll('.card')).some(c => c.style.display !== 'none');
+                section.style.display = visibleInContent ? 'block' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
