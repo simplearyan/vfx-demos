@@ -1,0 +1,713 @@
+<div id="spinel">
+
+  <div class="heartsEars">
+    <div class="ears earsLeft">
+      <div></div>
+    </div>
+    <div class="ears earsRight">
+      <div></div>
+    </div>
+  </div>
+
+  <div class="spinelFace">
+
+    <div class="spinelEyes">
+      <div class="eyes leftEye">
+
+        <ul class="eyebrows leftEyebrow">
+          <li></li>
+          <li></li>
+          <li></li>
+        </ul>
+
+        <div class="pupils"></div>
+      </div>
+      <div class="eyes rightEye">
+
+        <ul class="eyebrows rightEyebrow">
+          <li></li>
+          <li></li>
+          <li></li>
+        </ul>
+
+        <div class="pupils"></div>
+      </div>
+    </div>
+
+    <div class="nose"></div>
+
+    <ul class="mouth">
+      <li class="mouthLine"></li>
+      <li class="mouthLine"></li>
+      <li class="mouthLine"></li>
+    </ul>
+
+    <div class="faceShape faceShape-1"></div>
+    <div class="faceShape faceShape-2"></div>
+
+    <div class="cheeks"></div>
+
+  </div>
+
+  <div class="neck"></div>
+
+  <div class="body">
+    <div class="heartBody">
+      <div class="shapeHeart-1"></div>
+      <div class="shapeHeart-2"></div>
+      <div class="shapeHeart-4"></div>
+
+      <div class="shapeHeart-9"></div>
+      <div class="shapeHeart-10"></div>
+      <div class="shapeHeart-12"></div>
+
+      <div class="heartLeft">
+        <div class="shapeHeart-5"></div>
+        <div class="shapeHeart-7"></div>
+
+        <div class="shapeHeart-11"></div>
+      </div>
+
+      <div class="heartRight">
+        <div class="shapeHeart-3"></div>
+        <div class="shapeHeart-6"></div>
+        <div class="shapeHeart-8"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arm arm-left">
+    <div class="armExtension"></div>
+  </div>
+
+  <div class="arm arm-right">
+    <div class="armExtension"></div>
+  </div>
+
+  <div class="endBar"></div>
+
+</div>
+
+<style>
+    * {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+}
+section,
+article,
+button,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  text-align: initial;
+}
+a {
+  text-decoration: none;
+  text-transform: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+button {
+  background-color: transparent;
+  border: 0;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+body,
+html {
+  margin: 0;
+  padding: 0;
+  background-color: #f7e6ee;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+#spinel {
+  width: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-flow: column;
+  position: relative;
+}
+
+#spinel .heartsEars {
+  position: relative;
+  width: 310px;
+  height: 100px;
+  top: 50px;
+  left: 0;
+  z-index: 0;
+
+  .earsLeft {
+    left: -40px;
+    transform: rotate(-40deg);
+
+    &::before {
+      box-shadow: inset 10px 9px #c21f7a;
+    }
+
+    div {
+      height: 78px;
+      width: 98px;
+      right: 16px;
+      top: 32px;
+    }
+  }
+
+  .earsRight {
+    right: -40px;
+    transform: rotate(40deg);
+
+    &::after {
+      box-shadow: inset -9px 15px #c21f7a;
+    }
+
+    div {
+      height: 78px;
+      width: 88px;
+      right: 31px;
+      top: 23px;
+    }
+  }
+
+  .ears {
+    position: absolute;
+    width: 150px;
+    height: 140px;
+
+    &::before,
+    &::after {
+      position: absolute;
+      content: "";
+      top: 0;
+      width: 90px;
+      height: 140px;
+      background: #e82a8e;
+      border: 3px solid #802a59;
+      border-radius: 50px 50px 0 0;
+    }
+
+    &::before {
+      left: 86px;
+      transform: rotate(-47deg);
+      transform-origin: 0 100%;
+    }
+
+    &::after {
+      left: 0;
+      transform: rotate(47deg);
+      transform-origin: 100% 100%;
+      height: 129px;
+    }
+
+    div {
+      background: #e82a8e;
+      position: absolute;
+      z-index: 1;
+      transform: rotate(44deg);
+      border-radius: 12px 0 0 0;
+    }
+  }
+}
+
+#spinel .spinelFace {
+  position: relative;
+  height: 275px;
+  width: 250px;
+  border-radius: 50%;
+  background-color: #e82a8e;
+  border: 3px solid #802a59;
+  z-index: 1;
+}
+
+#spinel .spinelEyes {
+  height: 120px;
+  width: 100%;
+  position: absolute;
+  top: 60px;
+  z-index: 11;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 46px;
+
+  .eyes {
+    background-color: #ffffff;
+    height: 100px;
+    width: 62px;
+    border-radius: 50% 50%;
+    margin-top: 20px;
+    border: 1.3px solid #262024;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+
+    .eyebrows {
+      position: absolute;
+      top: 0px;
+
+      li {
+        border-left: 2px solid #000;
+        background-color: transparent;
+        border-radius: 30% 0 0 0;
+
+        &:nth-child(1) {
+          width: 13px;
+          height: 24px;
+        }
+
+        &:nth-child(2) {
+          width: 13px;
+          height: 24px;
+        }
+
+        &:nth-child(3) {
+          width: 7px;
+          height: 20px;
+        }
+      }
+    }
+
+    .leftEyebrow {
+      left: -12px;
+
+      li {
+        &:nth-child(1) {
+          margin-left: 3px;
+          transform: rotate(-50deg);
+        }
+
+        &:nth-child(2) {
+          margin-left: -4px;
+          transform: rotate(-66deg);
+        }
+
+        &:nth-child(3) {
+          margin-left: -1px;
+          transform: rotate(-92deg);
+        }
+      }
+    }
+
+    .rightEyebrow {
+      right: -9px;
+
+      li {
+        &:nth-child(1) {
+          transform: rotate(50deg) scaleX(-1);
+        }
+
+        &:nth-child(2) {
+          transform: rotate(66deg) scaleX(-1) translateY(-7px);
+        }
+
+        &:nth-child(3) {
+          transform: rotate(92deg) scaleX(-1) translateY(-10px);
+        }
+      }
+    }
+
+    .pupils {
+      height: 50px;
+      width: 28px;
+      background-color: #231f20;
+      border-radius: 50%;
+      position: relative;
+
+      &:after {
+        content: "";
+        width: 12px;
+        height: 12px;
+        background-color: #ffffff;
+        position: absolute;
+        top: 50%;
+        transform: translate(0, -50%) rotate(45deg);
+        right: -7px;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  .leftEye {
+    transform: rotate(-5deg);
+
+    .pupils {
+      margin-right: -13px;
+      transform: rotate(5deg);
+    }
+  }
+
+  .rightEye {
+    transform: rotate(5deg);
+
+    .pupils {
+      margin-left: -13px;
+      transform: rotate(-5deg);
+    }
+  }
+}
+
+#spinel .mouth {
+  position: absolute;
+  bottom: 28px;
+  z-index: 12;
+  left: 50%;
+  transform: translate(-50%, 0);
+  height: 50px;
+  width: 120px;
+  background-color: #ffffff;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  border: 2px solid #1c0a16;
+
+  li {
+    position: absolute;
+    height: 100%;
+    background-color: #1c0a16;
+    width: 2px;
+    z-index: 0;
+
+    &:nth-child(1) {
+      top: 1px;
+      left: 26px;
+      height: 41px;
+    }
+
+    &:nth-child(2) {
+      left: 53px;
+    }
+
+    &:nth-child(3) {
+      top: 1px;
+      right: 31px;
+      height: 43px;
+    }
+  }
+
+  &:before {
+    content: "";
+    width: 118px;
+    height: 26px;
+    background-color: #ecc6dd;
+    position: absolute;
+    top: -11.9px;
+    left: -1px;
+    border-bottom: 2px solid #1c0a16;
+    z-index: 1;
+  }
+}
+
+#spinel .nose {
+  position: absolute;
+  top: 173px;
+  left: 114px;
+  border-radius: 50px;
+  border: 1px solid #1c0a16;
+  height: 20px;
+  width: 18px;
+  z-index: 11;
+}
+
+#spinel .faceShape {
+  height: 200px;
+  width: 118px;
+  background-color: #ecc6dd;
+  border-radius: 50%;
+  position: absolute;
+  top: 28px;
+  z-index: 10;
+  border: 3px solid #802a59;
+
+  &:after {
+    content: "";
+    background-color: #ecc6dd;
+    height: 75px;
+    width: 112px;
+    position: absolute;
+    bottom: -17px;
+    border-radius: 30px;
+  }
+}
+
+#spinel .faceShape-1 {
+  left: 20px;
+}
+
+#spinel .faceShape-2 {
+  right: 20px;
+  &:before {
+    content: "";
+    background-color: #ecc6dd;
+    width: 66px;
+    height: 200px;
+    position: absolute;
+    bottom: -37px;
+    left: -25px;
+  }
+}
+
+#spinel .cheeks {
+  height: 119px;
+  width: 238px;
+  background-color: #ecc6dd;
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  border-radius: 50%;
+  transform: translate(-50%, 0);
+  border: 2px solid #1c0a16;
+}
+
+#spinel .neck {
+  height: 77px;
+  width: 50px;
+  background-color: #ecc6dd;
+  border: 2px solid #1c0a16;
+  position: relative;
+  top: -2px;
+  z-index: 0;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    background-color: #e691bb;
+    position: absolute;
+    top: -24px;
+    left: -38px;
+    height: 60px;
+    width: 102px;
+    border-radius: 50%;
+  }
+}
+
+#spinel .body {
+  border-radius: 50% 50% 50% 50% / 60% 60% 100% 100%;
+  height: 155px;
+  width: 180px;
+  background-color: #ffffff;
+  border: 2px solid #1c0a16;
+  position: relative;
+  z-index: 1;
+  margin-top: -35px;
+}
+
+#spinel .body .heartBody {
+  position: absolute;
+  width: 108px;
+  height: 80px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  .heartLeft,
+  .heartRight {
+    position: absolute;
+    content: "";
+    top: 0;
+    width: 48px;
+    height: 80px;
+    background: #dc86b5;
+    border: 3px solid #802a59;
+    border-radius: 50px 50px 0 0;
+    overflow: hidden;
+  }
+
+  .heartLeft {
+    left: 54px;
+    transform: rotate(-44deg);
+    transform-origin: 0 100%;
+  }
+
+  .heartRight {
+    left: 10px;
+    transform: rotate(47deg);
+    transform-origin: 100% 100%;
+    height: 76px;
+  }
+
+  .shapeHeart-1,
+  .shapeHeart-2,
+  .shapeHeart-3,
+  .shapeHeart-4,
+  .shapeHeart-5,
+  .shapeHeart-6,
+  .shapeHeart-7,
+  .shapeHeart-8,
+  .shapeHeart-9,
+  .shapeHeart-10,
+  .shapeHeart-11,
+  .shapeHeart-12 {
+    position: absolute;
+    z-index: 1;
+  }
+
+  .shapeHeart-1,
+  .shapeHeart-2 {
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-right: 30px solid #e790bb;
+    border-bottom: 14px solid transparent;
+    z-index: 3;
+  }
+
+  .shapeHeart-1 {
+    top: 19px;
+    left: 33px;
+    transform: rotate(32deg);
+  }
+
+  .shapeHeart-2 {
+    top: 19px;
+    left: 46px;
+    transform: rotate(-32deg) scaleX(-1);
+  }
+
+  .shapeHeart-3 {
+    width: 30px;
+    height: 58px;
+    top: 0px;
+    left: -15px;
+    transform: skew(14deg);
+    background: #e92990;
+    z-index: 2;
+  }
+
+  .shapeHeart-4 {
+    background: #ec3091;
+    width: 20px;
+    height: 28px;
+    top: 26px;
+    left: 29.2px;
+    transform: rotate(46deg);
+  }
+
+  .shapeHeart-5 {
+    top: -4px;
+    left: -2px;
+    height: 20px;
+    width: 20px;
+    z-index: 0;
+    background: #ffffff;
+  }
+
+  .shapeHeart-6 {
+    top: -9.2px;
+    left: -8px;
+    height: 24px;
+    width: 48px;
+    z-index: 1;
+    background: #cc277f;
+    transform: rotate(125deg);
+  }
+
+  .shapeHeart-7 {
+    width: 26px;
+    height: 36px;
+    top: 7px;
+    left: -4px;
+    z-index: 1;
+    transform: rotate(-45deg);
+    background: #c21c73;
+    z-index: -1;
+  }
+
+  .shapeHeart-8 {
+    height: 43px;
+    width: 43px;
+    top: -3px;
+    left: 21px;
+    transform: rotate(35deg);
+    z-index: 0;
+    background: #de71aa;
+  }
+
+  .shapeHeart-9 {
+    background: #e1b2cc;
+    width: 27px;
+    height: 32px;
+    top: 39.2px;
+    left: 42.5px;
+    transform: rotate(46deg);
+  }
+
+  .shapeHeart-10 {
+    left: 42px;
+    top: 11px;
+    background-color: #e1b2cc;
+    width: 9px;
+    height: 17px;
+    transform: rotate(45deg);
+  }
+
+  .shapeHeart-11 {
+    height: 30px;
+    width: 30px;
+    background: #cc277f;
+    left: 24px;
+    top: 1px;
+    transform: rotate(45deg);
+  }
+}
+
+#spinel .arm {
+  height: 90px;
+  width: 90px;
+  background-color: #dc86b5;
+  border: 2px solid #1c0a16;
+  border-radius: 50% 50% 50% 50% / 40% 40% 55% 55%;
+  position: absolute;
+  top: 400px;
+  z-index: 0;
+  box-shadow: inset 1px -17px #db5ea0;
+}
+
+#spinel .arm-left {
+  left: 55px;
+  transform: rotate(15deg);
+}
+
+#spinel .arm-right {
+  right: 55px;
+  transform: rotate(-15deg);
+}
+
+#spinel .armExtension {
+  background-color: #ecc6dd;
+  width: 34px;
+  height: 84px;
+  border: 2px solid #1c0a16;
+  position: absolute;
+  top: 72px;
+  left: 25px;
+  border-radius: 15px 15px 0 0;
+}
+
+#spinel .endBar {
+  position: absolute;
+  bottom: -18px;
+  z-index: 2;
+  height: 47px;
+  width: 100%;
+  background: #f7e6ee;
+}
+
+</style>

@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walking Stickman Plotter</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e5e5e5;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        #graph-container {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: rgba(23, 23, 23, 0.8);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row antialiased select-none">
+
+    <!-- Sidebar Controls -->
+    <aside class="w-full md:w-80 h-auto md:h-full glass-panel flex flex-col z-10 shrink-0 shadow-2xl">
+        <div class="p-6 border-b border-neutral-800">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i data-lucide="footprints" class="text-white w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-white">Walk & Plot</h1>
+            </div>
+            <p class="text-xs text-neutral-400 font-medium">Command the stickman to walk and draw points.</p>
+        </div>
+
+        <div class="p-6 border-b border-neutral-800">
+            <form id="plot-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold text-neutral-500 mb-1 tracking-widest uppercase">X-Axis</label>
+                        <input type="number" id="input-x" required step="any" placeholder="e.g. 5" class="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition mono">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-neutral-500 mb-1 tracking-widest uppercase">Y-Axis</label>
+                        <input type="number" id="input-y" required step="any" placeholder="e.g. 3" class="w-full bg-neutral-900 border border-neutral-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition mono">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center active:scale-[0.98]">
+                    <i data-lucide="pencil" class="w-4 h-4 mr-2"></i> Draw Point
+                </button>
+                <button type="button" onclick="plotRandom()" class="w-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-semibold py-2.5 rounded-lg text-xs transition border border-neutral-700 flex items-center justify-center active:scale-[0.98]">
+                    <i data-lucide="dices" class="w-3.5 h-3.5 mr-2"></i> Random Point
+                </button>
+            </form>
+        </div>
+
+        <!-- Plotted History -->
+        <div class="flex-1 overflow-hidden flex flex-col">
+            <div class="px-6 py-3 flex justify-between items-center border-b border-neutral-800 bg-neutral-900/50">
+                <h3 class="text-[10px] font-bold text-neutral-500 tracking-widest uppercase">Plotted History</h3>
+                <button onclick="clearGraph()" class="text-xs text-red-400 hover:text-red-300 font-bold transition flex items-center">
+                    <i data-lucide="trash-2" class="w-3 h-3 mr-1"></i> Clear
+                </button>
+            </div>
+            <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <!-- Points injected here -->
+                <div class="text-center text-neutral-600 text-xs py-4 italic" id="empty-state">No points drawn yet.</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Canvas Area -->
+    <main id="graph-container" class="flex-1 relative cursor-crosshair">
+        <canvas id="graph-canvas"></canvas>
+        
+        <!-- Graph Labels -->
+        <div class="absolute top-4 left-4 text-[10px] font-bold text-slate-500 tracking-widest mono bg-slate-900/80 px-2 py-1 rounded border border-slate-700">Y-AXIS</div>
+        <div class="absolute bottom-4 right-4 text-[10px] font-bold text-slate-500 tracking-widest mono bg-slate-900/80 px-2 py-1 rounded border border-slate-700">X-AXIS</div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Core Variables & Setup ---
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('graph-container');
+
+        let cw, ch;
+        let originX, originY;
+        const scale = 40; 
+        
+        let plottedPoints = [];
+        let actionQueue = [];
+        let particles = [];
+
+        function resize() {
+            cw = container.clientWidth;
+            ch = container.clientHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+            originX = Math.floor(cw / 2);
+            originY = Math.floor(ch / 2);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const toPx = (lx, ly) => ({ x: originX + lx * scale, y: originY - ly * scale });
+        const toLogical = (px, py) => ({ lx: (px - originX) / scale, ly: (originY - py) / scale });
+
+        // --- Walking Stickman Character ---
+        const char = {
+            x: originX,
+            y: originY,
+            targetX: originX,
+            targetY: originY,
+            facing: 1, // 1 for right, -1 for left
+            state: 'IDLE', // IDLE, WALKING, PLOTTING
+            walkCycle: 0,
+            targetPoint: null, 
+            timer: 0
+        };
+
+        // --- Math / Drawing Helpers ---
+        function drawGrid() {
+            ctx.lineWidth = 1;
+            
+            // Draw faint grid lines
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)'; 
+            ctx.beginPath();
+            for (let x = originX % scale; x < cw; x += scale) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, ch);
+            }
+            for (let y = originY % scale; y < ch; y += scale) {
+                ctx.moveTo(0, y); ctx.lineTo(cw, y);
+            }
+            ctx.stroke();
+
+            // Draw thick Axes
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)'; 
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, originY); ctx.lineTo(cw, originY); // X Axis
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, ch); // Y Axis
+            ctx.stroke();
+
+            // Draw Tick Marks and Numbers
+            ctx.fillStyle = '#64748b'; 
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = -30; i <= 30; i++) {
+                if (i === 0) continue;
+                let px = originX + i * scale;
+                if (px > 0 && px < cw) {
+                    ctx.beginPath(); ctx.moveTo(px, originY - 4); ctx.lineTo(px, originY + 4); ctx.stroke();
+                    if(i % 2 === 0) ctx.fillText(i, px, originY + 14);
+                }
+                let py = originY - i * scale;
+                if (py > 0 && py < ch) {
+                    ctx.beginPath(); ctx.moveTo(originX - 4, py); ctx.lineTo(originX + 4, py); ctx.stroke();
+                    if(i % 2 === 0) {
+                        ctx.textAlign = 'right';
+                        ctx.fillText(i, originX - 8, py);
+                        ctx.textAlign = 'center';
+                    }
+                }
+            }
+        }
+
+        function drawStickman() {
+            ctx.save();
+            ctx.translate(char.x, char.y);
+            ctx.scale(char.facing, 1);
+
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Bobbing effect during walk
+            let bob = 0;
+            if (char.state === 'WALKING') {
+                bob = Math.abs(Math.sin(char.walkCycle * 2)) * 3;
+            }
+            ctx.translate(0, -bob);
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -35, 12, 0, Math.PI * 2);
+            ctx.fillStyle = '#0f172a';
+            ctx.fill(); ctx.stroke();
+
+            // Cute Eyes
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(4, -37, 2, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(9, -37, 2, 0, Math.PI * 2); ctx.fill();
+            
+            // Smile
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(6, -33, 4, 0, Math.PI * 0.8); ctx.stroke();
+
+            // Torso
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(0, -23);
+            ctx.lineTo(0, 10);
+            ctx.stroke();
+
+            // Legs Animation Logic
+            let leg1X = 0, leg1Y = 35, knee1X = 0, knee1Y = 20;
+            let leg2X = 0, leg2Y = 35, knee2X = 0, knee2Y = 20;
+
+            if (char.state === 'WALKING') {
+                const stride = 16;
+                const lift = 10;
+                
+                // Leg 1
+                leg1X = Math.sin(char.walkCycle) * stride;
+                leg1Y = 35 - Math.max(0, Math.cos(char.walkCycle)) * lift;
+                knee1X = leg1X / 2 + Math.sin(char.walkCycle - Math.PI/4) * 6;
+                knee1Y = 10 + (leg1Y - 10) / 2;
+
+                // Leg 2 (Offset by PI)
+                leg2X = Math.sin(char.walkCycle + Math.PI) * stride;
+                leg2Y = 35 - Math.max(0, Math.cos(char.walkCycle + Math.PI)) * lift;
+                knee2X = leg2X / 2 + Math.sin(char.walkCycle + Math.PI - Math.PI/4) * 6;
+                knee2Y = 10 + (leg2Y - 10) / 2;
+            } else {
+                // Idle Legs
+                leg1X = -6; leg2X = 6;
+                knee1X = -3; knee2X = 3;
+            }
+
+            // Draw Legs
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(knee1X, knee1Y); ctx.lineTo(leg1X, leg1Y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(knee2X, knee2Y); ctx.lineTo(leg2X, leg2Y); ctx.stroke();
+
+            // Arms Animation Logic
+            let arm1X = -8, arm1Y = 5; // back arm
+            let arm2X = 8, arm2Y = 5;  // front arm
+
+            if (char.state === 'WALKING') {
+                // Arms swing opposite to legs
+                arm1X = Math.sin(char.walkCycle + Math.PI) * 12;
+                arm2X = Math.sin(char.walkCycle) * 12;
+            }
+
+            // Back Arm
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(arm1X, arm1Y); ctx.stroke();
+
+            // Front Arm (Drawing Arm)
+            ctx.beginPath(); ctx.moveTo(0, -15);
+            
+            if (char.state === 'PLOTTING') {
+                // Calculate Target Point Relative to Shoulder
+                let localTx = (char.targetPoint.px - char.x) * char.facing;
+                let localTy = (char.targetPoint.py - char.y) + bob + 15; // +15 balances shoulder offset
+                
+                let handX = localTx;
+                let handY = localTy;
+                
+                // Draw circle animation
+                if (char.timer > 10 && char.timer < 45) {
+                    const progress = (char.timer - 10) / 35;
+                    handX += Math.cos(progress * Math.PI * 2) * 8;
+                    handY += Math.sin(progress * Math.PI * 2) * 8;
+                    
+                    // Draw the chalk line tracking the hand
+                    ctx.beginPath();
+                    ctx.arc(localTx, localTy, 8, 0, progress * Math.PI * 2);
+                    ctx.strokeStyle = '#6366f1'; // indigo-500
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Emit chalk dust
+                    if (Math.random() > 0.3) {
+                        const globalHx = char.x + handX * char.facing;
+                        const globalHy = char.y - bob - 15 + handY;
+                        particles.push({
+                            x: globalHx, y: globalHy, 
+                            vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, 
+                            life: 1, size: Math.random()*3+1
+                        });
+                    }
+                }
+                
+                // Restore stroke color for arm
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 4;
+                ctx.lineTo(handX, handY);
+                ctx.stroke();
+                
+                // Chalk Piece in Hand
+                ctx.beginPath();
+                ctx.moveTo(handX, handY);
+                ctx.lineTo(handX + 4, handY - 4);
+                ctx.strokeStyle = '#818cf8'; // indigo-400
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+            } else {
+                // Idle or Walking Front Arm
+                ctx.lineTo(arm2X, arm2Y);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.04;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    return;
+                }
+                
+                ctx.fillStyle = `rgba(99, 102, 241, ${p.life})`; // indigo dust
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawPlottedPoints() {
+            plottedPoints.forEach(p => {
+                const px = p.px;
+                const py = p.py;
+                
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = '#6366f1';
+                
+                // Outer ring
+                ctx.strokeStyle = '#818cf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.stroke();
+                
+                // Inner dot
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+                
+                ctx.shadowBlur = 0; 
+
+                // Coordinate Label
+                ctx.fillStyle = '#94a3b8'; 
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`(${p.lx.toFixed(1)}, ${p.ly.toFixed(1)})`, px + 12, py - 12);
+            });
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            // 1. State Machine
+            if (char.state === 'IDLE' && actionQueue.length > 0) {
+                char.targetPoint = actionQueue.shift();
+                char.state = 'WALKING';
+                
+                // Determine stand position (Stand 30px away to reach comfortably)
+                let offsetX = -30; 
+                if (char.targetPoint.px < 50) offsetX = 30; // Stand on right if cramped to left edge
+                
+                char.targetX = char.targetPoint.px + offsetX;
+                char.targetY = char.targetPoint.py + 25; // Feet align below the point
+                char.facing = offsetX < 0 ? 1 : -1;
+            }
+
+            if (char.state === 'WALKING') {
+                let dx = char.targetX - char.x;
+                let dy = char.targetY - char.y;
+                let dist = Math.hypot(dx, dy);
+
+                if (dist > 2) {
+                    char.x += (dx / dist) * 4; // Walking speed
+                    char.y += (dy / dist) * 4;
+                    char.walkCycle += 0.25; // Leg swing speed
+                    
+                    if (dist > 10) {
+                        char.facing = dx > 0 ? 1 : -1;
+                    }
+                } else {
+                    // Arrived at destination
+                    char.x = char.targetX;
+                    char.y = char.targetY;
+                    char.state = 'PLOTTING';
+                    char.timer = 0;
+                    char.walkCycle = 0; // reset legs to standing
+                    char.facing = (char.targetPoint.px > char.x) ? 1 : -1; // Face the point
+                }
+            }
+
+            if (char.state === 'PLOTTING') {
+                char.timer++;
+                
+                // At frame 45, register point in history
+                if (char.timer === 45) {
+                    plottedPoints.push(char.targetPoint);
+                    updateHistoryUI();
+                }
+
+                // At frame 70, done plotting
+                if (char.timer > 70) {
+                    char.state = 'IDLE';
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawGrid();
+            drawPlottedPoints();
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // --- Interactivity ---
+        function queuePoint(lx, ly) {
+            const pxCoords = toPx(lx, ly);
+            actionQueue.push({ lx: lx, ly: ly, px: pxCoords.x, py: pxCoords.y });
+        }
+
+        document.getElementById('plot-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const x = parseFloat(document.getElementById('input-x').value);
+            const y = parseFloat(document.getElementById('input-y').value);
+            if(!isNaN(x) && !isNaN(y)) {
+                queuePoint(x, y);
+                document.getElementById('input-x').value = '';
+                document.getElementById('input-y').value = '';
+                document.getElementById('input-x').focus();
+            }
+        });
+
+        function plotRandom() {
+            const x = parseFloat((Math.random() * 20 - 10).toFixed(1));
+            const y = parseFloat((Math.random() * 14 - 7).toFixed(1));
+            queuePoint(x, y);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            const logical = toLogical(px, py);
+            
+            const lx = Math.round(logical.lx * 10) / 10;
+            const ly = Math.round(logical.ly * 10) / 10;
+            queuePoint(lx, ly);
+        });
+
+        function updateHistoryUI() {
+            const list = document.getElementById('history-list');
+            const empty = document.getElementById('empty-state');
+            
+            if (empty) empty.remove();
+            
+            const p = plottedPoints[plottedPoints.length - 1];
+            
+            const el = document.createElement('div');
+            el.className = 'bg-neutral-800/80 border border-neutral-700/50 rounded-lg p-3 flex justify-between items-center animate-pulse';
+            el.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-2 h-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+                    <span class="text-sm font-bold text-neutral-200 mono">P(${p.lx}, ${p.ly})</span>
+                </div>
+                <span class="text-[9px] text-neutral-500 font-bold uppercase tracking-wider">Plotted</span>
+            `;
+            
+            list.insertBefore(el, list.firstChild);
+            setTimeout(() => { el.classList.remove('animate-pulse'); }, 1000);
+        }
+
+        function clearGraph() {
+            plottedPoints = [];
+            actionQueue = [];
+            document.getElementById('history-list').innerHTML = '<div class="text-center text-neutral-600 text-xs py-4 italic" id="empty-state">No points drawn yet.</div>';
+            
+            // Return character to origin
+            actionQueue.push({ lx: 0, ly: 0, px: originX, py: originY });
+        }
+
+        // Start engine
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

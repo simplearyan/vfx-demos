@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Figure Animation Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* gray-50 */
+            color: #111827; /* gray-900 */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Clean Canvas */
+        #anim-canvas {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .char-btn.active {
+            outline: 3px solid #3b82f6; /* blue-500 */
+            outline-offset: 2px;
+            transform: scale(1.1);
+        }
+
+        .anim-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row antialiased select-none bg-gray-50">
+
+    <!-- Left Sidebar Control Panel -->
+    <aside class="w-full md:w-[350px] h-auto md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0 z-20 shadow-sm">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-white shrink-0">
+            <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 text-white">
+                <i data-lucide="clapperboard" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-gray-900 leading-none">Stick Studio</h1>
+                <p class="text-xs text-gray-500 font-medium mt-1">Animation Viewer</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            <!-- Character Selection -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Character</h2>
+                    <span id="char-name" class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">The Second Coming</span>
+                </div>
+                
+                <div id="char-grid" class="grid grid-cols-4 gap-3">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Size / Scale Slider -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Size / Scale</h2>
+                    <span id="scale-display" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">1.0x</span>
+                </div>
+                <input type="range" id="scale-slider" min="0.5" max="3" step="0.1" value="1" class="w-full accent-blue-500" oninput="updateScale(this.value)">
+            </div>
+
+            <!-- Animation Selection -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Animations</h2>
+                <div id="anim-list" class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Playback Toggle -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Controls</h2>
+                <button id="btn-play" onclick="togglePlay()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl text-sm transition flex items-center justify-center border border-gray-200 shadow-sm active:scale-95">
+                    <i data-lucide="pause" class="w-4 h-4 mr-2"></i>
+                    <span>Pause Animation</span>
+                </button>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Workspace (Canvas) -->
+    <main class="flex-1 flex flex-col items-center justify-center bg-gray-50 p-4 md:p-8 relative">
+        <div class="w-full h-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative flex items-center justify-center">
+            
+            <canvas id="anim-canvas" class="touch-none"></canvas>
+            
+            <!-- Ground Line Overlay -->
+            <div class="absolute bottom-[25%] left-0 w-full h-[2px] bg-gray-200 pointer-events-none"></div>
+
+            <!-- Hint Overlay -->
+            <div class="absolute top-4 left-4 bg-white/80 backdrop-blur text-xs font-bold text-gray-500 px-3 py-1.5 rounded-lg pointer-events-none border border-gray-100 shadow-sm">
+                FPS: 60 | Engine: Dynamic IK
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Data & State ---
+        const characters = [
+            { id: 'tsc', name: 'The Second Coming', color: '#FF8800', hollow: true },
+            { id: 'tco', name: 'The Chosen One', color: '#000000', hollow: false },
+            { id: 'tdl', name: 'The Dark Lord', color: '#dc2626', hollow: false },
+            { id: 'green', name: 'Green', color: '#22c55e', hollow: false },
+            { id: 'blue', name: 'Blue', color: '#3b82f6', hollow: false },
+            { id: 'yellow', name: 'Yellow', color: '#eab308', hollow: false },
+            { id: 'purple', name: 'Purple', color: '#a855f7', hollow: false }
+        ];
+
+        const animations = [
+            { id: 'Idle', icon: 'user' },
+            { id: 'Walk', icon: 'footprints' },
+            { id: 'Walk 2', icon: 'move' },
+            { id: 'Run', icon: 'zap' },
+            { id: 'Run 2', icon: 'fast-forward' },
+            { id: 'Punch', icon: 'swords' },
+            { id: 'Punch 2', icon: 'hammer' },
+            { id: 'Thinking', icon: 'lightbulb' },
+            { id: 'Confuse', icon: 'help-circle' },
+            { id: 'Hello', icon: 'hand' },
+            { id: 'Dance', icon: 'music' },
+            { id: 'Fly', icon: 'rocket' },
+            { id: 'Hit', icon: 'flame' },
+            { id: 'Dead', icon: 'skull' }
+        ];
+
+        let currentChar = characters[0];
+        let currentAnim = 'Idle';
+        let isPlaying = true;
+        let stickScale = 1.0;
+
+        // Engine State
+        let timer = 0;
+        let cycle = 0;
+        let particles = [];
+
+        // --- UI Initialization ---
+        function initUI() {
+            const charGrid = document.getElementById('char-grid');
+            characters.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = `char-btn w-10 h-10 lg:w-12 lg:h-12 rounded-full border-2 border-gray-200 shadow-sm transition mx-auto flex items-center justify-center ${c.id === currentChar.id ? 'active' : ''}`;
+                
+                if(c.hollow) {
+                    btn.innerHTML = `<div class="w-6 h-6 lg:w-8 lg:h-8 rounded-full border-[3px] lg:border-[4px] bg-white" style="border-color: ${c.color};"></div>`;
+                } else {
+                    btn.innerHTML = `<div class="w-6 h-6 lg:w-8 lg:h-8 rounded-full" style="background-color: ${c.color};"></div>`;
+                }
+                btn.onclick = () => selectCharacter(c);
+                charGrid.appendChild(btn);
+            });
+
+            const animList = document.getElementById('anim-list');
+            animations.forEach(a => {
+                const btn = document.createElement('button');
+                btn.id = `anim-btn-${a.id}`;
+                btn.className = `anim-btn flex flex-col items-center justify-center py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-[10px] transition hover:bg-gray-50 ${a.id === currentAnim ? 'active' : ''}`;
+                btn.innerHTML = `<i data-lucide="${a.icon}" class="w-4 h-4 mb-1"></i> ${a.id}`;
+                btn.onclick = () => selectAnimation(a.id);
+                animList.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function updateScale(val) {
+            stickScale = parseFloat(val);
+            document.getElementById('scale-display').innerText = stickScale.toFixed(1) + 'x';
+            if (!isPlaying) draw(); // Force re-render if paused
+        }
+
+        function selectCharacter(c) {
+            currentChar = c;
+            document.getElementById('char-name').innerText = c.name;
+            document.getElementById('char-name').style.color = c.color;
+            
+            document.querySelectorAll('.char-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', characters[idx].id === c.id);
+            });
+            if (!isPlaying) draw();
+        }
+
+        function selectAnimation(animId) {
+            currentAnim = animId;
+            timer = 0; 
+            cycle = 0;
+            particles = []; 
+            
+            document.querySelectorAll('.anim-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-600', 'bg-white');
+            });
+            const activeBtn = document.getElementById(`anim-btn-${animId}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-gray-600', 'bg-white');
+            if (!isPlaying) draw();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('btn-play');
+            if (isPlaying) {
+                btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4 mr-2"></i><span>Pause Animation</span>';
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4 mr-2"></i><span>Play Animation</span>';
+            }
+            lucide.createIcons();
+        }
+
+        // --- Canvas Engine ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        let cw, ch;
+        let cx, cy; 
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch * 0.75); // Ground level at bottom 1/4
+        }
+        window.addEventListener('resize', resize);
+
+        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+        function spawnImpact(px, py, color, speedMultiplier = 1) {
+            for(let i=0; i<12; i++) {
+                particles.push({
+                    x: px, y: py,
+                    vx: (Math.random() - 0.5) * 15 * speedMultiplier,
+                    vy: (Math.random() - 0.5) * 15 * speedMultiplier,
+                    life: 1, 
+                    size: (Math.random() * 4 + 2) * stickScale,
+                    color: Math.random() > 0.5 ? color : '#cbd5e1'
+                });
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if (p.life <= 0) { particles.splice(i, 1); return; }
+                
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.rect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawStickman() {
+            ctx.save();
+            
+            // Base positioning
+            let baseOffsetX = 0;
+            let baseOffsetY = 0;
+            let lean = 0;
+            let bob = 0;
+            
+            // Joints
+            let l1x=0, l1y=35, k1x=0, k1y=20;
+            let l2x=0, l2y=35, k2x=0, k2y=20;
+            let a1x=-10, a1y=5, a2x=10, a2y=5;
+
+            // --- ANIMATION MATHEMATICS ---
+            if (currentAnim === 'Idle') {
+                cycle += 0.05;
+                bob = Math.sin(cycle) * 2;
+                l1x = -12; l2x = 12; k1x = -6; k2x = 6;
+                a1x = -15; a2x = 15; a1y = 15; a2y = 15;
+            } 
+            else if (currentAnim === 'Walk') {
+                cycle += 0.15;
+                bob = Math.abs(Math.sin(cycle * 2)) * 3;
+                lean = 0.05;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                l1x = s * 22; l1y = 35 - Math.max(0, c) * 12;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 6; k1y = 10 + (l1y-10)/2;
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                l2x = s2 * 22; l2y = 35 - Math.max(0, c2) * 12;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 6; k2y = 10 + (l2y-10)/2;
+                a1x = s2 * 18; a1y = 5 + Math.abs(s2)*2;
+                a2x = s * 18;  a2y = 5 + Math.abs(s)*2;
+            }
+            else if (currentAnim === 'Walk 2') {
+                // Ninja Sneak / Creep
+                cycle += 0.12;
+                bob = Math.abs(Math.sin(cycle * 2)) * 4;
+                lean = 0.25;
+                baseOffsetY = 10; // Lower center of gravity
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                
+                l1x = s * 25; l1y = 25 - Math.max(0, c) * 12;
+                k1x = l1x/2 + 8; k1y = 15 + (l1y-15)/2;
+                l2x = s2 * 25; l2y = 25 - Math.max(0, c2) * 12;
+                k2x = l2x/2 + 8; k2y = 15 + (l2y-15)/2;
+                
+                a1x = 15 + s2*8; a1y = 5;
+                a2x = 20 + s*8; a2y = -2; // Arms up ready
+            }
+            else if (currentAnim === 'Run') {
+                cycle += 0.3;
+                bob = Math.abs(Math.sin(cycle * 2)) * 6;
+                lean = 0.3;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                l1x = s * 35; l1y = 35 - Math.max(0, c) * 20;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 12; k1y = 10 + (l1y-10)/2;
+                l2x = s2 * 35; l2y = 35 - Math.max(0, c2) * 20;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 12; k2y = 10 + (l2y-10)/2;
+                a1x = s2 * 30; a1y = -10 + Math.abs(s2)*10;
+                a2x = s * 30;  a2y = -10 + Math.abs(s)*10;
+            }
+            else if (currentAnim === 'Run 2') {
+                // Naruto / Ninja Sprint
+                cycle += 0.4;
+                bob = Math.abs(Math.sin(cycle * 2)) * 4;
+                lean = 0.7; // Extreme lean
+                baseOffsetY = 5;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                
+                l1x = s * 40; l1y = 30 - Math.max(0, c) * 20;
+                k1x = l1x/2; k1y = 15;
+                l2x = s2 * 40; l2y = 30 - Math.max(0, c2) * 20;
+                k2x = l2x/2; k2y = 15;
+                
+                a1x = -35; a1y = -5 + Math.random()*3;
+                a2x = -40; a2y = 0 + Math.random()*3; // Arms straight back
+                
+                // Wind dust particles
+                if(Math.random() > 0.5) spawnImpact(cx - 30*stickScale, cy + 30*stickScale, '#e2e8f0', 0.5);
+            }
+            else if (currentAnim === 'Punch') {
+                let pCycle = timer % 60;
+                l1x = -15; l2x = 25; k1x = -10; k2x = 15;
+                l1y = 35; l2y = 35; k1y = 22; k2y = 22;
+                a1x = -15; a1y = -5;
+                if (pCycle < 15) {
+                    let p = pCycle / 15;
+                    a2x = lerp(10, -30, p); a2y = lerp(10, -15, p);
+                    lean = lerp(0, -0.15, p);
+                } else if (pCycle < 22) {
+                    let p = (pCycle - 15) / 7;
+                    a2x = lerp(-30, 45, p); a2y = lerp(-15, -15, p);
+                    lean = lerp(-0.15, 0.3, p);
+                    if (pCycle === 21) spawnImpact(cx + 45*stickScale, cy - 15*stickScale, currentChar.color);
+                } else if (pCycle < 40) {
+                    a2x = 45; a2y = -15; lean = 0.3;
+                } else {
+                    let p = (pCycle - 40) / 20;
+                    a2x = lerp(45, 10, p); a2y = lerp(-15, 10, p);
+                    lean = lerp(0.3, 0, p);
+                }
+            }
+            else if (currentAnim === 'Punch 2') {
+                // Uppercut
+                let pCycle = timer % 60;
+                l1x = -15; l2x = 25; k1x = -10; k2x = 15;
+                l1y = 35; l2y = 35; k1y = 22; k2y = 22;
+                a1x = -15; a1y = -5;
+                if (pCycle < 20) {
+                    let p = pCycle / 20;
+                    baseOffsetY = lerp(0, 15, p); // Squat
+                    a2x = lerp(10, 0, p); a2y = lerp(10, 15, p);
+                    lean = lerp(0, 0.2, p);
+                } else if (pCycle < 26) {
+                    let p = (pCycle - 20) / 6;
+                    baseOffsetY = lerp(15, -25, p); // Explode up
+                    a2x = lerp(0, 20, p); a2y = lerp(15, -55, p); // Arm shoots high
+                    lean = lerp(0.2, -0.15, p);
+                    if (pCycle === 25) spawnImpact(cx + 20*stickScale, cy - 55*stickScale, currentChar.color, 1.5);
+                } else if (pCycle < 40) {
+                    baseOffsetY = -25;
+                    a2x = 20; a2y = -55;
+                    lean = -0.15;
+                } else {
+                    let p = (pCycle - 40) / 20;
+                    baseOffsetY = lerp(-25, 0, p);
+                    a2x = lerp(20, 10, p); a2y = lerp(-55, 10, p);
+                    lean = lerp(-0.15, 0, p);
+                }
+            }
+            else if (currentAnim === 'Thinking') {
+                cycle += 0.05;
+                bob = Math.sin(cycle) * 2;
+                l1x = -8; l2x = 8; k1x = -4; k2x = 4;
+                a1x = -15; a1y = 15; 
+                a2x = 12; a2y = -22; // Hand on chin
+            }
+            else if (currentAnim === 'Confuse') {
+                cycle += 0.08;
+                bob = Math.sin(cycle) * 1;
+                lean = Math.sin(cycle*0.5) * 0.15; // Confused tilting
+                l1x = -12; l2x = 12; k1x = -6; k2x = 6;
+                a1x = -15; a1y = 15;
+                a2x = 0; a2y = -45; // Scratching top of head
+            }
+            else if (currentAnim === 'Hello') {
+                cycle += 0.2;
+                bob = Math.sin(cycle*0.5) * 2;
+                l1x = -12; l2x = 12; k1x = -6; k2x = 6;
+                a1x = -15; a1y = 15;
+                a2x = 25 + Math.sin(cycle)*10; a2y = -40 + Math.cos(cycle)*5; // Waving high
+            }
+            else if (currentAnim === 'Dance') {
+                cycle += 0.2;
+                bob = Math.abs(Math.sin(cycle*2)) * 12; 
+                let s = Math.sin(cycle);
+                lean = s * 0.15; 
+                l1x = -15; l1y = 35 - bob; k1x = -20 - s*5; k1y = 20;
+                l2x = 15; l2y = 35 - bob; k2x = 20 - s*5; k2y = 20;
+                a1x = 25; a1y = -25 + Math.sin(cycle*4)*15;
+                a2x = -25; a2y = -25 + Math.cos(cycle*4)*15;
+            }
+            else if (currentAnim === 'Hit') {
+                // Taking damage knockback
+                let hCycle = timer % 40;
+                if(hCycle === 1) spawnImpact(cx, cy - 20*stickScale, '#ef4444'); // Blood/impact
+                
+                if(hCycle < 5) {
+                    baseOffsetY = -10; lean = -0.5;
+                    l1x = 15; l2x = 25; k1x = 10; k2x = 20;
+                    a1x = 20; a1y = -15; a2x = 30; a2y = -25;
+                } else if(hCycle < 15) {
+                    let p = (hCycle-5)/10;
+                    baseOffsetY = lerp(-10, 0, p); lean = lerp(-0.5, -0.2, p);
+                    l1x = 15; l2x = 25; k1x = 10; k2x = 20;
+                    a1x = lerp(20, 10, p); a1y = lerp(-15, 5, p);
+                    a2x = lerp(30, 15, p); a2y = lerp(-25, 5, p);
+                } else {
+                    baseOffsetY = 0; lean = -0.2;
+                    l1x = 15; l2x = 25; k1x = 10; k2x = 20;
+                    a1x = 10; a1y = 5; a2x = 15; a2y = 5;
+                }
+            }
+            else if (currentAnim === 'Dead') {
+                lean = Math.PI / 2; // 90 degrees flat
+                baseOffsetY = 38; // Ground level
+                l1x = -15; l2x = 15; k1x = -8; k2x = 8;
+                l1y = 35; l2y = 35; k1y = 35; k2y = 35;
+                a1x = 15; a1y = -15; a2x = -15; a2y = -15;
+            }
+            else if (currentAnim === 'Fly') {
+                cycle += 0.1;
+                bob = Math.sin(cycle) * 8;
+                baseOffsetY = -80; 
+                lean = 0.6; 
+                l1x = -25; l1y = 10; k1x = -10; k1y = 5;
+                l2x = -35; l2y = 15; k2x = -15; k2y = 10;
+                a2x = 40; a2y = -25; 
+                a1x = -25; a1y = 5; 
+                if (Math.random() > 0.4) {
+                    particles.push({
+                        x: cx - 40*stickScale, y: cy + (baseOffsetY + bob)*stickScale,
+                        vx: -5 - Math.random()*2, vy: (Math.random() - 0.5)*2,
+                        life: 1, size: (Math.random()*3+2)*stickScale,
+                        color: currentChar.color
+                    });
+                }
+            }
+
+            // Apply Global Positioning & SCALING
+            ctx.translate(cx + baseOffsetX * stickScale, cy + baseOffsetY * stickScale - bob * stickScale);
+            ctx.rotate(lean);
+            ctx.scale(stickScale, stickScale); // <--- SCALE ENGINE APPLIED HERE
+
+            // Draw Alan Becker Style 
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = currentChar.color;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -38, 16, 0, Math.PI * 2);
+            if (currentChar.hollow) {
+                ctx.fillStyle = '#ffffff'; 
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = currentChar.color;
+                ctx.fill();
+            }
+
+            // Torso
+            ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(0, 10); ctx.stroke();
+
+            // Legs
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(k1x, k1y); ctx.lineTo(l1x, l1y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(k2x, k2y); ctx.lineTo(l2x, l2y); ctx.stroke();
+
+            // Arms
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(a1x, a1y); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(a2x, a2y); ctx.stroke(); 
+
+            ctx.restore(); // Restore before drawing global drop shadow
+
+            // Draw Drop Shadow (Fixed on global ground)
+            if (currentAnim !== 'Fly' && currentAnim !== 'Dead') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.beginPath();
+                let shadowW = (20 + Math.abs(l2x - l1x)) * stickScale;
+                ctx.ellipse(cx, cy + 35 * stickScale, shadowW/2, 4 * stickScale, 0, 0, Math.PI*2);
+                ctx.fill();
+            } else if (currentAnim === 'Fly') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 35 * stickScale, 15 * stickScale, 3 * stickScale, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            if (isPlaying) timer++;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Run
+        initUI();
+        resize();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

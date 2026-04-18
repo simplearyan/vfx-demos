@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VFX Canvas Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #111827;
+            color: white;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling while drawing */
+            touch-action: none; /* Prevent pinch-zoom/scroll on mobile while drawing */
+        }
+        
+        .workspace {
+            position: relative;
+            width: 100vw;
+            height: calc(100vh - 80px); /* Leave room for toolbar */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: radial-gradient(circle, #1f2937 10%, transparent 11%),radial-gradient(circle, #1f2937 10%, transparent 11%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+        }
+
+        #media-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Background image/video */
+        .bg-media {
+            display: block;
+            max-width: 100%;
+            max-height: calc(100vh - 120px);
+            object-fit: contain;
+            border-radius: 8px;
+            opacity: 0.7; /* Dimmed slightly so drawing stands out */
+        }
+
+        /* The transparent drawing canvas */
+        #drawCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            z-index: 10;
+            border-radius: 8px;
+        }
+
+        .btn {
+            transition: all 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .brush-active {
+            ring: 2px;
+            ring-color: white;
+            border-color: white;
+            background-color: #374151;
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen font-sans">
+
+    <!-- Toolbar -->
+    <div class="h-20 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 shadow-lg z-20">
+        <div class="flex items-center space-x-4">
+            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-blue-500 mr-4">VFX Canvas</h1>
+            
+            <!-- Brushes -->
+            <div class="flex space-x-2 bg-gray-800 p-1 rounded-lg">
+                <button id="brush-glow" class="btn px-4 py-2 rounded-md border border-gray-700 hover:bg-gray-700 flex items-center space-x-2 brush-active" onclick="setBrush('glow')">
+                    <div class="w-4 h-4 rounded-full bg-orange-400 shadow-[0_0_8px_#ea580c]"></div>
+                    <span class="text-sm">Neon Glow</span>
+                </button>
+                <button id="brush-marker" class="btn px-4 py-2 rounded-md border border-gray-700 hover:bg-gray-700 flex items-center space-x-2" onclick="setBrush('marker')">
+                    <div class="w-4 h-4 rounded-full bg-blue-600"></div>
+                    <span class="text-sm">Thick Marker</span>
+                </button>
+                <button id="brush-sparkler" class="btn px-4 py-2 rounded-md border border-gray-700 hover:bg-gray-700 flex items-center space-x-2" onclick="setBrush('sparkler')">
+                    <div class="w-4 h-4 rounded-full bg-yellow-300 shadow-[0_0_8px_#facc15]"></div>
+                    <span class="text-sm">Sparkler</span>
+                </button>
+            </div>
+            
+            <!-- Size Slider -->
+            <div class="flex items-center space-x-2 ml-4">
+                <span class="text-sm text-gray-400">Size:</span>
+                <input type="range" id="sizeSlider" min="1" max="50" value="5" class="w-24 accent-orange-500">
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- Background Upload -->
+            <label class="btn cursor-pointer px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm flex items-center border border-gray-700">
+                <span>📁 Load Background</span>
+                <input type="file" id="bgUploader" class="hidden" accept="image/*,video/*">
+            </label>
+            
+            <div class="w-px h-8 bg-gray-700 mx-2"></div>
+
+            <button onclick="playAnimation()" class="btn px-4 py-2 bg-green-600 hover:bg-green-500 rounded-lg text-sm font-semibold flex items-center">
+                ▶ Animate
+            </button>
+            <button onclick="clearCanvas()" class="btn px-4 py-2 bg-red-600 hover:bg-red-500 rounded-lg text-sm font-semibold">
+                Clear
+            </button>
+            <button onclick="exportPNG()" class="btn px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold">
+                💾 Save VFX (PNG)
+            </button>
+        </div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="workspace" id="workspace">
+        <div id="media-container">
+            <!-- Default background image -->
+            <img id="bg-image" class="bg-media" src="https://images.unsplash.com/photo-1532767153582-b1a0e5145009?q=80&w=1920&auto=format&fit=crop" alt="Background">
+            <video id="bg-video" class="bg-media hidden" loop muted playsinline></video>
+            
+            <!-- Drawing Canvas -->
+            <canvas id="drawCanvas"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('drawCanvas');
+        const ctx = canvas.getContext('2d');
+        const mediaContainer = document.getElementById('media-container');
+        const bgImage = document.getElementById('bg-image');
+        const bgVideo = document.getElementById('bg-video');
+        const sizeSlider = document.getElementById('sizeSlider');
+
+        // State
+        let isDrawing = false;
+        let currentBrush = 'glow';
+        let brushSizeMultiplier = 1;
+        
+        // History for animation
+        let strokeHistory = []; 
+        let currentStroke = null;
+        let isAnimating = false;
+
+        // Brush Configurations
+        const brushes = {
+            glow: {
+                coreColor: '#ffffff',
+                shadowColor: '#ea580c', // Orange glow
+                shadowBlur: 20,
+                baseSize: 6,
+                lineCap: 'round',
+                lineJoin: 'round'
+            },
+            marker: {
+                coreColor: '#2563eb', // Blue
+                shadowColor: 'transparent',
+                shadowBlur: 0,
+                baseSize: 25,
+                lineCap: 'round',
+                lineJoin: 'round'
+            },
+            sparkler: {
+                coreColor: '#ffffff',
+                shadowColor: '#facc15', // Yellow/Gold
+                shadowBlur: 15,
+                baseSize: 3,
+                lineCap: 'round',
+                lineJoin: 'round'
+            }
+        };
+
+        // Initialize Canvas Size to match the background media
+        function resizeCanvas() {
+            const activeMedia = bgVideo.classList.contains('hidden') ? bgImage : bgVideo;
+            
+            // Set actual canvas resolution to match display size
+            canvas.width = activeMedia.clientWidth;
+            canvas.height = activeMedia.clientHeight;
+            
+            // Redraw everything if we resized
+            redrawHistory();
+        }
+
+        // Wait for image to load before setting canvas size
+        bgImage.onload = resizeCanvas;
+        window.addEventListener('resize', resizeCanvas);
+
+        // --- Interaction Logic ---
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Scale mouse coordinates to canvas resolution
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let clientX = evt.clientX;
+            let clientY = evt.clientY;
+            
+            // Handle touch events
+            if (evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDrawing(e) {
+            if (isAnimating) return;
+            e.preventDefault(); // Prevent scrolling on touch
+            isDrawing = true;
+            const pos = getMousePos(e);
+            
+            currentStroke = {
+                brush: currentBrush,
+                sizeMultiplier: parseFloat(sizeSlider.value) / 10,
+                points: [pos]
+            };
+            
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            applyBrushStyle(currentStroke.brush, currentStroke.sizeMultiplier);
+        }
+
+        function draw(e) {
+            if (!isDrawing || isAnimating) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+            
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            
+            currentStroke.points.push(pos);
+        }
+
+        function stopDrawing() {
+            if (isDrawing && currentStroke && currentStroke.points.length > 0) {
+                strokeHistory.push(currentStroke);
+            }
+            isDrawing = false;
+        }
+
+        // Event Listeners for Mouse
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Event Listeners for Touch (Mobile/Tablet)
+        canvas.addEventListener('touchstart', startDrawing, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDrawing);
+
+        // --- Drawing Utilities ---
+        function applyBrushStyle(brushName, sizeMult = 1) {
+            const brush = brushes[brushName];
+            ctx.strokeStyle = brush.coreColor;
+            ctx.shadowColor = brush.shadowColor;
+            ctx.shadowBlur = brush.shadowBlur;
+            ctx.lineWidth = brush.baseSize * sizeMult;
+            ctx.lineCap = brush.lineCap;
+            ctx.lineJoin = brush.lineJoin;
+        }
+
+        function setBrush(brushName) {
+            currentBrush = brushName;
+            
+            // Update UI
+            document.querySelectorAll('.brush-active').forEach(el => {
+                el.classList.remove('brush-active', 'bg-gray-700', 'border-white');
+                el.classList.add('border-gray-700');
+            });
+            const activeBtn = document.getElementById('brush-' + brushName);
+            activeBtn.classList.add('brush-active', 'bg-gray-700', 'border-white');
+            activeBtn.classList.remove('border-gray-700');
+            
+            // Update slider default visually based on brush
+            if(brushName === 'marker') sizeSlider.value = 10;
+            if(brushName === 'glow') sizeSlider.value = 5;
+            if(brushName === 'sparkler') sizeSlider.value = 3;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokeHistory = [];
+        }
+
+        function redrawHistory() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            strokeHistory.forEach(stroke => {
+                if (stroke.points.length === 0) return;
+                
+                applyBrushStyle(stroke.brush, stroke.sizeMultiplier);
+                ctx.beginPath();
+                ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+                
+                for (let i = 1; i < stroke.points.length; i++) {
+                    ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+                }
+                ctx.stroke();
+            });
+        }
+
+        // --- Animation Engine ---
+        function playAnimation() {
+            if (strokeHistory.length === 0 || isAnimating) return;
+            isAnimating = true;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let strokeIndex = 0;
+            let pointIndex = 0;
+            
+            function animateNextFrame() {
+                if (strokeIndex >= strokeHistory.length) {
+                    isAnimating = false; // Finished
+                    return;
+                }
+                
+                const currentAnimStroke = strokeHistory[strokeIndex];
+                
+                if (pointIndex === 0) {
+                    applyBrushStyle(currentAnimStroke.brush, currentAnimStroke.sizeMultiplier);
+                    ctx.beginPath();
+                    ctx.moveTo(currentAnimStroke.points[0].x, currentAnimStroke.points[0].y);
+                }
+                
+                // Draw multiple points per frame to speed it up depending on length
+                const pointsPerFrame = Math.max(1, Math.floor(currentAnimStroke.points.length / 30)); 
+                
+                for(let i=0; i<pointsPerFrame; i++) {
+                    if (pointIndex < currentAnimStroke.points.length - 1) {
+                        pointIndex++;
+                        ctx.lineTo(currentAnimStroke.points[pointIndex].x, currentAnimStroke.points[pointIndex].y);
+                        ctx.stroke();
+                        // re-begin path so stroke() doesn't overlap excessively causing weird shadow artifacts
+                        ctx.beginPath();
+                        ctx.moveTo(currentAnimStroke.points[pointIndex].x, currentAnimStroke.points[pointIndex].y);
+                    }
+                }
+                
+                if (pointIndex >= currentAnimStroke.points.length - 1) {
+                    strokeIndex++;
+                    pointIndex = 0;
+                }
+                
+                requestAnimationFrame(animateNextFrame);
+            }
+            
+            animateNextFrame();
+        }
+
+        // --- Export & File Handling ---
+        function exportPNG() {
+            // Because the canvas has a transparent background, toDataURL saves ONLY the drawing!
+            const dataURL = canvas.toDataURL("image/png");
+            const link = document.createElement('a');
+            link.download = 'vfx-overlay.png';
+            link.href = dataURL;
+            link.click();
+        }
+
+        document.getElementById('bgUploader').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const url = URL.createObjectURL(file);
+            
+            if (file.type.startsWith('video/')) {
+                bgImage.classList.add('hidden');
+                bgVideo.classList.remove('hidden');
+                bgVideo.src = url;
+                bgVideo.onloadeddata = () => {
+                    bgVideo.play();
+                    resizeCanvas();
+                }
+            } else {
+                bgVideo.classList.add('hidden');
+                bgImage.classList.remove('hidden');
+                bgImage.src = url;
+                bgImage.onload = resizeCanvas;
+            }
+        });
+
+        // Initialize setup
+        setTimeout(resizeCanvas, 100); // Failsafe for initial load
+        
+    </script>
+</body>
+</html>

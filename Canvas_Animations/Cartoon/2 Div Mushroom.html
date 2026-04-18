@@ -1,0 +1,86 @@
+<div class="bottom"/>
+<div class="top"/>
+
+
+
+<style>
+    *,
+*:before,
+*:after {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+  background-color: #406947;
+}
+
+.top {
+  width: 22em;
+  height: 14em;
+  background-image: radial-gradient(#fffcfa 40%, transparent 40%), radial-gradient(#fffcfa 32%, transparent 32%);;
+  background-color: #f5e042;
+  background-position: -2.4em -.5em, 6em 4em;
+  background-repeat: repeat;
+  background-size: 14em 10em;
+  border: .8em solid #fffcfa;
+  border-radius: 49% 48% 16% 18% / 72% 72% 23% 23%;
+  position: absolute;
+  margin: auto;
+  top: -12em;
+  bottom: 0;
+  left: -3.8em;
+  right: 0;
+  box-shadow: -1em .3em .1em .2em rgba(0,0,0,0.1);
+}
+
+.bottom {
+  width: 16em;
+  height: 16em;
+  background-color: #fff3eb;
+  border: .8em solid #fffcfa;
+  border-radius: 50% 50% 35% 35% / 74% 74% 23% 23%;
+  position: absolute;
+  margin: auto;
+  top: 5em;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: -1em 0 .1em rgba(0,0,0,0.1);
+}
+
+.bottom::before {
+    content: "";
+    position: absolute;
+    height: 1.2em;
+    width: 1.2em;
+    background-color: #010008;
+    border-radius: 50%;
+    top: 9.3em;
+    left: 8.7em;
+    box-shadow: 
+/*  left eye */
+    -3.8em 0 0 #010008,
+/*  cheeks */
+    1.5em 1em 0 -0.1em #f2d5c2,
+    -5.2em 1em 0 -0.1em #f2d5c2;
+}
+
+/* Mouth */
+.bottom::after{
+    content: "";
+    position: absolute;
+    height: 1.3em;
+    width: 2.5em;
+    top: 10.5em;
+    left: 6.3em;
+    border-radius: 15% 15% 50% 50% / 15% 15% 70% 70%;
+    border: .2em solid #010008;
+    background: radial-gradient(
+        at 50% 80%,
+        #f5750f .5em,
+        #010008 .5em
+    );
+}
+</style>

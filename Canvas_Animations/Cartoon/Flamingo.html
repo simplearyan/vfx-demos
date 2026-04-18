@@ -1,0 +1,513 @@
+<!-- 🦉🦚🦜🦢🦩🐦🐧🦅🦆 -->
+<div class="container">
+	<div class="flamingo">
+		<div class="head">
+			<div class="beak_container">
+				<div class="beak_dark"></div>
+				<div class="beak_light"></div>
+				<div class="beak_head"></div>
+			</div>
+			<div class="eye_container">
+				<div class="eye_lid">
+					<div class="eye_ball">
+						<div class="eye_pupil">
+							<div class="eye_iris"></div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+		<div class="neck"></div>
+		<div class="body">
+			<div class="body_body"></div>
+			<div class="body_circle"></div>
+		</div>
+		<div class="legs">
+			<div class="legs_left"></div>
+			<div class="legs_right"></div>
+		</div>
+	</div>
+	<div class="water">
+		<div class="reflection">
+			<div class="reflection_left_leg"></div>
+			<div class="reflection_right_leg"></div>
+		</div>
+		<div class="ripple"></div>
+		<div class="plants_left">
+			<div class="plant"></div>
+			<div class="plant"></div>
+			<div class="plant"></div>
+		</div>
+		<div class="plants_right">
+			<div class="plant"></div>
+			<div class="plant"></div>
+			<div class="plant"></div>
+			<div class="plant"></div>
+		</div>
+	</div>
+</div>
+<div id="fariat">
+	<h1>FLAMINGO</h1> <span>by Fariat</span>
+</div>
+
+
+<style>
+    * {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+@font-face {
+	font-family: "game";
+	src: url("https://fonts.googleapis.com/css2?family=Poppins:wght@500;800&display=swap");
+}
+:root {
+	--background: #fff;
+	--scale: 100px;
+	--transition: cubic-bezier(0, 0.46, 0, 1);
+	--darkpink: #ff8282;
+	--lightpink: #f3247a;
+}
+
+html,
+body {
+	height: 100%;
+}
+body {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	font-family: "Poppins", sans-serif;
+	color: #a6c5bb;
+	background: var(--background);
+}
+.container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	padding: 1rem 0;
+	width: 492px;
+	position: relative;
+	transform: scale(0.8);
+}
+
+.flamingo {
+	z-index: 2;
+	position: relative;
+	opacity: 1;
+	width: 413px;
+	height: 514px;
+	transform: scale(0.8);
+}
+/* ---- Beak Start ---- */
+
+.beak_dark {
+	width: 70px;
+	height: 56px;
+	background: linear-gradient(#2b2b44, #0e041c);
+	border-top-left-radius: 30px;
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 1;
+}
+.beak_light {
+	width: 80px;
+	height: 58px;
+	background: linear-gradient(#fff, #b5d7d7);
+	border-top-left-radius: 30px;
+	border-bottom-right-radius: 30px;
+	position: absolute;
+	left: 45px;
+	top: -1px;
+	z-index: 2;
+	overflow: hidden;
+}
+.beak_light:after {
+	content: "";
+	position: absolute;
+	width: 80px;
+	height: 6px;
+	background: linear-gradient(#9acbcc 102%, #fff0 90%);
+	bottom: 0px;
+}
+.beak_head {
+	width: 80px;
+	height: 56px;
+	background: var(--lightpink);
+	border-top-right-radius: 30px;
+	position: absolute;
+	left: 70px;
+	top: 0;
+	z-index: 1;
+}
+.beak_head:after {
+	content: "";
+	position: absolute;
+	background: var(--lightpink);
+	width: 40px;
+	height: 40px;
+	bottom: -40px;
+	left: 5px;
+}
+.beak_head:before {
+	content: "";
+	position: absolute;
+	background: var(--background);
+	border-top-right-radius: 50%;
+	width: 40px;
+	height: 60px;
+	bottom: -60px;
+	left: 4px;
+	z-index: 2;
+}
+
+/* ---- Beak End ---- */
+
+/* ---- Eye Start ---- */
+
+.eye_lid {
+	width: 55px;
+	height: 55px;
+	background: linear-gradient(var(--darkpink), var(--lightpink));
+	border-radius: 100%;
+	position: absolute;
+	left: 126px;
+	top: 11px;
+	z-index: 5;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.eye_ball {
+	width: 45px;
+	height: 45px;
+	background: linear-gradient(#fff, #dfffff);
+	border-radius: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	overflow: hidden;
+	position: relative;
+	animation: 5s blink infinite var(--transition);
+}
+.eye_ball:before {
+	content: "";
+	position: absolute;
+	width: 20px;
+	height: 20px;
+	border-radius: 100%;
+	background-color: #fff;
+	top: 0px;
+	left: 20px;
+}
+.eye_pupil {
+	width: 35px;
+	height: 35px;
+	background: linear-gradient(#0a9ad1, #43f6dc);
+	border-radius: 100%;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+.eye_iris {
+	width: 27px;
+	height: 27px;
+	background: linear-gradient(#083d9c, #083c9c00);
+	border-radius: 100%;
+}
+/* ---- Eye End ---- */
+
+/* ---- Neck Start ---- */
+.neck {
+	width: 36px;
+	height: 155px;
+	background: linear-gradient(var(--lightpink), var(--darkpink));
+	position: absolute;
+	left: 114px;
+	top: 50px;
+	z-index: 1;
+}
+
+/* ---- Neck End ---- */
+
+/* ---- Body Start ---- */
+
+.body_body {
+	width: 185px;
+	height: 75px;
+	background: linear-gradient(
+		to bottom,
+		var(--lightpink) 60%,
+		var(--darkpink) 177%
+	);
+	position: absolute;
+	border-bottom-left-radius: 100px;
+	border-bottom-right-radius: 100px;
+	left: 114px;
+	top: 205px;
+	z-index: 1;
+}
+.body_circle {
+	width: 112px;
+	height: 112px;
+	background: linear-gradient(to right, var(--lightpink), var(--darkpink));
+	position: absolute;
+	border-radius: 100%;
+	left: 150px;
+	top: 147px;
+	z-index: 1;
+	border-top-right-radius: 0;
+	transform: rotate(47deg);
+	animation: 5s wing infinite var(--transition);
+	animation-delay: 3s;
+}
+
+/* ---- Body End ---- */
+
+/* ---- Legs Start ---- */
+
+.legs_right {
+	width: 6px;
+	height: 240px;
+	background-color: #f4c6bd;
+	position: absolute;
+	left: 214px;
+	top: 268px;
+	z-index: 1;
+}
+.legs_right:after {
+	content: "";
+	position: absolute;
+	width: 15px;
+	height: 30px;
+	border-radius: 10px;
+	background-color: #e0adb4;
+	top: 150px;
+	left: -5px;
+}
+.legs_left {
+	width: 6px;
+	height: 228px;
+	background: #f4c6bd;
+	position: absolute;
+	left: 194px;
+	top: 280px;
+	z-index: 1;
+}
+.legs_left:after {
+	content: "";
+	position: absolute;
+	width: 15px;
+	height: 30px;
+	border-radius: 10px;
+	background-color: #e0adb4;
+	top: 138px;
+	left: -5px;
+}
+
+/* ---- Legs End ---- */
+
+/* ---- Water Start ---- */
+.water {
+	width: 100%;
+	max-width: 490px;
+	height: 170px;
+	position: absolute;
+	background: linear-gradient(#5df6e4, #00d2e9);
+	bottom: 0;
+	border-radius: 30px;
+	display: flex;
+	justify-content: center;
+}
+
+.plant {
+	background: linear-gradient(#d6ff1b -30%, #59de9a 90%);
+}
+.plants_left,
+.plants_right {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-end;
+	position: absolute;
+	border: 0;
+}
+.plants_left {
+	top: -30px;
+	left: 10%;
+	height: 30px;
+}
+.plants_right {
+	top: -29px;
+	left: 70%;
+	height: 29px;
+}
+.plants_left .plant {
+	width: 42px;
+	height: 36px;
+	border-top-right-radius: 30px;
+	border-top-left-radius: 30px;
+}
+.plants_left .plant:nth-child(1) {
+	height: 35px;
+}
+.plants_left .plant:nth-child(2) {
+	height: 40px;
+}
+.plants_left .plant:nth-child(3) {
+	height: 40px;
+}
+
+.plants_right .plant {
+	width: 20px;
+	height: 36px;
+	border-top-right-radius: 30px;
+	border-top-left-radius: 30px;
+}
+.plants_right .plant:nth-child(1) {
+	height: 22px;
+}
+.plants_right .plant:nth-child(2) {
+	height: 26px;
+	animation-delay: 0.5s;
+}
+.plants_right .plant:nth-child(3) {
+	height: 36px;
+}
+.plants_right .plant:nth-child(4) {
+	height: 18px;
+}
+.ripple {
+	border: 6px solid #92eff4;
+	border-radius: 17px;
+	position: absolute;
+	animation: 2s ripple infinite linear;
+	animation-delay: 2s;
+	top: 80px;
+	opacity: 0;
+}
+.reflection_left_leg {
+	width: 5px;
+	height: 73px;
+	position: absolute;
+	background: linear-gradient(#2ec2cc, #006fab);
+	bottom: 0px;
+	left: 234.8px;
+	opacity: 0.4;
+}
+.reflection_left_leg:after {
+	content: "";
+	position: absolute;
+	width: 12px;
+	height: 25px;
+	border-radius: 10px;
+	background: linear-gradient(#2ec2cc -30%, #006fab 80%);
+	top: 40px;
+	left: -3.8px;
+}
+.reflection_right_leg:after {
+	content: "";
+	position: absolute;
+	width: 12px;
+	height: 25px;
+	border-radius: 10px;
+	background: linear-gradient(#2ec2cc -30%, #006fab 80%);
+	top: 40px;
+	left: -3.8px;
+}
+.reflection_right_leg {
+	width: 5px;
+	height: 73px;
+	position: absolute;
+	background: linear-gradient(#2ec2cc, #006fab);
+	bottom: 0px;
+	left: 250.5px;
+	opacity: 0.4;
+}
+/* ---- Water End ---- */
+
+/* ---- Creator ---- */
+#fariat {
+	width: 100%;
+	bottom: 40px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 600;
+	color: inherit;
+	text-transform: uppercase;
+	padding-left: 35px;
+}
+#fariat span {
+	font-size: 10px;
+	margin-left: 20px;
+	color: inherit;
+	letter-spacing: 4px;
+}
+#fariat h1 {
+	font-size: 25px;
+}
+/* ---- Animations ---- */
+
+@keyframes ripple {
+	0% {
+		opacity: 1;
+		width: 50px;
+		height: 30px;
+		border: 6px solid #92eff400;
+		transform: scale(0.5);
+	}
+	50% {
+		width: 100px;
+		height: 30px;
+		border: 6px solid #92eff4;
+		transform: scale(1);
+	}
+	100% {
+		width: 200px;
+		height: 30px;
+		border: 6px solid #92eff400;
+		transform: scale(1.5);
+	}
+}
+@keyframes wing {
+	0% {
+		transform: rotate(47deg);
+	}
+	2% {
+		transform: rotate(0deg);
+	}
+	4% {
+		transform: rotate(47deg);
+	}
+	8% {
+		transform: rotate(0deg);
+	}
+	10%,
+	100% {
+		transform: rotate(47deg);
+	}
+}
+@keyframes blink {
+	0% {
+		height: 45px;
+	}
+	2% {
+		height: 0px;
+	}
+	4% {
+		height: 45px;
+	}
+	8% {
+		height: 0px;
+	}
+	12%,
+	100% {
+		height: 45px;
+	}
+}
+
+</style>

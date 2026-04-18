@@ -1,0 +1,218 @@
+<div class="box">
+    <div class="head">
+        <div class="face">
+            <div class="eyes">
+                <div class="eye eye-left"></div>
+                <div class="eye eye-right"></div>
+            </div>
+            <div class="nose"></div>
+            <div class="lips">
+                <div class="lips-left"></div>
+                <div class="lips-right"></div>
+            </div>
+            <div class="whiskers">
+                <div class="whiskers-left">
+                    <div class="left-1"></div>
+                    <div class="left-2"></div>
+                    <div class="left-3"></div>
+                </div>
+                <div class="whiskers-right">
+                    <div class="right-1"></div>
+                    <div class="right-2"></div>
+                    <div class="right-3"></div>
+                </div>
+            </div>
+            <div class="mouth"></div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    body {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.head {
+    position: relative;
+    height: 200px;
+    width: 200px;
+    border-radius: 50%;
+    background: deepskyblue;
+    border: 2px solid black;
+
+    .face {
+        position: absolute;
+        height: 170px;
+        width: 170px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid black;
+        bottom: -2px;
+        left: 13px;
+
+        .eyes {
+            margin: auto;
+            height: 52px;
+            width: 72px;
+            display: flex;
+
+            .eye {
+                margin: auto;
+                height: 48px;
+                width: 32px;
+                background: white;
+                border: 2px solid black;
+                border-radius: 50%;
+                transform: translatey(-20px);
+
+                &:before {
+                    content: "";
+                    display: block;
+                    height: 18px;
+                    width: 10px;
+                    background: black;
+                    border-radius: 50%;
+                }
+
+                &-left:before {
+                    transform: translate(14px, 17px);
+                }
+
+                &-right:before {
+                    transform: translate(7px, 17px);
+                }
+            }
+        }
+
+        .nose {
+            position: absolute;
+            left: 50%;
+            top: 28px;
+            transform: translate(-50%, -50%);
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: red;
+            border: 2px solid black;
+        }
+
+        .lips {
+            position: absolute;
+            display: flex;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            top: 34%;
+
+            &-right {
+                width: 80px;
+                height: 35px;
+                border: 2px solid black;
+                border-left-width: 1px;
+                border-top: none;
+                border-radius: 0 50px 100px 0;
+                background: #fff;
+            }
+
+            &-left {
+                width: 80px;
+                height: 35px;
+                border: 2px solid black;
+                border-right-width: 1px;
+                border-top: none;
+                border-radius: 50px 0 0 100px;
+                background: #fff;
+            }
+        }
+
+        .mouth {
+            position: absolute;
+            content: "";
+            width: 120px;
+            height: 60px;
+            background: darken(red, 12%);
+            border: 2px solid black;
+            border-radius: 0 0 140px 140px;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            top: 63%;
+            overflow: hidden;
+
+            &:after {
+                content: "";
+                position: absolute;
+                width: 80px;
+                height: 40px;
+                border: 1px solid black;
+                background: lighten(red, 15%);
+                border-radius: 80px 80px 0 0;
+                transform: translate(-50%, -50%);
+                left: 50%;
+                bottom: -40%;
+            }
+        }
+
+        .whiskers {
+            position: absolute;
+            z-index: 100;
+            display: flex;
+            width: 120px;
+            justify-content: space-between;
+            transform: translate(-50%, -50%);
+            left: 50%;
+
+            &-left {
+                .left-1 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    transform: rotate(10deg);
+                    margin-bottom: 10px;
+                }
+
+                .left-2 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    margin-bottom: 10px;
+                }
+
+                .left-3 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    transform: rotate(-10deg);
+                }
+            }
+
+            &-right {
+                .right-1 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    transform: rotate(-10deg);
+                    margin-bottom: 10px;
+                }
+
+                .right-2 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    margin-bottom: 10px;
+                }
+
+                .right-3 {
+                    width: 50px;
+                    height: 1px;
+                    background: black;
+                    transform: rotate(10deg);
+                }
+            }
+        }
+    }
+}
+
+</style>

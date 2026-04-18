@@ -1,0 +1,161 @@
+ <div class="cartoon1">
+    <div class="face">
+        <span class="eye1"></span>
+        <span class="eye2"></span>
+        <span class="nose"></span>
+        <span class="mouth"></span>
+    
+    </div>
+</div>
+    
+
+
+<style>
+      *{
+            transition: 0.6s;
+        }
+        body{
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #464646;
+        }
+        .face{
+            width: 200px;
+            height:200px;
+            display: inline-block;
+            position: relative;
+            background-color: rgb(111, 159, 178);
+            border-radius: 50%;
+            box-shadow:inset 2px 2px 10px #0a5f01, inset 20px 20px 50px #01ed40;
+        }
+        .face::after{
+            content: "";
+            position: absolute;
+            width:90px;
+            height: 100px;
+            transform: rotate(-20deg);
+            background-color: #000;
+            left:0;
+            animation: animation1 0.3s infinite;
+            border-radius: 50px 50px 0px 0px;
+            top: -20px;
+            z-index: -100;
+        }
+        .face::before{
+            content: "";
+            position: absolute;
+            width:90px;
+            height: 100px;
+            transform: rotate(20deg);
+            background-color: #000;
+            animation: animation 0.3s infinite;
+            right:0;
+            border-radius: 50px 50px 0px 0px;
+            top: -20px;
+            z-index: -100;
+        }
+        .eye1{
+            position: absolute;
+            width: 50px;
+            height: 30px;
+            background-color: aliceblue;
+            border: 3px solid #000;
+            border-radius: 50%;
+            text-align: center;
+            top:40px;
+            left:30px;
+            border-top: 30px solid #000000;
+        }
+
+        .eye1::before{
+            content:"";
+            position: absolute;
+            width:10px;
+            height: 10px;
+            top: 30%;
+            left: 30%;
+            animation: animation 0.3s infinite;
+            border-radius: 50%;
+            transition: 0.5s;
+            border:5px solid #000;
+            background-color: #9b9999;
+        }
+        .eye2{
+            position: absolute;
+            width: 50px;
+            height: 30px;
+            background-color: aliceblue;
+            border: 3px solid #000;
+            border-radius: 50%;
+            text-align: center;
+            border-top: 30px solid #000000;
+            top:40px;
+            right:30px;
+        }
+        .eye2::before{
+            content:"";
+            position: absolute;
+            width:10px;
+            height: 10px;
+            animation: animation 0.3s infinite;
+            top: 30%;
+            right: 30%;
+            border-radius: 50%;
+            border:5px solid #000;
+            background-color: #9b9999;
+        }
+        .nose{
+            position: absolute;
+            width:60px;
+            height: 50px;
+            background-color: #000;
+            border-radius: 50%;
+            top: 50%;
+            left:35%;
+            border-top: 3px solid #fff;
+        }
+        .mouth{
+            position: absolute;
+            width:150px;
+            height: 100px;
+            background-color: transparent;
+            top:35%;
+            left:15%;
+            border-bottom: 10px solid #000;
+            animation: animation2 3s infinite;
+            border-radius: 50%;
+        }
+        @keyframes animation{
+            0%{
+                transform:rotate(20deg) scale(1);
+            }
+          
+            100%{
+               
+                transform: rotate(20deg) scale(1.2);
+            }
+        }
+        @keyframes animation1{
+            0%{
+                transform:rotate(-20deg) scale(1);
+            }
+          
+            100%{
+               
+                transform: rotate(-20deg) scale(1.2);
+            }
+        }
+        @keyframes animation2{
+            0%{
+                border-radius: 30px;
+            }
+          
+            100%{
+               
+                border-radius: 100%;
+            }
+        }
+</style>

@@ -1,0 +1,287 @@
+<div class="drawing" role="img" aria-label="cartoon of a cute bat">
+  <div class="wing"></div>
+  <div class="wing"></div>
+  <div class="ear"></div>
+  <div class="ear"></div>
+  <div class="foot"></div>
+  <div class="foot"></div>
+  <div class="body"></div>
+  <div class="head">
+    <div class="eye"></div>
+    <div class="eye"></div>
+    <div class="mouth"></div>
+    <div class="nose"></div>
+  </div>
+</div>
+
+
+<a id="youtube" href="https://www.youtube.com/watch?v=dDPREg-1K-E" target="_blank"><span>Watch how this drawing was coded</span></a>
+
+<style>
+    body {
+  background: #97b;  
+}
+
+.drawing {
+  --skin: #456;
+  --skin-light: #fff2;
+  --skin-dark: #0002;
+  --skin2: #88c;
+  font-size: 1vmin;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80em;
+  aspect-ratio: 3/2;
+  
+  & *,
+  & *::before,
+  & *::after {
+    position: absolute;
+    box-sizing: border-box;
+  }
+  
+  .head {
+    width: 40%;
+    height: 55%;
+    border: 1.25em solid;
+    border-radius: 100% 100% 100% 100% / 130% 130% 76% 76%;
+    background: var(--skin);
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow:
+      0 8vmin 0 -6vmin var(--skin-dark),
+      inset 1em 1em 0 -0.5em var(--skin-light),
+      inset -2em -1.5em 0 -0.5em var(--skin-dark);
+    
+    .nose {
+      width: 28%;
+      aspect-ratio: 4/2.25;
+      border: 0.8em solid;
+      border-radius: 100% / 120% 120% 90% 90%;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      top: 66.6%;
+      box-shadow: 
+        inset 0 -1.25em 0 -1em var(--skin-dark),
+        inset 0 1.5em 0 -1em var(--skin-light);
+      background: 
+        radial-gradient(70% 150% at 30% 50%, #000 13%, #0000 0),
+        radial-gradient(70% 150% at 70% 50%, #000 13%, #0000 0),
+        #e89;
+    }
+    
+    .mouth {
+      width: 25%;
+      aspect-ratio: 4/2.25;
+      border: 0.8em solid;
+      border-radius: 50% / 10% 10% 100% 100%;
+      transform: translate(-50%, -50%);
+      left: 50%;
+      top: 77%;
+       box-shadow: inset 2em 1em var(--skin-dark);
+      background:
+        radial-gradient(60% 100% at 50% 100%, #c54 55%, #000 0);
+      
+      &::before,
+      &::after {
+        content: "";
+        width: 25%;
+        height: 45%;
+        background: #fff;
+        border-radius: 50% / 0 0 100% 100%;
+        left: 5%;
+        top: 7%;
+        clip-path: polygon(0 0, 100% 0, 70% 100%, 30% 100%);
+        box-shadow: inset 0.5em 0 var(--skin-dark);
+      }
+      
+      &::after {
+        left: auto;
+        right: 5%;
+      }
+    }
+    
+    .eye {
+      --pos: 23%;
+      width: 23%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      top: 45%;
+      left: var(--pos);
+      transform: translateX(-50%);
+      background:
+        radial-gradient(circle at 45% 13%, #fff 5%, #0000 6%),
+        radial-gradient(at 33% 33%, #fff 16%, #000 17%);
+      
+      & + & {
+        left: calc(100% - var(--pos));
+      }
+    }
+  }
+  
+  .body {
+    width: 33%;
+    height: 50%;
+    border: 1.25em solid;
+    border-radius: 100% / 140% 140% 75% 75%;
+    top: 40%;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 
+      inset 1em 0.5em var(--skin-light),
+      inset -2em 1em var(--skin-dark);
+    background: 
+      radial-gradient(100% 100% at 50% 85%, var(--skin-light) 45%, #0000 0),
+      var(--skin);
+  }
+  
+  .ear {
+    width: 26%;
+    aspect-ratio: 1;
+    border: 1.25em solid;
+    border-radius: 90% 0% 70% 0%;
+    background: var(--skin);
+    box-shadow: inset 0.25em 0.5em var(--skin-light),
+      inset -0.5em -1em var(--skin-dark);
+    left: 60%;
+    top: -14%;
+    
+    & + & {
+      left: 18%;
+      top: -17%;
+      transform: scaleX(-1) rotate(-15deg);
+      box-shadow: 
+        inset 0.5em 0.45em var(--skin-dark),
+        inset -0.5em -0.5em var(--skin-light);
+    }
+    
+    &::before {
+      content: "";
+      width: 80%;
+      height: 86%;
+      border: 0.8em solid;
+      border-radius: 100% 0% 100% 0%;
+      left: 0%;
+      bottom: 0;
+      transform-origin: 0 100%;
+      transform: rotate(4deg);
+      background:
+        repeating-radial-gradient(150% 140% at 0 100%, #0000 0 36%, #0004 0 40%)
+        var(--skin2);
+      box-shadow: inset -2em -2em #fff1;
+    }
+  }
+  
+  .foot {
+    --rotation: 20deg;
+    width: 11%;
+    height: 20%;
+    border: 1.25em solid;
+    border-radius: 50%;
+    bottom: 1%;
+    left: 42%;
+    transform: translate(-50%, 0) rotate(var(--rotation));
+    background:
+      radial-gradient(170% 120% at 50% 0, var(--skin-dark) 50%, #0000 0),
+      linear-gradient(90deg, #0000 65%, #000 0) 0 100% / 38% 25% repeat-x,
+      var(--skin);
+    
+    & + & {
+      --rotation: -25deg;
+      left: 58%;
+      
+    }
+  }
+  
+  .wing {
+    top: 20%;
+    left: -8%;
+    width: 50%;
+    height: 50%;
+    border: 1.25em solid;
+    border-radius: 90% 50% 50% 2em / 120% 100% 0 2em;
+    transform-origin: 100% 100%;
+    transform: rotate(-15deg);
+    box-shadow:
+      inset 0 1em var(--skin-light),
+      inset 0 1.5em 0 0.5em var(--skin),
+      inset 0 1.5em 0 1.25em,
+      inset 0 4.5em 0 1em var(--skin-dark)
+      ;
+    -webkit-mask:
+      radial-gradient(125% 85% at 55% 105%, #0000 35%, #000 0) 0% 100% / calc(50% + 1px) 100% no-repeat,
+      radial-gradient(125% 65% at 45% 105%, #0000 35%, #000 0) 100% 100% / calc(50% + 1px) 100% no-repeat
+      ;
+    background: 
+      radial-gradient(100% 160% at 100% 100%, #0000 48%, #0003 0 50%, #0000 0),
+      radial-gradient(145% 93% at 53% 105%, #000 35%, #0000 0) 0% 100% / calc(50% + 1px) 100% no-repeat,
+      radial-gradient(145% 73%  at 48% 105%, #000 35%, #0000 0) 100% 100% / calc(50% + 1px) 100% no-repeat,
+      var(--skin2);
+    
+    & + & {
+      transform-origin: 50% 50%;
+      transform: scaleX(-1) rotate(-2deg);
+      left: 60%;
+      top:28%;
+    }
+  }
+}
+
+
+/***/
+
+
+
+#youtube {
+  z-index: 2;
+  display: block;
+  width: 100px;
+  height: 70px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: red;
+  border-radius: 50% / 11%;
+  transition: transform 0.5s;
+}
+
+#youtube:hover,
+#youtube:focus {
+  transform: scale(1.1);
+}
+
+#youtube::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 7.5%;
+  left: -6%;
+  width: 112%;
+  height: 85%;
+  background: red;
+  border-radius: 9% / 50%;
+}
+
+#youtube::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  width: 45px;
+  height: 30px;
+  border: 15px solid transparent;
+  box-sizing: border-box;
+  border-left: 30px solid white;
+}
+
+#youtube span {
+  font-size: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+</style>

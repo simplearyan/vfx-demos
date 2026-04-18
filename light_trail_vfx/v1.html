@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Light Trail VFX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            filter: contrast(1.1) brightness(1.1);
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 1rem;
+            display: flex;
+            gap: 1.5rem;
+            color: white;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls shadow-2xl">
+        <div class="flex flex-col items-center">
+            <span class="text-xs uppercase opacity-50 mb-1">Color</span>
+            <input type="color" id="colorPicker" value="#ff9500" class="w-8 h-8 rounded cursor-pointer bg-transparent border-none">
+        </div>
+        <div class="flex flex-col items-center">
+            <span class="text-xs uppercase opacity-50 mb-1">Glow</span>
+            <input type="range" id="glowSlider" min="5" max="50" value="25" class="accent-orange-500">
+        </div>
+        <div class="flex flex-col items-center">
+            <button id="clearBtn" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded text-sm transition-colors mt-2">Clear</button>
+        </div>
+        <div class="flex flex-col justify-center text-[10px] opacity-40">
+            Click & Drag to Draw Trail<br>
+            Double Click for Wireframe
+        </div>
+    </div>
+
+    <canvas id="vfxCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('vfxCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const glowSlider = document.getElementById('glowSlider');
+        const clearBtn = document.getElementById('clearBtn');
+
+        let width, height;
+        let isDrawing = false;
+        let points = [];
+        let trails = [];
+        let wireframes = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Interaction logic
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            points = [{x: e.clientX, y: e.clientY}];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            points.push({x: e.clientX, y: e.clientY});
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (points.length > 2) {
+                trails.push({
+                    pts: points,
+                    color: colorPicker.value,
+                    glow: glowSlider.value,
+                    opacity: 1
+                });
+            }
+            isDrawing = false;
+            points = [];
+        });
+
+        // For "Wireframe" look (Double click to create a geometric structure)
+        canvas.addEventListener('dblclick', (e) => {
+            const size = 150;
+            const x = e.clientX;
+            const y = e.clientY;
+            wireframes.push({
+                x, y, 
+                size, 
+                color: colorPicker.value,
+                rot: Math.random() * Math.PI
+            });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            trails = [];
+            wireframes = [];
+        });
+
+        function drawTrail(trailPoints, color, glow, active = false) {
+            if (trailPoints.length < 2) return;
+
+            ctx.beginPath();
+            ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+
+            // Use quadratic curves for smooth lines
+            for (let i = 1; i < trailPoints.length - 2; i++) {
+                const xc = (trailPoints[i].x + trailPoints[i+1].x) / 2;
+                const yc = (trailPoints[i].y + trailPoints[i+1].y) / 2;
+                ctx.quadraticCurveTo(trailPoints[i].x, trailPoints[i].y, xc, yc);
+            }
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = active ? 8 : 6;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Glow effect
+            ctx.shadowBlur = glow;
+            ctx.shadowColor = color;
+            
+            // Core bright center
+            ctx.stroke();
+            
+            // Extra brightness boost
+            ctx.lineWidth = active ? 3 : 2;
+            ctx.strokeStyle = '#fff';
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+        }
+
+        function drawWireframe(wire) {
+            ctx.save();
+            ctx.translate(wire.x, wire.y);
+            ctx.rotate(wire.rot);
+            
+            ctx.beginPath();
+            // Draw a simple diamond wireframe shape matching the ref
+            ctx.moveTo(0, -wire.size);
+            ctx.lineTo(wire.size/2, 0);
+            ctx.lineTo(0, wire.size);
+            ctx.lineTo(-wire.size/2, 0);
+            ctx.closePath();
+            
+            ctx.strokeStyle = wire.color;
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = wire.color;
+            ctx.stroke();
+            
+            // Connect points to center for depth
+            ctx.beginPath();
+            ctx.moveTo(0, -wire.size); ctx.lineTo(0, wire.size);
+            ctx.moveTo(-wire.size/2, 0); ctx.lineTo(wire.size/2, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function animate() {
+            // Slight clear to allow trails to fade if desired, but here we keep them solid
+            ctx.clearRect(0, 0, width, height);
+            
+            // Black background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Subtle "city lights" bokeh in background
+            ctx.shadowBlur = 0;
+            for(let i=0; i<15; i++) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + Math.random()*0.1})`;
+                ctx.beginPath();
+                ctx.arc(width * (i/15) + (Math.sin(Date.now()*0.001)*10), height * 0.7 + (Math.cos(i)*20), 2, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            ctx.globalCompositeOperation = 'screen';
+
+            // Draw existing trails
+            trails.forEach(t => {
+                drawTrail(t.pts, t.color, t.glow);
+            });
+
+            // Draw active drawing
+            if (isDrawing) {
+                drawTrail(points, colorPicker.value, glowSlider.value, true);
+            }
+
+            // Draw wireframes
+            wireframes.forEach(w => {
+                w.rot += 0.005; // Gentle rotation
+                drawWireframe(w);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

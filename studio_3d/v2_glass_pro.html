@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Advanced 3D Text Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            font-family: system-ui, -apple-system, sans-serif;
+            touch-action: none;
+            color: white;
+        }
+        #scene-container {
+            width: 100vw;
+            height: 100vh;
+            background-color: #050505;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-image 0.3s ease;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            outline: none;
+        }
+        .glass-panel {
+            background: rgba(15, 15, 15, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Custom UI Elements */
+        input[type="text"], select {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            transition: all 0.2s;
+        }
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(0,0,0,0.8);
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 100%;
+            height: 32px;
+            border-radius: 6px;
+            padding: 0;
+            cursor: pointer;
+            background: transparent;
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Loader */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    
+    <!-- Import Map for Modern Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="fixed inset-0 z-50 bg-[#050505] flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="loader mb-4"></div>
+        <h2 class="text-xl font-bold tracking-widest uppercase text-white/80">Loading Studio</h2>
+        <p class="text-sm text-gray-500 mt-2">Generating PBR Environment...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div id="scene-container">
+        <canvas id="webgl-canvas"></canvas>
+    </div>
+
+    <!-- Top Left Header -->
+    <div class="fixed top-6 left-6 pointer-events-none z-10">
+        <h1 class="text-3xl font-bold tracking-tight text-white drop-shadow-lg">Studio<span class="text-blue-500 font-light">3D</span></h1>
+        <p class="text-xs text-gray-400 font-medium tracking-wide mt-1 uppercase">Lighting & Materials</p>
+    </div>
+
+    <!-- Left Panel: Text & Environment Settings -->
+    <div class="fixed top-24 left-6 z-10 w-72 glass-panel rounded-2xl p-5 flex flex-col gap-5 max-h-[calc(100vh-120px)] overflow-y-auto hide-scrollbar">
+        
+        <!-- Text Content -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Text Content</label>
+            <input type="text" id="textInput" value="GLASS" class="w-full px-3 py-2 rounded-lg text-sm font-bold" maxlength="15">
+        </div>
+        
+        <!-- Font Selection -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Font Style</label>
+            <select id="fontSelect" class="w-full px-3 py-2 rounded-lg text-sm">
+                <option value="helvetiker">Helvetiker (Bold)</option>
+                <option value="optimer">Optimer (Bold)</option>
+                <option value="gentilis">Gentilis (Regular)</option>
+                <option value="droid">Droid Sans (Bold)</option>
+            </select>
+        </div>
+
+        <div class="w-full h-px bg-white/10 my-1"></div>
+
+        <!-- Material Style -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Material Style</label>
+            <select id="materialSelect" class="w-full px-3 py-2 rounded-lg text-sm">
+                <option value="glass">Holographic Glass</option>
+                <option value="solid">Solid Plastic / Metal</option>
+            </select>
+        </div>
+
+        <!-- Material Colors -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Material Tints</label>
+            <div class="flex items-center justify-between gap-4 mb-3">
+                <span class="text-sm text-gray-300 w-1/2">Front Face</span>
+                <input type="color" id="frontColor" value="#ffffff" class="w-1/2">
+            </div>
+            <div class="flex items-center justify-between gap-4">
+                <span class="text-sm text-gray-300 w-1/2">Side Extrusion</span>
+                <input type="color" id="sideColor" value="#ffffff" class="w-1/2">
+            </div>
+        </div>
+
+        <div class="w-full h-px bg-white/10 my-1"></div>
+
+        <!-- Background Image -->
+        <div>
+            <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Environment</label>
+            <label for="bgUpload" class="flex items-center justify-center gap-2 w-full px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm cursor-pointer transition-colors border border-white/10 hover:border-white/30">
+                <i data-lucide="image" class="w-4 h-4"></i>
+                Upload Background
+            </label>
+            <input type="file" id="bgUpload" accept="image/*" class="hidden">
+            <button id="bgClear" class="text-xs text-red-400 hover:text-red-300 mt-2 hidden w-full text-center">Remove Background</button>
+        </div>
+    </div>
+
+    <!-- Right Panel: Lighting Settings -->
+    <div class="fixed top-6 right-6 z-10 w-80 glass-panel rounded-2xl p-5 flex flex-col gap-4 max-h-[calc(100vh-48px)] overflow-y-auto hide-scrollbar">
+        <h2 class="text-sm font-bold tracking-wider uppercase border-b border-white/10 pb-2 flex items-center gap-2">
+            <i data-lucide="lightbulb" class="w-4 h-4 text-yellow-400"></i> Lighting Rig
+        </h2>
+        
+        <!-- Light 1 Control -->
+        <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-semibold text-gray-300 uppercase">Light 1 (Cyan Fill)</label>
+                <input type="color" id="l1Color" value="#00f0ff" class="w-10 h-6">
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-2"><span class="text-[10px] text-gray-500 w-4">Int</span><input type="range" id="l1Int" min="0" max="20" step="0.1" value="5"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-red-400 w-4">X</span><input type="range" id="l1X" min="-150" max="150" value="-50"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-green-400 w-4">Y</span><input type="range" id="l1Y" min="-150" max="150" value="50"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-blue-400 w-4">Z</span><input type="range" id="l1Z" min="-100" max="200" value="100"></div>
+            </div>
+        </div>
+
+        <!-- Light 2 Control -->
+        <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-semibold text-gray-300 uppercase">Light 2 (Magenta Rim)</label>
+                <input type="color" id="l2Color" value="#ff00ff" class="w-10 h-6">
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-2"><span class="text-[10px] text-gray-500 w-4">Int</span><input type="range" id="l2Int" min="0" max="20" step="0.1" value="8"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-red-400 w-4">X</span><input type="range" id="l2X" min="-150" max="150" value="80"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-green-400 w-4">Y</span><input type="range" id="l2Y" min="-150" max="150" value="-50"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-blue-400 w-4">Z</span><input type="range" id="l2Z" min="-100" max="200" value="20"></div>
+            </div>
+        </div>
+
+        <!-- Light 3 Control -->
+        <div class="bg-white/5 rounded-xl p-3 border border-white/5">
+            <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-semibold text-gray-300 uppercase">Light 3 (Yellow Top)</label>
+                <input type="color" id="l3Color" value="#ffb800" class="w-10 h-6">
+            </div>
+            <div class="space-y-3">
+                <div class="flex items-center gap-2"><span class="text-[10px] text-gray-500 w-4">Int</span><input type="range" id="l3Int" min="0" max="20" step="0.1" value="6"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-red-400 w-4">X</span><input type="range" id="l3X" min="-150" max="150" value="0"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-green-400 w-4">Y</span><input type="range" id="l3Y" min="-150" max="150" value="80"></div>
+                <div class="flex items-center gap-2"><span class="text-[10px] text-blue-400 w-4">Z</span><input type="range" id="l3Z" min="-100" max="200" value="-50"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+        lucide.createIcons();
+
+        // --- Core Variables ---
+        let scene, camera, renderer, controls;
+        let textMesh;
+        let fonts = {};
+        
+        // Lighting System
+        const lights = {
+            l1: new THREE.PointLight(0x00f0ff, 5, 500),
+            l2: new THREE.PointLight(0xff00ff, 8, 500),
+            l3: new THREE.PointLight(0xffb800, 6, 500)
+        };
+
+        const state = {
+            text: 'GLASS',
+            fontName: 'helvetiker',
+            materialType: 'glass',
+            frontColor: '#ffffff',
+            sideColor: '#ffffff'
+        };
+
+        const fontUrls = {
+            helvetiker: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/helvetiker_bold.typeface.json',
+            optimer: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/optimer_bold.typeface.json',
+            gentilis: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/gentilis_regular.typeface.json',
+            droid: 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/fonts/droid/droid_sans_bold.typeface.json'
+        };
+
+        // Initialize App
+        init();
+
+        async function init() {
+            const canvas = document.getElementById('webgl-canvas');
+            const container = document.getElementById('scene-container');
+            
+            // 1. Scene Setup
+            scene = new THREE.Scene();
+            
+            // 2. Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
+            camera.position.set(0, 0, 150);
+
+            // 3. Renderer
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setClearColor(0x000000, 0); 
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.0;
+
+            // 4. PBR Environment (Crucial for Glass Reflections)
+            const pmremGenerator = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+
+            // 5. Lighting Setup
+            lights.l1.position.set(-50, 50, 100);
+            lights.l2.position.set(80, -50, 20);
+            lights.l3.position.set(0, 80, -50);
+
+            scene.add(lights.l1);
+            scene.add(lights.l2);
+            scene.add(lights.l3);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+            // 6. Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // 7. Load Assets
+            await loadAllFonts();
+            refreshTextGeometry();
+
+            // Hide Loading Screen
+            document.getElementById('loadingScreen').style.opacity = '0';
+            setTimeout(() => document.getElementById('loadingScreen').style.display = 'none', 500);
+
+            // 8. Event Bindings
+            window.addEventListener('resize', onWindowResize);
+            setupUIHandlers();
+
+            // 9. Start Loop
+            animate();
+        }
+
+        // --- Font Handling ---
+        async function loadAllFonts() {
+            const loader = new FontLoader();
+            const loadFont = (url) => new Promise((resolve, reject) => loader.load(url, resolve, undefined, reject));
+
+            try {
+                const [helvetiker, optimer, gentilis, droid] = await Promise.all([
+                    loadFont(fontUrls.helvetiker),
+                    loadFont(fontUrls.optimer),
+                    loadFont(fontUrls.gentilis),
+                    loadFont(fontUrls.droid)
+                ]);
+                fonts = { helvetiker, optimer, gentilis, droid };
+            } catch (error) {
+                console.error("Error loading fonts:", error);
+                alert("Failed to load 3D fonts.");
+            }
+        }
+
+        // Generate dynamic materials based on state
+        function getMaterials() {
+            if (state.materialType === 'glass') {
+                // Iridescent / Holographic Glass Setup
+                const glassConfig = {
+                    transmission: 1.0,
+                    opacity: 1.0,
+                    metalness: 0.1,
+                    roughness: 0.1,
+                    ior: 1.5,
+                    thickness: 5.0,
+                    iridescence: 1.0,
+                    iridescenceIOR: 1.4,
+                    clearcoat: 1.0,
+                    clearcoatRoughness: 0.1
+                };
+                return [
+                    new THREE.MeshPhysicalMaterial({ color: state.frontColor, ...glassConfig }),
+                    new THREE.MeshPhysicalMaterial({ color: state.sideColor, ...glassConfig })
+                ];
+            } else {
+                // Solid Metal / Plastic Setup
+                return [
+                    new THREE.MeshStandardMaterial({ color: state.frontColor, roughness: 0.2, metalness: 0.1 }),
+                    new THREE.MeshStandardMaterial({ color: state.sideColor, roughness: 0.3, metalness: 0.2 })
+                ];
+            }
+        }
+
+        function refreshTextGeometry() {
+            if (!fonts[state.fontName]) return;
+            
+            if (textMesh) {
+                scene.remove(textMesh);
+                textMesh.geometry.dispose();
+            }
+
+            const displayString = state.text.trim() === '' ? ' ' : state.text;
+
+            const textGeo = new TextGeometry(displayString, {
+                font: fonts[state.fontName],
+                size: 30,
+                height: 12, 
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 1.5,
+                bevelSize: 0.8,
+                bevelOffset: 0,
+                bevelSegments: 5
+            });
+
+            // Center geometry
+            textGeo.computeBoundingBox();
+            const centerOffset = - 0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
+            const heightOffset = - 0.5 * (textGeo.boundingBox.max.y - textGeo.boundingBox.min.y);
+            textGeo.translate(centerOffset, heightOffset, 0);
+
+            // Create mesh with array of materials [Front, Side]
+            textMesh = new THREE.Mesh(textGeo, getMaterials());
+            scene.add(textMesh);
+        }
+
+        // --- UI Handlers ---
+        function setupUIHandlers() {
+            // Text & Font
+            document.getElementById('textInput').addEventListener('input', (e) => {
+                state.text = e.target.value;
+                refreshTextGeometry();
+            });
+            document.getElementById('fontSelect').addEventListener('change', (e) => {
+                state.fontName = e.target.value;
+                refreshTextGeometry();
+            });
+
+            // Material Settings
+            document.getElementById('materialSelect').addEventListener('change', (e) => {
+                state.materialType = e.target.value;
+                refreshTextGeometry();
+            });
+
+            document.getElementById('frontColor').addEventListener('input', (e) => {
+                state.frontColor = e.target.value;
+                if(textMesh) textMesh.material[0].color.set(e.target.value);
+            });
+            document.getElementById('sideColor').addEventListener('input', (e) => {
+                state.sideColor = e.target.value;
+                if(textMesh) textMesh.material[1].color.set(e.target.value);
+            });
+
+            // Background Image Upload
+            const bgContainer = document.getElementById('scene-container');
+            const bgClearBtn = document.getElementById('bgClear');
+            
+            document.getElementById('bgUpload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if(file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        bgContainer.style.backgroundImage = `url(${event.target.result})`;
+                        bgClearBtn.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            bgClearBtn.addEventListener('click', () => {
+                bgContainer.style.backgroundImage = 'none';
+                bgClearBtn.classList.add('hidden');
+                document.getElementById('bgUpload').value = '';
+            });
+
+            // Setup Light Controls Generator
+            const bindLight = (id, lightObj) => {
+                document.getElementById(`${id}Color`).addEventListener('input', e => lightObj.color.set(e.target.value));
+                document.getElementById(`${id}Int`).addEventListener('input', e => lightObj.intensity = parseFloat(e.target.value));
+                document.getElementById(`${id}X`).addEventListener('input', e => lightObj.position.x = parseFloat(e.target.value));
+                document.getElementById(`${id}Y`).addEventListener('input', e => lightObj.position.y = parseFloat(e.target.value));
+                document.getElementById(`${id}Z`).addEventListener('input', e => lightObj.position.z = parseFloat(e.target.value));
+            };
+
+            bindLight('l1', lights.l1);
+            bindLight('l2', lights.l2);
+            bindLight('l3', lights.l3);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('scene-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- Render Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); 
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

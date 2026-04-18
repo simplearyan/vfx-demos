@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Light Trail VFX - Optimized</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.75rem 1.25rem;
+            border-radius: 1.5rem;
+            display: flex;
+            gap: 1.25rem;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            align-items: center;
+            width: max-content;
+            max-width: 95vw;
+        }
+        .mode-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-1px);
+        }
+        input[type="range"] { height: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="controls shadow-2xl">
+        <div class="flex flex-col items-center">
+            <input type="color" id="colorPicker" value="#ff9500" class="w-8 h-8 rounded-full cursor-pointer bg-transparent border-none p-0 overflow-hidden">
+        </div>
+
+        <div class="h-8 w-[1px] bg-white/10 mx-1"></div>
+
+        <div class="flex gap-1">
+            <button id="classicMode" class="mode-btn active px-3 py-1.5 rounded-lg text-[11px] font-medium uppercase tracking-wider">Classic</button>
+            <button id="thickMode" class="mode-btn px-3 py-1.5 rounded-lg text-[11px] font-medium uppercase tracking-wider">3D Thick</button>
+        </div>
+
+        <div class="hidden sm:flex flex-col items-center min-w-[80px]">
+            <span class="text-[9px] uppercase font-bold opacity-40 mb-1">Glow</span>
+            <input type="range" id="glowSlider" min="5" max="60" value="30" class="accent-orange-500 w-full">
+        </div>
+
+        <button id="clearBtn" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all">Clear</button>
+    </div>
+
+    <canvas id="vfxCanvas"></canvas>
+
+    <script>
+        /** * PERFORMANCE OPTIMIZATION STRATEGY:
+         * 1. Persistent Buffer: Finished trails are drawn once to 'staticCanvas' and reused.
+         * 2. Downsampling: We only store every 2nd mouse point to reduce path complexity.
+         * 3. Pre-baked Background: Bokeh is generated once and drawn as an image.
+         */
+        
+        const canvas = document.getElementById('vfxCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Disable alpha for faster clear
+        
+        // Offscreen canvas for storing completed trails (The Buffer)
+        const staticCanvas = document.createElement('canvas');
+        const staticCtx = staticCanvas.getContext('2d');
+        
+        const colorPicker = document.getElementById('colorPicker');
+        const glowSlider = document.getElementById('glowSlider');
+        const clearBtn = document.getElementById('clearBtn');
+        const classicModeBtn = document.getElementById('classicMode');
+        const thickModeBtn = document.getElementById('thickMode');
+
+        let width, height;
+        let isDrawing = false;
+        let brushMode = 'classic';
+        let currentPoints = [];
+        let wireframes = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Limit resolution on low-end screens if dpr is too high
+            const scale = dpr > 2 ? 2 : dpr;
+
+            canvas.width = staticCanvas.width = width * scale;
+            canvas.height = staticCanvas.height = height * scale;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            
+            ctx.scale(scale, scale);
+            staticCtx.scale(scale, scale);
+            
+            // Clear buffer on resize as scaling clears context
+            clearAll();
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mode Switching
+        const setMode = (m) => {
+            brushMode = m;
+            classicModeBtn.classList.toggle('active', m === 'classic');
+            thickModeBtn.classList.toggle('active', m === 'thick');
+        };
+        classicModeBtn.onclick = () => setMode('classic');
+        thickModeBtn.onclick = () => setMode('thick');
+
+        // Interaction
+        const getPos = (e) => ({ x: e.clientX || e.touches?.[0]?.clientX, y: e.clientY || e.touches?.[0]?.clientY });
+
+        const startDraw = (e) => {
+            isDrawing = true;
+            const pos = getPos(e);
+            currentPoints = [pos];
+        };
+
+        const moveDraw = (e) => {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            // Downsampling: Only add point if moved significantly to keep paths light
+            const last = currentPoints[currentPoints.length - 1];
+            const dist = Math.hypot(pos.x - last.x, pos.y - last.y);
+            if (dist > 4) currentPoints.push(pos);
+        };
+
+        const endDraw = () => {
+            if (isDrawing && currentPoints.length > 1) {
+                // Bake the current trail into the static buffer
+                staticCtx.globalCompositeOperation = 'screen';
+                if (brushMode === 'thick') {
+                    draw3DTrail(staticCtx, currentPoints, colorPicker.value, parseInt(glowSlider.value));
+                } else {
+                    drawClassicTrail(staticCtx, currentPoints, colorPicker.value, parseInt(glowSlider.value));
+                }
+            }
+            isDrawing = false;
+            currentPoints = [];
+        };
+
+        canvas.addEventListener('mousedown', startDraw);
+        window.addEventListener('mousemove', moveDraw);
+        window.addEventListener('mouseup', endDraw);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); }, {passive: false});
+        window.addEventListener('touchmove', (e) => { moveDraw(e); }, {passive: false});
+        window.addEventListener('touchend', endDraw);
+
+        canvas.addEventListener('dblclick', (e) => {
+            wireframes.push({
+                x: e.clientX, y: e.clientY, 
+                size: 80 + Math.random() * 100, 
+                color: colorPicker.value,
+                rot: Math.random() * Math.PI,
+                rotSpeed: (Math.random() - 0.5) * 0.015
+            });
+        });
+
+        function clearAll() {
+            staticCtx.clearRect(0, 0, width, height);
+            // Fill background on buffer to avoid transparency blending issues
+            staticCtx.fillStyle = '#000';
+            staticCtx.fillRect(0, 0, width, height);
+            wireframes = [];
+        }
+        clearBtn.onclick = clearAll;
+
+        // Optimized Trail Renderers
+        function drawClassicTrail(targetCtx, pts, color, glow) {
+            targetCtx.save();
+            targetCtx.beginPath();
+            targetCtx.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length - 1; i++) {
+                const xc = (pts[i].x + pts[i+1].x) / 2;
+                const yc = (pts[i].y + pts[i+1].y) / 2;
+                targetCtx.quadraticCurveTo(pts[i].x, pts[i].y, xc, yc);
+            }
+            targetCtx.shadowBlur = glow;
+            targetCtx.shadowColor = color;
+            targetCtx.strokeStyle = color;
+            targetCtx.lineWidth = 5;
+            targetCtx.lineCap = 'round';
+            targetCtx.stroke();
+            
+            // Core highlight
+            targetCtx.shadowBlur = 0;
+            targetCtx.strokeStyle = '#fff';
+            targetCtx.lineWidth = 1.5;
+            targetCtx.stroke();
+            targetCtx.restore();
+        }
+
+        function draw3DTrail(targetCtx, pts, color, glow) {
+            targetCtx.save();
+            const len = pts.length;
+            // Draw in bigger steps for finished trails to save perf
+            const step = isDrawing ? 1 : 2; 
+            
+            for (let i = 1; i < len; i += step) {
+                const p1 = pts[i - 1];
+                const p2 = pts[i];
+                const ratio = i / len;
+                
+                targetCtx.globalAlpha = ratio;
+                targetCtx.beginPath();
+                targetCtx.moveTo(p1.x, p1.y);
+                targetCtx.lineTo(p2.x, p2.y);
+
+                targetCtx.shadowBlur = glow * ratio;
+                targetCtx.shadowColor = color;
+                targetCtx.strokeStyle = color;
+                targetCtx.lineWidth = 1 + (ratio * 20);
+                targetCtx.lineCap = 'round';
+                targetCtx.stroke();
+
+                if (ratio > 0.6) {
+                    targetCtx.shadowBlur = 0;
+                    targetCtx.strokeStyle = '#fff';
+                    targetCtx.lineWidth = (1 + (ratio * 20)) * 0.25;
+                    targetCtx.stroke();
+                }
+            }
+            targetCtx.restore();
+        }
+
+        function drawWireframe(targetCtx, wire) {
+            targetCtx.save();
+            targetCtx.translate(wire.x, wire.y);
+            targetCtx.rotate(wire.rot);
+            targetCtx.beginPath();
+            targetCtx.moveTo(0, -wire.size);
+            targetCtx.lineTo(wire.size/2, 0); targetCtx.lineTo(0, wire.size); targetCtx.lineTo(-wire.size/2, 0);
+            targetCtx.closePath();
+            targetCtx.strokeStyle = wire.color;
+            targetCtx.lineWidth = 1;
+            targetCtx.shadowBlur = 15;
+            targetCtx.shadowColor = wire.color;
+            targetCtx.stroke();
+            targetCtx.restore();
+        }
+
+        // Main Animation Loop
+        function animate() {
+            // 1. Draw background buffer
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(staticCanvas, 0, 0, width, height);
+            
+            // 2. Add atmospheric bokeh (Subtle and fast)
+            ctx.globalCompositeOperation = 'screen';
+            ctx.fillStyle = 'rgba(255,255,255,0.03)';
+            const time = Date.now() * 0.0005;
+            for(let i=0; i<8; i++) {
+                ctx.beginPath();
+                ctx.arc((width * (i/8) + Math.sin(time + i)*20) % width, height * 0.8, 1.5, 0, 7);
+                ctx.fill();
+            }
+
+            // 3. Draw active trail (not yet in buffer)
+            if (isDrawing && currentPoints.length > 1) {
+                if (brushMode === 'thick') {
+                    draw3DTrail(ctx, currentPoints, colorPicker.value, parseInt(glowSlider.value));
+                } else {
+                    drawClassicTrail(ctx, currentPoints, colorPicker.value, parseInt(glowSlider.value));
+                }
+            }
+
+            // 4. Draw dynamic wireframes
+            wireframes.forEach(w => {
+                w.rot += w.rotSpeed;
+                drawWireframe(ctx, w);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize background
+        clearAll();
+        animate();
+    </script>
+</body>
+</html>

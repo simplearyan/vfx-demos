@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Portfolio | Interactive</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=Kalam:wght@400;700&display=swap');
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: #fafaf9; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+            scroll-behavior: smooth;
+            overflow-x: hidden;
+        }
+
+        /* Hand-drawn font for playful elements */
+        .handwritten {
+            font-family: 'Kalam', cursive;
+        }
+
+        /* Hero Gradient Text */
+        .text-gradient {
+            background: linear-gradient(135deg, #f97316, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Soft background pattern */
+        .bg-pattern {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Mascot Canvas - Fixed to bottom right, ignores pointer events so you can click things under it, 
+           but we'll handle mascot clicks via global mouse coordinates */
+        #mascot-canvas {
+            position: fixed;
+            bottom: -20px;
+            right: 20px;
+            width: 300px;
+            height: 400px;
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        /* Decorative blobs */
+        .blob {
+            position: absolute;
+            filter: blur(60px);
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        section {
+            min-height: 100vh;
+            padding: 100px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-pattern">
+
+    <!-- Ambient Background Blobs -->
+    <div class="blob bg-orange-300 w-96 h-96 rounded-full top-0 left-[-100px]"></div>
+    <div class="blob bg-amber-200 w-80 h-80 rounded-full bottom-0 right-0"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed w-full top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="#" class="text-2xl font-black tracking-tighter flex items-center">
+                <i data-lucide="sparkles" class="text-orange-500 mr-2 w-6 h-6"></i>
+                ALEX<span class="text-orange-500">.DEV</span>
+            </a>
+            <div class="hidden md:flex space-x-8 font-semibold text-slate-600">
+                <a href="#home" class="hover:text-orange-500 transition hover-trigger" data-emotion="excited">Home</a>
+                <a href="#about" class="hover:text-orange-500 transition hover-trigger" data-emotion="thinking">About Me</a>
+                <a href="#projects" class="hover:text-orange-500 transition hover-trigger" data-emotion="happy">Projects</a>
+                <a href="#contact" class="hover:text-orange-500 transition hover-trigger" data-emotion="wave">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Canvas for our Interactive Mascot -->
+    <canvas id="mascot-canvas"></canvas>
+
+    <!-- 1. HERO SECTION -->
+    <section id="home" class="max-w-6xl mx-auto px-6 pt-32 flex flex-col md:flex-row items-center justify-between">
+        <div class="md:w-3/5 space-y-6">
+            <div class="inline-block handwritten text-orange-500 text-xl md:text-2xl transform -rotate-2 mb-2">
+                Hey there, I'm Alex! 👋
+            </div>
+            <h1 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight text-slate-800">
+                I build websites that feel <span class="text-gradient">alive.</span>
+            </h1>
+            <p class="text-lg text-slate-500 max-w-lg leading-relaxed">
+                I'm a creative developer who blends clean code with interactive art. I believe the web shouldn't just be functional—it should be fun, emotional, and memorable.
+            </p>
+            <div class="pt-4 flex space-x-4">
+                <a href="#projects" class="bg-slate-900 hover:bg-orange-500 text-white px-8 py-4 rounded-full font-bold transition-all shadow-lg hover:shadow-orange-500/30 transform hover:-translate-y-1 hover-trigger" data-emotion="excited">
+                    See my work
+                </a>
+                <a href="#contact" class="bg-white border-2 border-slate-200 hover:border-orange-500 text-slate-700 px-8 py-4 rounded-full font-bold transition-all hover-trigger" data-emotion="wave">
+                    Let's talk
+                </a>
+            </div>
+        </div>
+        
+        <!-- Empty space on right for mascot breathing room -->
+        <div class="hidden md:block md:w-2/5">
+            <div class="text-right pt-20 handwritten text-slate-400 text-lg animate-pulse pr-10">
+                Play with him! ↗ <br>(He follows your mouse)
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ABOUT SECTION -->
+    <section id="about" class="bg-slate-900 text-white w-full">
+        <div class="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center w-full gap-16">
+            <div class="md:w-1/2">
+                <div class="bg-slate-800 p-8 rounded-3xl border border-slate-700 shadow-2xl relative">
+                    <div class="absolute -top-4 -left-4 w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center text-slate-900 transform -rotate-12">
+                        <i data-lucide="code-2" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="text-2xl font-black mb-4 flex items-center"><i data-lucide="terminal" class="mr-2 text-orange-400"></i> My Stack</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-4 py-2 bg-slate-700 rounded-lg text-sm font-semibold hover-trigger" data-emotion="thinking">JavaScript</span>
+                        <span class="px-4 py-2 bg-slate-700 rounded-lg text-sm font-semibold hover-trigger" data-emotion="happy">React</span>
+                        <span class="px-4 py-2 bg-slate-700 rounded-lg text-sm font-semibold hover-trigger" data-emotion="excited">HTML5 Canvas</span>
+                        <span class="px-4 py-2 bg-slate-700 rounded-lg text-sm font-semibold hover-trigger" data-emotion="thinking">Tailwind CSS</span>
+                        <span class="px-4 py-2 bg-slate-700 rounded-lg text-sm font-semibold hover-trigger" data-emotion="happy">UI/UX Design</span>
+                    </div>
+                </div>
+            </div>
+            <div class="md:w-1/2 space-y-6">
+                <h2 class="text-4xl md:text-5xl font-black">Not your average developer.</h2>
+                <p class="text-slate-300 text-lg leading-relaxed">
+                    I started coding because I wanted to make cartoons move on a screen. Years later, I'm still doing exactly that, but bringing that playful energy into professional web experiences.
+                </p>
+                <p class="text-slate-300 text-lg leading-relaxed">
+                    When I'm not debugging a massive codebase, I'm usually sketching stick figures or tweaking animation curves to get them *just right*.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. CONTACT SECTION -->
+    <section id="contact" class="max-w-4xl mx-auto px-6 text-center flex flex-col items-center justify-center">
+        <h2 class="text-5xl font-black mb-6">Let's create something <span class="text-gradient">awesome.</span></h2>
+        <p class="text-xl text-slate-500 mb-10 max-w-2xl">
+            Whether you have a crazy idea for a web app, or just want to say hi to the stickman in the corner, my inbox is always open.
+        </p>
+        <button class="bg-orange-500 hover:bg-orange-600 text-white text-xl px-10 py-5 rounded-full font-black transition-all shadow-[0_0_40px_rgba(249,115,22,0.4)] transform hover:scale-105 hover-trigger" data-emotion="wave">
+            Email Me
+        </button>
+        
+        <div class="mt-20 flex space-x-6">
+            <a href="#" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-600 hover:text-orange-500 hover:shadow-lg transition hover-trigger" data-emotion="happy"><i data-lucide="github"></i></a>
+            <a href="#" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-600 hover:text-orange-500 hover:shadow-lg transition hover-trigger" data-emotion="happy"><i data-lucide="twitter"></i></a>
+            <a href="#" class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-slate-600 hover:text-orange-500 hover:shadow-lg transition hover-trigger" data-emotion="happy"><i data-lucide="linkedin"></i></a>
+        </div>
+    </section>
+
+
+    <script>
+        lucide.createIcons();
+
+        // --- Mascot Interactive Engine ---
+        const canvas = document.getElementById('mascot-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Setup resolution
+        const cw = 300;
+        const ch = 400;
+        canvas.width = cw * window.devicePixelRatio;
+        canvas.height = ch * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+        // Global State
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let currentEmotion = 'neutral'; // neutral, happy, thinking, excited, wave
+        let time = 0;
+        let jumpOffset = 0;
+        let isJumping = false;
+
+        // Character Colors & Props
+        const colors = {
+            hair: '#4a2c11', // Messy brown hair
+            skin: '#ffffff',
+            outline: '#000000'
+        };
+
+        // Track Mouse
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        // Click detection for jump
+        window.addEventListener('mousedown', (e) => {
+            // Check if click is near bottom right corner where mascot is
+            const rect = canvas.getBoundingClientRect();
+            if (e.clientX > rect.left && e.clientX < rect.right && 
+                e.clientY > rect.top && e.clientY < rect.bottom) {
+                if (!isJumping) {
+                    isJumping = true;
+                    currentEmotion = 'excited';
+                    // Jump physics simulated in loop
+                }
+            }
+        });
+
+        // Hover triggers for emotions
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                if(!isJumping) currentEmotion = e.target.getAttribute('data-emotion');
+            });
+            el.addEventListener('mouseleave', () => {
+                if(!isJumping) currentEmotion = 'neutral';
+            });
+        });
+
+        // Draw Messy Hair Polygon
+        function drawHair(cx, cy, bob) {
+            ctx.fillStyle = colors.hair;
+            ctx.beginPath();
+            
+            // Base of hair
+            ctx.arc(cx, cy - 10, 45, Math.PI, 0);
+            
+            // Draw spikes along the top
+            ctx.moveTo(cx + 45, cy - 10);
+            ctx.lineTo(cx + 50, cy - 35); // right spike
+            ctx.lineTo(cx + 35, cy - 30);
+            ctx.lineTo(cx + 40, cy - 55); // high right
+            ctx.lineTo(cx + 20, cy - 40);
+            ctx.lineTo(cx + 10, cy - 65); // top high
+            ctx.lineTo(cx - 5, cy - 45);
+            ctx.lineTo(cx - 20, cy - 60); // top left
+            ctx.lineTo(cx - 30, cy - 35);
+            ctx.lineTo(cx - 45, cy - 45); // far left
+            ctx.lineTo(cx - 45, cy - 10);
+            
+            ctx.fill();
+
+            // Extra loose strands
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = colors.hair;
+            ctx.beginPath(); ctx.moveTo(cx - 40, cy - 45); ctx.quadraticCurveTo(cx - 50, cy - 60, cx - 60, cy - 40); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + 40, cy - 55); ctx.quadraticCurveTo(cx + 55, cy - 65, cx + 60, cy - 35); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy - 65); ctx.quadraticCurveTo(cx + 10, cy - 80, cx + 25, cy - 70); ctx.stroke();
+        }
+
+        // Main Draw Function
+        function renderMascot() {
+            ctx.clearRect(0, 0, cw, ch);
+            time += 0.05;
+
+            // Breathing / Idle animation
+            let bob = Math.sin(time) * 4;
+            
+            // Jump logic
+            if (isJumping) {
+                jumpOffset -= 15; // jump up
+                if (jumpOffset < -100) {
+                    isJumping = false;
+                }
+            } else if (jumpOffset < 0) {
+                jumpOffset += 8; // fall down
+                if (jumpOffset > 0) {
+                    jumpOffset = 0;
+                    currentEmotion = 'neutral';
+                }
+            }
+
+            // Global Center of character
+            const cx = cw / 2;
+            const cy = 180 + bob + jumpOffset;
+
+            // Canvas coordinates for calculating mouse look
+            const rect = canvas.getBoundingClientRect();
+            const absoluteCanvasX = rect.left + cx;
+            const absoluteCanvasY = rect.top + cy;
+            
+            // Calculate angle to mouse
+            const dx = mouseX - absoluteCanvasX;
+            const dy = mouseY - absoluteCanvasY;
+            const angle = Math.atan2(dy, dx);
+            const dist = Math.min(Math.hypot(dx, dy), 100); // cap tracking distance
+            
+            // Pupil offsets
+            const pxOffset = (Math.cos(angle) * dist) * 0.05;
+            const pyOffset = (Math.sin(angle) * dist) * 0.05;
+
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = colors.outline;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // --- Draw Body ---
+            // Spine
+            ctx.beginPath();
+            ctx.moveTo(cx, cy + 40);
+            ctx.lineTo(cx, cy + 140);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath(); ctx.moveTo(cx, cy + 140); ctx.lineTo(cx - 20, cy + 220); ctx.stroke(); // L Leg
+            ctx.beginPath(); ctx.moveTo(cx, cy + 140); ctx.lineTo(cx + 20, cy + 220); ctx.stroke(); // R Leg
+
+            // Feet (flat)
+            ctx.beginPath(); ctx.moveTo(cx - 20, cy + 220); ctx.lineTo(cx - 35, cy + 220); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + 20, cy + 220); ctx.lineTo(cx + 35, cy + 220); ctx.stroke();
+
+            // Arms
+            if (currentEmotion === 'wave') {
+                // Right arm waving
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.lineTo(cx - 30, cy + 110); ctx.stroke(); // L arm down
+                ctx.beginPath(); ctx.arc(cx - 30, cy + 110, 5, 0, Math.PI*2); ctx.stroke(); // L hand loop
+                
+                let waveAngle = Math.sin(time * 5) * 0.5; // fast wave
+                ctx.save();
+                ctx.translate(cx, cy + 60);
+                ctx.rotate(waveAngle);
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(40, -40, 50, -80); ctx.stroke(); // R arm waving up
+                ctx.beginPath(); ctx.arc(50, -80, 5, 0, Math.PI*2); ctx.stroke(); // R hand loop
+                ctx.restore();
+            } 
+            else if (currentEmotion === 'excited' || isJumping) {
+                // Both arms up
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.quadraticCurveTo(cx - 40, cy + 20, cx - 60, cy - 10); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx - 60, cy - 10, 5, 0, Math.PI*2); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.quadraticCurveTo(cx + 40, cy + 20, cx + 60, cy - 10); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + 60, cy - 10, 5, 0, Math.PI*2); ctx.stroke();
+            }
+            else if (currentEmotion === 'thinking') {
+                // One hand on chin
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.lineTo(cx - 25, cy + 110); ctx.stroke(); 
+                ctx.beginPath(); ctx.arc(cx - 25, cy + 110, 5, 0, Math.PI*2); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.lineTo(cx + 30, cy + 80); ctx.lineTo(cx + 15, cy + 30); ctx.stroke();
+            }
+            else {
+                // Normal arms down
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.lineTo(cx - 30, cy + 120); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx - 30, cy + 120, 5, 0, Math.PI*2); ctx.stroke(); // Hand loop
+                
+                ctx.beginPath(); ctx.moveTo(cx, cy + 60); ctx.lineTo(cx + 30, cy + 120); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + 30, cy + 120, 5, 0, Math.PI*2); ctx.stroke();
+            }
+
+            // --- Draw Head ---
+            // Hair Back Layer
+            drawHair(cx, cy, bob);
+
+            // Ears
+            ctx.fillStyle = colors.skin;
+            ctx.beginPath(); ctx.arc(cx - 45, cy + 5, 8, Math.PI*0.5, Math.PI*1.5); ctx.fill(); ctx.stroke(); // L
+            ctx.beginPath(); ctx.arc(cx + 45, cy + 5, 8, Math.PI*1.5, Math.PI*0.5); ctx.fill(); ctx.stroke(); // R
+
+            // Face Circle
+            ctx.beginPath();
+            ctx.arc(cx, cy, 45, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Hair Front Layer (Bangs)
+            ctx.fillStyle = colors.hair;
+            ctx.beginPath();
+            ctx.moveTo(cx - 40, cy - 20);
+            ctx.quadraticCurveTo(cx - 20, cy - 5, cx, cy - 25);
+            ctx.quadraticCurveTo(cx + 20, cy - 5, cx + 40, cy - 20);
+            ctx.quadraticCurveTo(cx + 20, cy - 45, cx, cy - 45);
+            ctx.quadraticCurveTo(cx - 20, cy - 45, cx - 40, cy - 20);
+            ctx.fill();
+
+            // --- Draw Expressions ---
+            ctx.fillStyle = colors.outline;
+            
+            let ex = cx - 15;
+            let ey = cy + 5;
+            let ex2 = cx + 15;
+            let ey2 = cy + 5;
+
+            if (currentEmotion === 'neutral' || currentEmotion === 'wave') {
+                // Neutral eyes (vertical ovals)
+                ctx.beginPath(); ctx.ellipse(ex + pxOffset, ey + pyOffset, 4, 7, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(ex2 + pxOffset, ey2 + pyOffset, 4, 7, 0, 0, Math.PI*2); ctx.fill();
+                
+                // Slight frown/neutral mouth
+                ctx.beginPath(); ctx.moveTo(cx - 10, cy + 25); ctx.quadraticCurveTo(cx, cy + 22, cx + 10, cy + 25); ctx.stroke();
+            } 
+            else if (currentEmotion === 'happy') {
+                // Happy eyes (curved arches)
+                ctx.beginPath(); ctx.arc(ex, ey+3, 6, Math.PI, 0); ctx.stroke();
+                ctx.beginPath(); ctx.arc(ex2, ey2+3, 6, Math.PI, 0); ctx.stroke();
+                
+                // Smile
+                ctx.beginPath(); ctx.moveTo(cx - 12, cy + 22); ctx.quadraticCurveTo(cx, cy + 32, cx + 12, cy + 22); ctx.stroke();
+            }
+            else if (currentEmotion === 'thinking') {
+                ctx.beginPath(); ctx.ellipse(ex + pxOffset, ey + pyOffset, 4, 7, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(ex2 + pxOffset, ey2 + pyOffset, 4, 7, 0, 0, Math.PI*2); ctx.fill();
+                
+                // Raised eyebrow
+                ctx.beginPath(); ctx.moveTo(cx + 5, cy - 10); ctx.quadraticCurveTo(cx + 15, cy - 15, cx + 25, cy - 10); ctx.stroke();
+                
+                // O mouth
+                ctx.beginPath(); ctx.arc(cx - 5, cy + 25, 4, 0, Math.PI*2); ctx.stroke();
+            }
+            else if (currentEmotion === 'excited') {
+                // Wide open eyes
+                ctx.beginPath(); ctx.ellipse(ex + pxOffset, ey + pyOffset, 6, 8, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(ex2 + pxOffset, ey2 + pyOffset, 6, 8, 0, 0, Math.PI*2); ctx.fill();
+                
+                // Big open mouth
+                ctx.fillStyle = colors.outline;
+                ctx.beginPath();
+                ctx.moveTo(cx - 15, cy + 20);
+                ctx.quadraticCurveTo(cx, cy + 40, cx + 15, cy + 20);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        // Loop
+        function animate() {
+            renderMascot();
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>

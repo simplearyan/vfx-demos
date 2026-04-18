@@ -1,0 +1,59 @@
+<canvas id='canv'></canvas>
+
+<style>
+    body {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  background:hsla(0,0%,5%,1);
+}
+</style>
+
+<script>
+    var c = document.getElementById('canv');
+var $ = c.getContext('2d');
+var w = c.width = window.innerWidth;
+var h = c.height = window.innerHeight;
+var cnt = 0;
+
+var draw = function() {
+  var i, b, arr, _arr, rz, x, y, px, py;
+  $.globalCompositeOperation = "source-over";
+  $.fillRect(0, 0, w, h);
+  $.globalCompositeOperation = "xor";
+  var dims = 0.85+ Math.sin(cnt / 15) / 15;
+  var rot = Math.sin(cnt / -12);
+  var _w = 250;
+  var u = 0;
+  for (b = 0; b < 85; b++){
+    rz = cnt / 150 + b / 10 * rot;
+    $.beginPath();
+    arr = [];
+    for (i = 0; i < 5; i++){
+      x = Math.sin(rz) * _w +  c.width/2;
+      y = Math.cos(rz) * _w + c.height/2;
+      rz += Math.PI * 1/2;
+      if (i) $.lineTo(x, y); 
+      else $.moveTo(x, y); 
+      arr[i] = [x, y];}
+    $.fillStyle = 'hsla(' + b * i + u + ',70%, 50%,1)';
+    $.closePath();
+    $.fill();
+    _arr = [];
+    rz += (Math.PI * 2 ) / (1 / 5);
+    for (i = 0; i < 5; i++){
+      _arr[i] = [x, y];
+      rz += (Math.PI * 2 ) / (1 / 5);}
+      _w *= dims;
+   }
+  cnt++;
+  u-=.1;
+  window.requestAnimationFrame(draw);}
+  draw();
+/*_________________________________*/
+window.addEventListener('resize', function(){
+  c.width = w = window.innerWidth;
+  c.height = h = window.innerHeight;
+}, false);
+
+</script>

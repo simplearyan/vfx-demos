@@ -1,0 +1,76 @@
+    <body>
+        <div class="container">
+            <div id="blender" class="blender">
+                <div id="blender-button" class="blender-button" onclick="controlarBlender()"></div>
+            </div>
+        </div>
+        <audio id="blender-button-sound" src="https://github.com/vkive/Blender/blob/master/Sound/sound_botonLicuadora.mp3" type="audio/mpeg"></audio>
+        <audio id="blender-sound" src="https://github.com/vkive/Blender/blob/master/Sound/sound_licuadora.mp3" type="audio/mpeg" loop></audio>
+    </body>
+
+
+    <style>
+        *{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+.blender{
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 700px;
+    height: 500px;
+    /*background-color: red;*/
+    background-image: url(https://github.com/vkive/Blender/blob/master/Img/licuadoraApagada.png?raw=true);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.blender.active{
+    background-image: url(https://github.com/vkive/Blender/blob/master/Img/licuadoraEncendida.gif?raw=true);
+}
+.blender-button{
+    margin: 350px auto 0px;
+    width: 70px;
+    height: 70px;
+}
+    </style>
+
+    <script>
+        /*the complete project is in the following link:
+https://github.com/vkive/Blender.git
+Follow me on Codepen
+*/
+
+var estadoBlender = "Apagada";
+var soundBlender = document.getElementById("blender-sound");
+var buttomBlender = document.getElementById("blender-button-sound");
+var Blender = document.getElementById("blender");
+
+function controlarBlender(){
+    if (estadoBlender == "Apagada"){
+        estadoBlender = "Encendida";
+        makeBrrBrr();
+        Blender.classList.add("active");
+       /* console.log("Esta Prendido");*/
+    }else{
+        estadoBlender = "Apagada";
+        makeBrrBrr();
+        Blender.classList.remove("active");
+       /* console.log("Esta Apagado");*/
+    }
+}
+
+function makeBrrBrr(){
+    if (soundBlender.paused){
+        buttomBlender.play();
+        soundBlender.play();
+    }else{
+        buttomBlender.play();
+        soundBlender.pause();
+        soundBlender.currentTime=0;
+    }
+}
+    </script>

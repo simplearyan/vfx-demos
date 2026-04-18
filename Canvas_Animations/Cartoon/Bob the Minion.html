@@ -1,0 +1,347 @@
+<div>
+  <div class="body">
+    <div class="head">
+      <div class="eye">
+        <div class="eyeball">
+          <div class="iris"></div>
+        </div>
+      </div>
+
+      <div class="eye two">
+        <div class="eyeball">
+          <div class="iris"></div>
+        </div>
+      </div>
+
+      <div class="belt"></div>
+
+      <div class="mouth"></div>
+    </div>
+    <div class="pant">
+      <div class="pant__strap"></div>
+      <div class="pant__strap two"></div>
+      <div class="pant__side-pocket"></div>
+    </div>
+  </div>
+  <div class="legs-container">
+    <div class="leg"></div>
+    <div class="leg two"></div>
+  </div>
+  <div class="hands-container">
+    <div class="hands"></div>
+  </div>
+</div>
+
+
+<style>
+    body {
+  display: grid;
+  place-items: center;
+  height: 100vh;
+}
+.body {
+  height: 300px;
+  width: 200px;
+  background-color: #ffd978;
+  border-radius: 100px 100px 50px 50px;
+  position: relative;
+  overflow: hidden;
+}
+.head {
+  height: 180px;
+  width: 200px;
+  // background-color: orange;
+  position: relative;
+  border-radius: 100px 100px 0 0;
+}
+.eye {
+  height: 88px;
+  width: 88px;
+  background: radial-gradient(
+    #ffffff 0,
+    #fff 23px,
+    #7c8ca6 23.5px,
+    #7c8ca6 31px,
+    #bec9e5 31.5px
+  );
+  position: absolute;
+  top: 50px;
+  left: 16px;
+  border-radius: 44px;
+  box-shadow: 0 6px #fec365;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+
+  &.two {
+    left: 96px;
+  }
+}
+
+.eyeball {
+  width: 47px;
+  height: 47px;
+  background-color: #d2d2d2;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+
+  &::after {
+    height: 100%;
+    width: 100%;
+    background-color: white;
+    top: 5px;
+    left: 0;
+    content: "";
+    position: absolute;
+    border-radius: 24px;
+  }
+}
+
+.iris {
+  width: 24px;
+  height: 24px;
+  background-color: #2c324a;
+  border-radius: 14px;
+  z-index: 1;
+  position: relative;
+  left: 0;
+  right: 0;
+  margin: auto;
+  top: 10px;
+  overflow: hidden;
+
+  &:after {
+    background-color: white;
+    content: "";
+    width: 16px;
+    height: 16px;
+    position: absolute;
+    border-radius: 9px;
+    top: -4px;
+    right: -4px;
+  }
+}
+
+.belt {
+  width: 100%;
+  background-color: #2b334a;
+  height: 12px;
+  position: absolute;
+  top: 90px;
+  left: 0;
+
+  &:after {
+    width: calc(100% - 15px);
+    height: 26px;
+    background: linear-gradient(#7e8ca7 0, #50617b);
+    position: absolute;
+    content: "";
+    top: -8px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    border-radius: 4px;
+  }
+}
+
+.mouth {
+  height: 20px;
+  width: 46px;
+  background-color: transparent;
+  border-bottom: 5px solid #2b334a;
+  position: absolute;
+  bottom: 0px;
+  border-radius: 50%;
+  margin: auto;
+  left: 0;
+  right: 0;
+}
+
+%pocket-style {
+  width: 30px;
+  height: 30px;
+  background-color: #677fae;
+  position: absolute;
+  top: 0;
+  box-shadow: inset 0px -2px 6px rgba(45, 49, 74, 0.3);
+}
+
+.pant {
+  background-color: #839fd3;
+  width: 100%;
+  height: 50px;
+  margin-top: 20px;
+  border-radius: 0 0 60px 60px;
+  position: relative;
+  bottom: -50px;
+  // background-color:red;
+
+  &:after {
+    content: "";
+    position: absolute;
+    background-color: #839fd3;
+    height: 60px;
+    width: 120px;
+    top: -50px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    border-radius: 5px;
+  }
+
+  //   pocket
+  &:before {
+    height: 30px;
+    width: 50px;
+    content: "";
+    background-color: #677fae;
+    position: absolute;
+    top: -30px;
+    left: 0;
+    right: 0;
+    margin: auto;
+    z-index: 1;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0px -1px 2px rgba(45, 49, 74, 0.6);
+  }
+
+  &__strap {
+    width: 12px;
+    height: 80px;
+    background-color: #677fae;
+    transform: rotateZ(-45deg);
+    position: relative;
+    top: -107px;
+    left: 18px;
+    z-index: 1;
+    box-shadow: -1px 0 2px rgba(45, 49, 74, 0.6);
+    border-radius: 2px;
+
+    &:after {
+      width: 8px;
+      height: 8px;
+      content: "+";
+      border-radius: 4px;
+      background-color: #2d314a;
+      position: absolute;
+      bottom: 2px;
+      left: 2px;
+      color: #839fd3;
+      font-weight: bold;
+      font-size: 10px;
+      line-height: 9px;
+      text-align: center;
+    }
+
+    &.two {
+      left: 170px;
+      top: -187px;
+      transform: rotateZ(45deg);
+      box-shadow: 1px 0 2px rgba(45, 49, 74, 0.6);
+    }
+  }
+
+  &__side-pocket {
+    @extend %pocket-style;
+    left: 0;
+    border-radius: 0 0 50px 10px;
+    &:after {
+      @extend %pocket-style;
+      content: "";
+      left: 170px;
+      border-radius: 0 0 10px 50px;
+    }
+  }
+}
+
+.legs-container {
+  height: 100px;
+  width: 200px;
+  padding: 0 50px;
+  box-sizing: border-box;
+  // background:red;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+
+  .leg {
+    width: 20px;
+    height: 35px;
+    background-color: #677fae;
+    border-radius: 0 0 0 70%;
+    position: relative;
+
+    &:before {
+      width: 20px;
+      height: 35px;
+      background-color: #677fae;
+      border-radius: 0 0 70% 0;
+      position: absolute;
+      right: -20px;
+      content: "";
+    }
+
+    // /shoe
+    &:after {
+      width: 45px;
+      height: 20px;
+      background-color: #2c324a;
+      position: absolute;
+      content: "";
+      top: 30px;
+      left: -10px;
+      border-radius: 70% 0 10px 0;
+    }
+
+    &.two {
+      margin-right: 20px;
+      &:after {
+        border-radius: 0 70% 0 10px;
+        left: 8px;
+      }
+    }
+  }
+}
+
+.hands-container {
+  margin: auto;
+  width: 250px;
+  position: relative;
+  z-index: -1;
+  margin-top:-225px;
+  margin-left:-25px;
+}
+
+%hand-style {
+  height: 22px;
+  width: 22px;
+  background-color: #2c324a;
+  content: "";
+  position: absolute;
+  border-radius: 4px;
+  top: 40px;
+}
+
+.hands {
+  box-sizing: border-box;
+  width: 100%;
+  height: 70px;
+  border: 14px solid #ffd978;
+  border-radius: 36px;
+  position: relative;
+
+  &:after {
+    @extend %hand-style;
+    transform: rotateZ(45deg);
+  }
+
+  &:before {
+    @extend %hand-style;
+    transform: rotateZ(-45deg);
+    right: 0;
+  }
+}
+
+</style>

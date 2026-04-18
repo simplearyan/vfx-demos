@@ -1,0 +1,136 @@
+<div class="fruit1"/>
+<div class="hole"/>
+  
+<div class="fruit2"/>
+<div class="pit"/>
+
+<style>
+    *,
+*:before,
+*:after {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+  background-color: #dcf7fa;
+}
+
+.fruit1 {
+  width: 16em;
+  height: 20em;
+  background: #a6ee44;
+  background: radial-gradient(circle, #a6ee44 55%, #74cc3c 70%);
+  border: .8em solid #4a2701;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  position: absolute;
+  margin: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 12em;
+}
+
+.hole {
+  border-radius: 50%;
+  height: 8em;
+  width: 8em;
+  background: rgb(71,214,34);
+  background: linear-gradient(135deg, #a6ee44 0%, #67b536 100%);
+  position: absolute;
+  top: 6.5em;
+  left: 3.3em;
+}
+
+.hole::before{
+    content: "";
+    position: absolute;
+    height: 1em;
+    width: 1em;
+    background-color: #010008;
+    border-radius: 50%;
+    top: 3em;
+    left: 5.4em;
+    box-shadow: 
+/*  left eye */
+    -2.4em 0 0 #010008,
+/*  cheeks */
+    .5em 1em 0 -0.1em #67b536,
+    -3em 1em 0 -0.1em #67b536;
+}
+
+/* Mouth */
+.hole::after{
+  content: "";
+  position: absolute;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  box-shadow: 0 .3em 0 .1em #010008;
+  top: 3.8em;
+  left: 4.2em;
+}
+
+.fruit2 {
+  width: 16em;
+  height: 20em;
+  background: #a6ee44;
+  background: radial-gradient(circle, #a6ee44 55%, #74cc3c 70%);
+  border: .8em solid #4a2701;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  box-shadow: -25px 0 rgba(0,0,0,0.1);
+  position: absolute;
+  margin: auto;
+  top: -2.5em;
+  bottom: 0;
+  left: 10em;
+  right: 0;
+}
+
+.pit {
+  border-radius: 50%;
+  height: 8em;
+  width: 8em;
+  background: rgb(181,137,33);
+  position: absolute;
+  top: 6.2em;
+  left: 2.8em;
+  box-shadow: 15px 10px rgba(0,0,0,0.1),
+    5px 1px 0 .1em rgba(154,117,28,1);
+}
+
+.pit::before{
+    content: "";
+    position: absolute;
+    height: 1em;
+    width: 1em;
+    background-color: #010008;
+    border-radius: 50%;
+    top: 3em;
+    left: 4em;
+    box-shadow: 
+/*  left eye */
+    -2.4em 0 0 #010008,
+/*  cheeks */
+    .5em 1em 0 -0.1em rgba(154,117,28,1),
+    -3em 1em 0 -0.1em rgba(154,117,28,1);
+}
+
+/* Mouth */
+.pit::after{
+    content: "";
+    position: absolute;
+    height: .9em;
+    width: 1.8em;
+    top: 4.3em;
+    left: 2.3em;
+    border-radius: .3em .3em .7em .7em;
+    border: .2em solid #010008;
+    background: radial-gradient(
+        at 50% 100%,
+        #f5750f .5em,
+        #010008 .5em
+    );
+}
+</style>

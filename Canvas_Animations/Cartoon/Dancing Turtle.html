@@ -1,0 +1,121 @@
+<div role="img" aria-label="Animated cartoon of a turtle dancing"></div>
+
+
+<style>
+    @property --x {
+  syntax: '<percentage>';
+  initial-value: 40%;
+  inherits: true;
+}
+
+body { overflow: hidden;}
+
+div {
+  --skin: #ac6;
+  --skin-dark: #5a3;
+  --shell: #c52;
+  --body: #fd5;
+  --lines: #fa2;
+  --x: 45%;
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  bottom: 0;
+  left: 50%;
+  translate: -50%;
+  animation: dance 1s alternate infinite;
+  background:
+    /* abs */
+    linear-gradient(var(--lines) 0 0) 50% 55% / 4px 250px,
+    linear-gradient(var(--lines) 0 0) 50% 45% / 150px 4px,
+    linear-gradient(var(--lines) 0 0) 50% 55% / 200px 4px,
+    linear-gradient(var(--lines) 0 0) 50% 65% / 150px 4px,
+    /* body */
+    radial-gradient(140px 160px, var(--body) 99.99%, #0000 0),
+    /* nails */
+    radial-gradient(circle at calc(38% + var(--x)) 100%, var(--skin-dark) 20px, #0000 0),
+    radial-gradient(circle at calc(32% + var(--x)) 100%, var(--skin-dark) 20px, #0000 0),
+    radial-gradient(circle at calc(68% - var(--x)) 100%, var(--skin-dark) 20px, #0000 0),
+    radial-gradient(circle at calc(62% - var(--x)) 100%, var(--skin-dark) 20px, #0000 0),
+    /* legs */
+    radial-gradient(var(--x) 60% at 50% calc(var(--x) + 50%), #0000 var(--x), var(--skin) 0 calc(var(--x) + 40%), #0000 0),
+    /* back shell */
+    radial-gradient(60px 60px at 50% calc(50% - 130px), var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 65% calc(50% - 100px), var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 35% calc(50% - 100px), var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 71% calc(50% - 25px),  var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 29% calc(50% - 25px),  var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 31% calc(50% + 45px),  var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 69% calc(50% + 45px),  var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 43% calc(50% + 120px), var(--shell) 60px, #0000 0),
+    radial-gradient(60px 60px at 57% calc(50% + 120px), var(--shell) 60px, #0000 0)
+    
+    ;
+  background-repeat: no-repeat;
+  
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 230px;
+    translate: -50% calc(-95% + var(--x) );
+    width: 55%;
+    height: 250px;
+    border-radius: 100% / 135% 135% 70% 70%;
+    transform-origin: 50% 100%;
+    animation: swing 4s -1s alternate infinite;
+    background:
+      /* eyes */
+      radial-gradient(circle at 25% 58%, #fff 6%, #0000 0),
+      radial-gradient(circle at 69% 58%, #fff 6%, #0000 0),
+      radial-gradient(circle at 20% 67%, #fff 3%, #0000 0),
+      radial-gradient(circle at 64% 67%, #fff 3%, #0000 0),
+      radial-gradient(circle at 28% 63%, #000 14%, #0000 0),
+      radial-gradient(circle at 72% 63%, #000 14%, #0000 0),
+      /* cheeks */
+/*       radial-gradient(35% 25% at 20% 80%, pink 25%, #0000 0),
+      radial-gradient(35% 25% at 80% 80%, pink 25%, #0000 0), */
+      /* mouth */
+      radial-gradient(farthest-side at 50% 0, #0000 55%, #000 0 99.99%, #0000 0) 50% 75% / 34px 17px no-repeat,
+      /* decoration */
+      radial-gradient(40% 30% at 50% 0, var(--skin-dark) 40%, #0000 0),
+      radial-gradient(30% 25% at 32% 18%, var(--skin-dark) 30%, #0000 0),
+      radial-gradient(26% 25% at 57% 20%, var(--skin-dark) 28%, #0000 0),
+      radial-gradient(circle at 75% 12%, var(--skin-dark) 7%, #0000 0)
+      var(--skin)
+      ;
+  }
+  
+  &::before {
+    content:"";
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    translate: -50%;
+    width: 135%;
+    height: 100%;
+    border-radius: 100% / 50%;
+    background:
+      radial-gradient(at -15px 10px, var(--skin-dark) 115px, #0000 0),
+      radial-gradient(at calc(100% + 15px) 10px, var(--skin-dark) 115px, #0000 0),
+      /* legs */
+    radial-gradient(95% 60% at 50% 0, #0000 40%, var(--skin) 0 60%, #0000 0)
+      ;
+    mask: radial-gradient(140px 160px, #0000 99.99%, #000 0);
+    animation: swing 5s linear alternate infinite;
+  }
+}
+
+@keyframes dance {
+  0% { height: 500px; --x: 40%; }
+  100% { height: 450px; --x: 45%; }
+}
+
+@keyframes swing {
+  0% { rotate: 0; }
+  50% { rotate: 3deg; }
+  100% { rotate: -3deg; }
+}
+
+*, *::before { aanimation: none !important; }
+</style>

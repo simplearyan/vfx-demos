@@ -1,0 +1,221 @@
+<div class="container">
+  <div class="ear-1"> </div>
+  <div class="ear-2"> </div>
+  <div class="eyebrow-1"> </div>
+  <div class="eyebrow-2"> </div>
+  <div class="eye-1"> </div>
+  <div class="eye-2"> </div>
+  <div class="eye-dot-1"> </div>
+  <div class="eye-dot-2"> </div>
+  <div class="nose"> </div>
+  <div class="mouth"> </div>
+  <div class="cheek-1"></div>
+  <div class="cheek-2"></div>
+  <div class="by">Débora Camargos</div>
+  
+</div>
+
+
+
+<style>
+    @import
+url(https://fonts.googleapis.com/css?family=Lobster);
+
+body{
+  animation: bg 20s infinite both ;
+}
+
+.container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 380px;
+  height: 410px;
+  border: 2px solid #000;
+  border-radius: 50% 50% 49% 49%;
+  margin-top: -200px;
+  margin-left: -180px;
+  box-shadow: 4px 4px 15px rgba(0,0,0,.3);
+  background: radial-gradient(circle, #fdca9f, #fbba8a, #f1a56b); 
+  }
+
+.ear-1 {
+  width:40px;
+  height:60px;
+  position: absolute;
+  border: 2px solid  #000;
+  top: 180px;
+  left: -15px;
+  border-radius: 50%;
+  clip-path: circle(70% at 0% 50%);
+  background: linear-gradient(to left, #fbba8a, #f1a56b); 
+  }
+
+.ear-2 {
+  width:40px;
+  height:60px;
+  position: absolute;
+  border: 2px solid  #000;
+  top: 180px;
+  left: 350px;
+  border-radius: 50%;
+  clip-path: circle(79% at 113% 50%);
+  background: linear-gradient(to left, #f1a56b, #fbba8a); 
+  }
+
+.eyebrow-1{
+  width:80px;
+  height:80px;
+  position: absolute;
+  border: 2px solid  #000;
+  border-radius: 50%;
+  top: 105px;
+  left: 60px;
+  clip-path: ellipse(25% 40% at 18% 18%);
+  transform: rotate(15deg);
+  animation: rotate 2.5s infinite linear;
+  opacity: .7;
+}
+
+.eyebrow-2{
+  width:80px;
+  height:80px;
+  position: absolute;
+  border: 2px solid  #000;
+  border-radius: 50%;
+  top: 120px;
+  left: 250px;
+  clip-path: ellipse(25% 40% at 95% 24%);
+  transform: rotate(-45deg);
+  animation: rotate-2 2.5s infinite linear;
+  opacity: .7;
+}
+
+.eye-1{
+  width:44px;
+  height:57px;
+  position: absolute;
+  border: 2px solid  #000;
+  border-radius: 50%;
+  top: 170px;
+  left: 240px;
+  background: #fff;
+}
+
+.eye-2{
+  width:44px;
+  height:57px;
+  position: absolute;
+  border: 2px solid  #000;
+  border-radius: 50%;
+  top: 170px;
+  left: 90px;
+  background: #fff;
+}
+
+.eye-dot-1{
+  width:34px;
+  height:42px;
+  position: absolute;
+  background: black;
+  border-radius: 50%;
+  top: 175px;
+  left: 243px;
+  animation: dot1 2.5s infinite ease;
+}
+
+.eye-dot-2{
+  width:34px;
+  height:42px;
+  position: absolute;
+  background: black;
+  border-radius: 50%;
+  top: 175px;
+  left: 93px;
+  animation: dot2 2.5s infinite ease;
+}
+
+.nose{
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  border: 2px solid ;
+  border-color: transparent transparent #000 transparent;
+  border-radius: 50%;
+  top: 200px;
+  left: 165px;
+}
+
+.mouth{
+  width: 120px;
+  height: 80px;
+  position: absolute;
+  border: 2px solid ;
+  border-color: transparent transparent #000 transparent;
+  border-radius: 50%;
+  top: 250px;
+  left: 140px;
+  transform: rotate(-15deg);
+}
+
+.cheek-1{
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  top: 250px;
+  left: 50px;
+  background: radial-gradient(circle, rgba(251, 174, 155, .7), transparent);
+}
+
+.cheek-2{
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  top: 250px;
+  left: 260px;
+  background: radial-gradient(circle, rgba(251, 174, 155, .7), transparent);
+}
+
+.by{
+  position: absolute;
+  width: 400px;
+  color: #1c1c1c;
+  text-shadow: 2px 2px 2px #808080;
+  font-size: 25px;
+  font-family: 'Lobster';
+  top: 430px;
+  left: 300px ;
+}
+
+/*Animations*/
+@keyframes bg{
+  0%{background: #d41f27;}
+  25%{background: #0072bd;}
+  50%{background: #00ae4c;}
+  100%{background: #fed102;}
+}
+
+@keyframes dot1{
+  30%{left: 243px;}
+  70%{left: 253px;}
+  100%{left: 243px;}
+}
+
+@keyframes dot2{
+  30%{left: 93px;}
+  70%{left: 103px;}
+  100%{left: 93px;}
+}
+
+@keyframes rotate{
+  0%{transform: rotate(15deg);}
+  70%{transform: rotate(25deg);}
+}
+
+@keyframes rotate-2{
+  0%{transform: rotate(-45deg);}
+  70%{transform: rotate(-25deg);}
+}
+</style>

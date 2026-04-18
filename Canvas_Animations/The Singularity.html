@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Singularity | Aether Interface</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --aether: #ffffff;
+            --core-glow: rgba(255, 255, 255, 0.8);
+            --nebula-1: #ff00ff;
+            --nebula-2: #00ffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        body {
+            background-color: var(--bg);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* The Singularity Core */
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .interface-overlay {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+            text-align: center;
+            color: white;
+        }
+
+        .title {
+            font-size: 12px;
+            letter-spacing: 20px;
+            text-transform: uppercase;
+            font-weight: 100;
+            opacity: 0.3;
+            margin-bottom: 40px;
+            animation: breathe 8s infinite ease-in-out;
+        }
+
+        @keyframes breathe {
+            0%, 100% { opacity: 0.1; letter-spacing: 20px; }
+            50% { opacity: 0.5; letter-spacing: 25px; }
+        }
+
+        /* Glass HUD Elements */
+        .hud-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .ring-1 { width: 300px; height: 300px; animation: rotate 20s linear infinite; }
+        .ring-2 { width: 350px; height: 350px; animation: rotate 30s linear reverse infinite; border-style: dashed; }
+        .ring-3 { width: 600px; height: 600px; opacity: 0.2; }
+
+        @keyframes rotate {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Custom Cursor - The "Light" */
+        .cursor-light {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 5;
+            transform: translate(-50%, -50%);
+        }
+
+        .cursor-dot {
+            position: fixed;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px white;
+        }
+
+        /* Distortion Filter */
+        svg {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="cursor-light" id="light"></div>
+    <div class="cursor-dot" id="dot"></div>
+
+    <div class="hud-ring ring-1"></div>
+    <div class="hud-ring ring-2"></div>
+    <div class="hud-ring ring-3"></div>
+
+    <div class="interface-overlay">
+        <div class="title">The Singularity</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const light = document.getElementById('light');
+        const dot = document.getElementById('dot');
+
+        let width, height;
+        let particles = [];
+        const particleCount = 1500;
+        let mouse = { x: -1000, y: -1000 };
+
+        function init() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 1.5;
+                this.alpha = Math.random() * 0.5;
+                this.color = Math.random() > 0.5 ? '#ffffff' : (Math.random() > 0.5 ? '#00ffff' : '#ff00ff');
+            }
+
+            update() {
+                // Gravity towards mouse
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 400) {
+                    let force = (400 - dist) / 400;
+                    this.vx += dx * force * 0.001;
+                    this.vy += dy * force * 0.001;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Friction
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+
+                // Wrap around
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            light.style.left = e.clientX + 'px';
+            light.style.top = e.clientY + 'px';
+            dot.style.left = e.clientX + 'px';
+            dot.style.top = e.clientY + 'px';
+        });
+
+        window.addEventListener('mousedown', () => {
+            particles.forEach(p => {
+                let dx = p.x - mouse.x;
+                let dy = p.y - mouse.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                p.vx = (dx / dist) * 10;
+                p.vy = (dy / dist) * 10;
+            });
+        });
+
+        window.addEventListener('resize', init);
+
+        init();
+        animate();
+    </script>
+</body>
+</html>

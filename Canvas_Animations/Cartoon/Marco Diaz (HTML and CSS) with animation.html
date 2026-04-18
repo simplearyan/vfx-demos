@@ -1,0 +1,1086 @@
+<main class="main">
+  <div class="container">
+    <div class="marco">
+      <div class="marco__head">
+        <div class="marco__hair">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>		
+        </div>
+        <div class="marco__forehead">
+
+        </div>
+        <div class="marco__eyebrows">
+          <div class="marco__eyebrow marco__eyebrow_left">
+            <div></div>
+            <div></div>
+          </div>
+          <div class="marco__eyebrow marco__eyebrow_right">
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="marco__eyes">
+          <div class="marco__eye marco__eye_left">
+            <div class="marco__eyelid marco__eyelid_left"></div>
+            <div class="marco__eyelid marco__eyelid_left"></div>
+          </div>
+          <div class="marco__eye marco__eye_right">
+            <div class="marco__eyelid marco__eyelid_right"></div>
+            <div class="marco__eyelid marco__eyelid_right"></div>
+          </div>
+        </div>
+        <div class="marco__birthmark"></div>
+        <div class="marco__ears">
+          <div class="marco__ear marco__ear_left">
+            <div></div>
+            <div></div>
+          </div>
+          <div class="marco__ear marco__ear_right">
+            <div></div>
+            <div></div>
+            <div></div>
+          </div>
+        </div>
+        <div class="marco__nose">
+          <div></div>	
+          <div></div>	
+          <div></div>	
+          <div></div>	
+        </div>
+        <div class="marco__mouth">
+
+        </div>
+        <div class="marco__chin">
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+
+
+<style>
+    :root {
+  --eyebrows-color: #3a1c19;
+  --face-color: #e49d8f;
+  --eyeballs-color: #8f4b38;
+  --birthmark-color: #000;
+  --background: #fff;
+  --hair-color: #442321;
+  
+  --animation-duration: 10s;
+  --animation-mode: ease;
+  --animation-delay: 5s;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    background: var(--background);
+}
+
+.container {
+    padding-top: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* =====================
+============= Марко =============*/
+
+.marco {
+    margin: 0 auto;
+    transform: scale(0.6);
+}
+
+/* =====================
+============= Марко (голова) =============*/
+
+.marco__head {
+    position: relative;
+    height: 250px;
+    width: 320px;
+}
+
+/* =====================
+============= Глаза =============*/
+
+.marco__eyes {
+    display: flex;
+    justify-content: space-between;
+    width: 300px;
+}
+
+.marco__eye {
+    width: 130px;
+    height: 120px;
+    left: -15px;
+    background: #f8f8f6;
+    border: 2px solid #000;
+    position: relative;
+    z-index: 5;
+    overflow: hidden;   
+}
+
+.marco__eye:before, .marco__eye:after {
+    content: "";
+    display: block;
+    position: absolute;
+}
+
+.marco__eye:before {
+    top: 20%; 
+    width: 40%;
+    height: 53%;
+    background: var(--eyeballs-color);
+    border-radius: 50%;
+    border: 2px solid #000;
+}
+
+.marco__eye:after {
+    top: 20%; 
+    width: 20%;
+    height: 28%;
+    background: #000;
+    border-radius: 50%;
+}
+
+.marco__eyelid {
+    position: absolute;
+    bottom: -4px;
+    left: -5px;
+    border-radius: 50%;
+    background: var(--face-color);
+    width: 110%;
+    height: 15px;
+    z-index: 10;
+    border: 2px solid #000;
+}
+
+/* =====================
+============= Правый глаз =============*/
+
+.marco__eye_right {
+    left: -5px;
+    border-radius: 40% 50% 50% 40% / 45% 50% 50% 45%;
+}
+
+.marco__eye_right:before {
+    left: 15%;
+}
+
+.marco__eye_right:after {
+    top: 40px;
+    left: 30px;
+}
+
+.marco__eyelid_right:nth-child(1) {
+    top: 0;
+    height: 0;
+    animation: eyelidTopAnimate var(--animation-duration) var(--animation-mode) infinite var(--animation-delay);
+}
+
+.marco__eyelid_right:nth-child(2) {
+    height: 20px;
+    animation: eyelidBottomRightAnimate var(--animation-duration) var(--animation-mode) infinite var(--animation-delay);
+}
+
+/* =====================
+============= Левый глаз =============*/
+
+.marco__eye_left {
+    border-radius: 50% 40% 40% 50% / 50% 45% 45% 50%;
+}
+
+.marco__eye_left:before {
+    right: 15%;
+}
+
+.marco__eye_left:after {
+    top: 40px;
+    right: 30px;
+}
+
+.marco__eyelid_left:nth-child(1) {
+    top: 0;
+    height: 0;
+    animation: eyelidTopAnimate var(--animation-duration) var(--animation-mode) infinite var(--animation-delay);
+}
+
+.marco__eyelid_left:nth-child(2) {
+    height: 15px;
+    animation: eyelidBottomLeftAnimate var(--animation-duration) var(--animation-mode) infinite var(--animation-delay);
+}
+
+/* =====================
+============= Анимация глаза =============*/
+
+@keyframes eyelidBottomLeftAnimate {
+    0% {
+        height: 15px;
+        border-radius: 50%;
+    }
+    2% {
+        height: 50%;
+        border-radius: 0;
+    }
+    4% {
+        height: 15px;
+        border-radius: 50%;
+    }
+}
+
+@keyframes eyelidBottomRightAnimate {
+    0% {
+        height: 20px;
+        border-radius: 50%;
+    }
+    2% {
+        height: 50%;
+        border-radius: 0;
+    }
+    4% {
+        height: 20px;
+        border-radius: 50%;
+    }
+}
+
+@keyframes eyelidTopAnimate {
+    0% {
+        height: 0;
+        border-radius: 50%;
+    }
+    2% {
+        height: 55%;
+        border-radius: 0;
+    }
+    4% {
+        height: 0;
+        border-radius: 50%;
+    }
+}
+
+/* =====================
+============= Родинка =============*/
+
+.marco__birthmark {
+    position: absolute;
+    background: var(--birthmark-color);
+    width: 7px;
+    height: 9px;
+    border-radius: 50%;
+    transform: rotate(25deg);
+    left: 15px;
+    z-index: 2;
+}
+
+/* =====================
+============= Нос =============*/
+
+.marco__nose {
+    position: relative;
+    left: 100px;
+    top: -40px;
+    width: 30px;
+    height: 60px;
+    z-index: 3;
+}
+
+.marco__nose div {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    background: var(--face-color);
+}
+
+.marco__nose div:nth-child(1) {
+    width: 30px;
+    height: 50px;
+    border: 2px solid #000;
+    transform: rotate(30deg);
+    z-index: 1;
+
+}
+
+.marco__nose div:nth-child(2) {
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 32px;
+    height: 54px;
+    transform: rotate(40deg);
+    z-index: 2;
+}
+
+.marco__nose div:nth-child(3) {
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    border: 2px solid #000;
+    width: 40px;
+    height: 40px;
+}
+
+.marco__nose div:nth-child(4) {
+    position: absolute;
+    right: -20px;
+    bottom: 0px;
+    width: 40px;
+    height: 40px;
+}
+
+
+/* =====================
+============= Брови =============*/
+
+.marco__eyebrows {
+    position: relative;
+}
+
+.marco__eyebrow {
+    z-index: 7;
+    position: relative;
+}
+
+.marco__eyebrow div:nth-child(1){
+    position: absolute;
+    width: 100px;
+    height: 40px;
+    z-index: 3;
+    border-bottom: 25px solid var(--eyebrows-color);
+    top: -25px;
+}
+
+.marco__eyebrow div:nth-child(2) {
+    position: absolute;
+    width: 105px;
+    height: 45px;
+    z-index: 2;
+    top: -27px;
+    border-bottom: 31px solid #000;
+}
+
+/* =====================
+============= Левая бровь =============*/
+
+.marco__eyebrow_left div:nth-child(1) {
+    left: 10px;
+    border-radius: 0% 0px 10px 80%; 
+    transform: rotate(-15deg);
+
+}
+
+.marco__eyebrow_left div:nth-child(2) {
+    left: 8px;
+    border-radius: 0% 0px 10px 80%; 
+    transform: rotate(-15deg);
+}
+
+
+/* =====================
+============= Правая бровь =============*/
+
+.marco__eyebrow_right div:nth-child(1) {
+    left: 10px;
+    border-radius: 0% 0px 80% 10px;  
+    transform: rotate(15deg);
+
+}
+
+.marco__eyebrow_right div:nth-child(2) {
+    left: 8px;
+    border-radius: 0% 0px 80% 10px; 
+    transform: rotate(15deg);
+}
+
+.marco__eyebrow_right {
+    left: 170px;
+}
+
+/* =====================
+============= Рот =============*/
+
+.marco__mouth {
+    width: 80px;
+    height: 20px;
+    position: absolute;
+    bottom: 70px;
+    left: 110px;
+    border-bottom: 3px solid #000;
+    z-index: 2;
+    transform: rotate(-10deg);
+    border-radius: 50%;
+}
+
+/* =====================
+============= Уши =============*/
+
+/* =====================
+============= Левое ухо =============*/
+
+.marco__ear_left {
+    position: absolute;
+    left: -70px;
+    top: 25px;
+    width: 100px;
+    height: 135px;
+    background: var(--face-color);
+    border: 2px solid #000;
+    border-radius: 50%;
+    z-index: -1;
+}
+
+.marco__ear_left div:nth-child(1),
+.marco__ear_left div:nth-child(2) {
+    width: 40px;
+    height: 40px;
+    border-top: 3px solid #000;
+    position: absolute;
+    top: 30px;
+    left: 20px;
+    border-radius: 50%;
+}
+
+.marco__ear_left div:nth-child(2) {
+    top: 87px;
+    left: 30px;
+    width: 30px;
+    height: 40px;
+    transform: rotate(10deg);
+    /*height: 50px;*/
+}
+
+/* =====================
+============= Правое ухо =============*/
+
+.marco__ear_right {
+    position: absolute;
+    right: -80px;
+    top: 25px;
+    width: 100px;
+    height: 140px;
+    transform: rotate(25deg);
+    background: var(--face-color);
+    border: 2px solid #000;
+    border-radius: 50% 50% 50% 45px;
+    z-index: 2;
+}
+
+.marco__ear_right div:nth-child(1) {
+    width: 60px;
+    height: 40px;
+    transform: rotate(-80deg);
+    border-top: 3px solid #000;
+    border-right: 3px solid #000;
+    position: absolute;
+    top: 35px;
+    left: 33px;
+    border-radius: 50%;
+}
+
+.marco__ear_right div:nth-child(2) {
+    width: 22px;
+    height: 35px;
+    border-radius: 50%;
+    position: absolute;
+    top: 25px;
+    left: 64px;
+    background: var(--face-color);
+}
+
+.marco__ear_right div:nth-child(3) {
+    width: 30px;
+    height: 30px;
+    border: 3px solid #000;
+    position: absolute;
+    top: 68px;
+    left: 53px;
+    transform: rotate(-5deg);
+    border-radius: 50%;
+    position: absolute;
+    border-bottom: none;
+    border-left: none;
+    background: var(--face-color);
+}
+
+/* =====================
+============= Подбородок =============*/
+
+.marco__chin {
+    width: 350px;
+    height: 160px;
+    bottom: -3px;
+    left: -28px;
+    border: 2px solid #000;
+    border-radius: 150px 100px 280px 200px;
+    background: var(--face-color);
+    position: absolute;
+}
+
+.marco__chin div:nth-child(1) {
+    width: 260px;
+    height: 40px;
+    position: absolute;
+    top: -5px;
+    left: 86px;
+    background: var(--face-color);
+}
+
+.marco__chin div:nth-child(2) {
+    width: 260px;
+    height: 93px;
+    position: absolute;
+    top: -51px;
+    left: 86px;
+    background: var(--face-color);
+    z-index: 2;
+}
+
+.marco__chin div:nth-child(3) {
+    width: 246px;
+    height: 65px;
+    transform: rotate(-2deg);
+    position: absolute;
+    bottom: -13px;
+    left: 41px;
+    z-index: -1;
+    border: 3px solid #000;
+    background: red;
+    border-radius: 0 0 50% 50%;
+    background: var(--face-color);
+}
+
+.marco__chin div:nth-child(4) {
+    width: 238px;
+    height: 61px;
+    position: absolute;
+    transform: rotate(-1deg);
+    bottom: -11px;
+    left: 40px;
+    z-index: 2;
+    border-radius: 0 0 50% 50%;
+    background: var(--face-color);
+}
+
+
+.marco__chin div:nth-child(5) {
+    width: 28px;
+    height: 5px;
+    position: absolute;
+    top: 153px;
+    left: 60px;
+    z-index: 10;
+    transform: rotate(14deg);
+    border-radius: 50%;
+    background: var(--face-color);
+}
+
+.marco__chin div:nth-child(6) {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    top: 23px;
+    right: -2px;
+    z-index: 10;
+    border-radius: 50%;
+    background: var(--face-color);
+}
+
+/* =====================
+============= Лоб =============*/
+
+.marco__forehead {
+    position: absolute;
+    top: -110px;
+    width: 320px;
+    height: 180px;
+    background: var(--face-color);
+    z-index: 2;
+    border-radius: 50% 50% 0 0%;
+}
+
+/* =====================
+============= Волосы =============*/
+.marco__hair {
+    position: relative;
+    top: 25px;
+}
+
+.marco__hair div:nth-child(1) {
+    position: absolute;
+    top: -160px;
+    left: -25px;
+    width: 410px;
+    height: 230px;
+    z-index: -2;
+    border-radius: 50% 50% 0px 0px;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(2) {
+    position: absolute;
+    top: -150px;
+    left: -125px;
+    width: 380px;
+    border-top: 80px solid #000;
+    border-radius: 50% 50% 0 0;
+    height: 250px;
+    z-index: 3;
+    transform: rotate(-10deg);
+}
+
+.marco__hair div:nth-child(3) {
+    position: absolute;
+    top: -145px;
+    left: -123px;
+    width: 375px;
+    border-top: 70px solid var(--hair-color);
+    border-radius: 50% 50% 0 0;
+    height: 230px;
+    z-index: 3;
+    transform: rotate(-10deg);
+}
+
+.marco__hair div:nth-child(4) {
+    position: absolute;
+    top: -210px;
+    left: -125px;
+    width: 380px;
+    border-top: 80px solid #000;
+    border-radius: 50% 50% 0 0;
+    z-index: -1;
+    height: 250px;
+}
+
+.marco__hair div:nth-child(5) {
+    position: absolute;
+    top: -205px;
+    left: -123px;
+    width: 375px;
+    border-top: 70px solid var(--hair-color);
+    border-radius: 50% 50% 0;
+    z-index: 1;
+    height: 230px;
+}
+
+.marco__hair div:nth-child(6) {
+    position: absolute;
+    top: -355px;
+    right: 20px;
+    width: 255px;
+    z-index: -1;
+    height: 200px;
+    transform: rotate(10deg);
+    border-bottom: 60px solid rgb(0, 0, 0);
+    border-radius: 50% 50% 0px;
+}
+
+.marco__hair div:nth-child(7) {
+    position: absolute;
+    top: -355px;
+    right: 20px;
+    width: 255px;
+    z-index: -1;
+    height: 195px;
+    transform: rotate(10deg);
+    border-radius: 50% 50% 0px;
+    border-bottom: 50px solid var(--hair-color);
+}
+
+.marco__hair div:nth-child(8) {
+    position: absolute;
+    top: -210px;
+    right: -45px;
+    width: 250px;
+    z-index: 3;
+    height: 95px;
+    transform: rotate(5deg);
+    border-radius: 0px 50% 0px 0px;
+    border: 3px solid #000;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(9) {
+    position: absolute;
+    top: -125px;
+    right: -90px;
+    width: 200px;
+    border-right: 50px solid var(--hair-color);
+    border-radius: 0 50% 50% 0;
+    z-index: 2;
+    height: 185px;
+    transform: rotate(-20deg);
+}
+
+.marco__hair div:nth-child(10) {
+    position: absolute;
+    left: -35px;
+    top: -75px;
+    width: 50px;
+    border-radius: 50%;
+    background: var(--hair-color);
+    z-index: -1;
+    border: 3px solid #000;
+    height: 100px;
+}
+
+.marco__hair div:nth-child(11) {
+    position: absolute;
+    left: -95px;
+    width: 95px;
+    border-bottom: 27px solid #000;
+    border-radius: 50% 50% 0;
+    z-index: 3;
+    height: 95px;
+    transform: rotate(-95deg);
+}
+
+.marco__hair div:nth-child(12) {
+    position: absolute;
+    left: -88px;
+    width: 93px;
+    border-bottom: 25px solid var(--hair-color);
+    border-radius: 50% 50% 0;
+    z-index: 3;
+    top: 1px;
+    height: 85px;
+    transform: rotate(-95deg);
+}
+
+.marco__hair div:nth-child(13) {
+    position: absolute;
+    left: -28px;
+    top: -2px;
+    height: 9px;
+    width: 3px;
+    z-index: 10;
+    transform: rotate(-15deg);
+    background: var( --hair-color);
+}
+
+.marco__hair div:nth-child(14) {
+    position: absolute;
+    top: -127px;
+    right: -94px;
+    width: 200px;
+    z-index: 1;
+    height: 185px;
+    transform: rotate(-20deg);
+    border-right: 50px solid rgb(0, 0, 0);
+    border-radius: 0px 50% 50% 0px;
+}
+
+.marco__hair div:nth-child(15) {
+    position: absolute;
+    top: -66px;
+    right: -100px;
+    width: 225px;
+    height: 110px;
+    z-index: 11;
+    transform: rotate(95deg);
+    border-top: 35px solid rgb(0, 0, 0);
+    border-radius: 50% 50% 0px 0px;
+}
+
+.marco__hair div:nth-child(16) {
+    position: absolute;
+    top: -66px;
+    right: -103px;
+    width: 225px;
+    height: 100px;
+    z-index: 11;
+    transform: rotate(94deg);
+    border-radius: 50% 50% 0px 0px;
+    border-top: 29px solid var(--hair-color);
+}
+
+.marco__hair div:nth-child(17) {
+    position: absolute;
+    top: -96px;
+    right: -60px;
+    width: 185px;
+    height: 110px;
+    z-index: 11;
+    transform: rotate(85deg);
+    border-top: 35px solid rgb(0, 0, 0);
+    border-radius: 50% 50% 0px 0px;
+}
+
+.marco__hair div:nth-child(18) {
+    position: absolute;
+    top: -90px;
+    right: -65px;
+    width: 180px;
+    height: 90px;
+    z-index: 11;
+    transform: rotate(85deg);
+    border-radius: 50% 50% 0px 0px;
+    border-top: 30px solid var(--hair-color);
+}
+
+.marco__hair div:nth-child(19) {
+    position: absolute;
+    top: -80px;
+    right: -50px;
+    width: 20px;
+    height: 70px;
+    z-index: 20;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(20) {
+    position: absolute;
+    top: -123px;
+    right: -28px;
+    width: 30px;
+    height: 140px;
+    z-index: 20;
+    border-radius: 0px 50% 0px 0px;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(21) {
+    position: absolute;
+    bottom: -164px;
+    right: -15px;
+    width: 60px;
+    height: 65px;
+    transform: rotate(49deg);
+    background: rgb(0, 0, 0);
+    border-radius: 0px 10px 20px 0px;
+}
+
+.marco__hair div:nth-child(22) {
+    position: absolute;
+    bottom: -162px;
+    right: -13px;
+    width: 60px;
+    height: 65px;
+    transform: rotate(49deg);
+    border-radius: 0px 10px 20px 0px;
+    background: var(--hair-color);
+} 
+
+.marco__hair div:nth-child(23) {
+    position: absolute;
+    top: 50px;
+    right: -65px;
+    width: 150px;
+    height: 90px;
+    z-index: 1;
+    transform: rotate(90deg);
+    border-top: 20px solid rgb(0, 0, 0);
+    border-radius: 50% 30% 0px 0px;
+}  
+
+.marco__hair div:nth-child(24) {
+    position: absolute;
+    top: 57px;
+    right: -60px;
+    width: 140px;
+    height: 80px;
+    z-index: 1;
+    transform: rotate(87deg);
+    border-radius: 50% 27% 0px 0px;
+    border-top: 16px solid var(--hair-color);
+}
+
+.marco__hair div:nth-child(25) {
+    position: absolute;
+    top: 137px;
+    right: -19px;
+    width: 5px;
+    height: 5px;
+    z-index: 40;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(26) {
+    position: absolute;
+    top: -182px;
+    right: -19px;
+    width: 176px;
+    height: 100px;
+    z-index: 20;
+    transform: rotate(-12deg);
+    border-radius: 50%;
+    border: 4px solid #000;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(28) {
+    
+    position: absolute;
+    top: -80px;
+    width: 90px;
+    height: 50px;
+    right: 40px;
+    z-index: 3;
+    background: var( --face-color);
+
+}
+
+.marco__hair div:nth-child(29) {
+    position: absolute;
+    top: -183px;
+    width: 280px;
+    height: 90px;
+    right: 40px;
+    z-index: 50;
+    border-radius: 20px;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(30) {
+    position: absolute;
+    top: -209px;
+    width: 20px;
+    height: 4px;
+    right: 232px;
+    z-index: 55;
+    background: rgb(0, 0, 0);
+    border-radius: 0px 50% 0px 0px;
+}
+
+.marco__hair div:nth-child(31) {
+    position: absolute;
+    top: -220px;
+    width: 50px;
+    height: 50px;
+    left: 102px;
+    transform: rotate(15deg);
+    z-index: 55;
+    background: var(--hair-color); 
+}
+
+.marco__hair div:nth-child(32) {
+    width: 100px;
+    height: 20px;
+    position: absolute;
+    top: -150px;
+    right: -95px;
+    z-index: -1;
+    transform: rotate(-40deg);
+    border-bottom: 3px solid rgb(0, 0, 0);
+    border-radius: 50%;
+}
+
+.marco__hair div:nth-child(33) {
+    width: 100px;
+    height: 20px;
+    position: absolute;
+    top: -135px;
+    right: -105px;
+    z-index: -1;
+    transform: rotate(-10deg);
+    border-bottom: 3px solid rgb(0, 0, 0);
+    border-radius: 50%;
+}
+
+.marco__hair div:nth-child(34) {
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: -116px;
+    right: -55px;
+    z-index: 30;
+    transform: rotate(5deg);
+    border-radius: 50%;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(35) {
+    width: 40px;
+    height: 50px;
+    position: absolute;
+    top: -130px;
+    right: -28px;
+    z-index: 30;
+    transform: rotate(5deg);
+    border-radius: 50%;
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(36) {
+    width: 140px;
+    height: 90px;
+    position: absolute;
+    top: -193px;
+    right: -25px;
+    z-index: 50;
+    border-radius: 50%;
+    background: var(--hair-color); 
+}
+
+.marco__hair div:nth-child(37) {
+    width: 36px;
+    height: 30px;
+    position: absolute;
+    top: -114px;
+    right: 105px;
+    z-index: 50;
+    border-bottom: 1px solid rgb(0, 0, 0);
+    background: var(--hair-color);
+}
+
+.marco__hair div:nth-child(38) {
+    width: 36px;
+    height: 30px;
+    position: absolute;
+    top: -104px;
+    right: 10px;
+    z-index: 1;
+    background: var(--face-color);
+}
+
+
+
+</style>

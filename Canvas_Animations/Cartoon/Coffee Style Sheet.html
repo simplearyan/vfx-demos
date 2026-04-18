@@ -1,0 +1,214 @@
+<main>
+  <article>
+    <h1><span>Coffee</span> <span>Style</span> <span>Sheet</span></h1>
+    <section>
+      <h2>Black</h2>
+      <div class="coffee black"></div>
+      <p>
+        hwb(0 0 100%)
+      </p>
+    </section>
+    <section>
+      <h2>Americano</h2>
+      <div class="coffee americano"></div>
+      <p>
+        hwb(50% 0 50%)
+      </p>
+    </section>
+    <section>
+      <h2>Lungo</h2>
+      <div class="coffee lungo"></div>
+      <p>
+        hwb(50% 0 50%)
+      </p>
+    </section>
+    <section>
+      <h2>Au Lait</h2>
+      <div class="coffee au-lait"></div>
+      <p>
+        hwb(0 50% 50%)
+      </p>
+    </section>
+    <section>
+      <h2>Latte</h2>
+      <div class="coffee latte"></div>
+      <p>
+        hwb(0 66% 33%)
+      </p>
+    </section>
+    <section>
+      <h2>Macchiato</h2>
+      <div class="coffee macchiato"></div>
+      <p>
+        hwb(0 33% 66%)
+      </p>
+    </section>
+    <section>
+      <h2>Cappuccino</h2>
+      <div class="coffee cappuccino"></div>
+      <p>
+        hwb(0 66% 33%)
+      </p>
+    </section>
+    <section>
+      <h2>Espresso</h2>
+      <div class="coffee espresso"></div>
+      <p>
+        hwb(0 0 33%)
+      </p>
+    </section>
+    <section>
+      <h2>need more cofee!</h2>
+      <div class="coffee"></div>
+      <p>
+        hwb(0 0 0)
+      </p>
+    </section>
+  </article>
+</main>
+
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Amatic+SC&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400&display=swap');
+
+body {
+  font-family: 'Amatic SC', Helvetica, Arial, sans-serif;
+  background: #aededf;#6302
+}
+
+article {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1vw;
+  font-family: 'Amatic SC', 'Comic Neue', 'Comic Sans', 'Comic Sans MS', Helvetica, Arial, sans-serif;
+  width: 98vw
+}
+
+h1 {
+  grid-column: 1 / 4;
+  text-align: center;
+  margin: 0.5vw;
+  font-size: 6vw;
+  color: #444;
+}
+
+h1 span {
+  display: inline-block;
+}
+
+h1 span::first-letter {
+  font-size: 8vw;
+  color: #000;
+}
+
+section {
+  aspect-ratio: 0.9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: relative;
+  overflow: clip;
+  font-size: 1vw;
+  padding: 1vw 0;
+  margin-top: 0vw;
+}
+
+
+h2 {
+  text-align: center;
+  margin: 0;
+  line-height: 1;
+  font-size: 5em;
+  padding-top: 2vw;
+}
+
+p {
+  font-size: 3em;
+  text-align: center;
+  margin: 0.5vw;
+  font-weight: bold;
+  line-height: 1.25;
+  font-family: 'Source Code Pro';
+}
+
+.coffee {
+  --foam: #fff;
+  --milk: #eeeee4;
+  --coffee: #531;
+  --water: #8df;
+  background: linear-gradient(var(--b)) 50% 100% / 100% 90% no-repeat;
+  width: 50%;
+  aspect-ratio: 1.1;
+  border: 0.5vw solid;
+  border-top: 0;
+  border-radius: 0 0 2vw 2vw;
+  margin-right: 2%;
+  position: relative;
+  box-shadow: inset 0 -0.5vw 0 -0.45vw #000;
+}
+
+.coffee::before {
+  content: "";
+  width: 25%;
+  height: 50%;
+  border: 0.5vw solid;
+  position: absolute;
+  border-left: 0;
+  top: 50%;
+  left: 100%;
+  transform: translate(0, -50%);
+  border-radius: 2vw 5vw 5vw 2vw;
+}
+
+.coffee::after {
+  content: "";
+  width: 140%;
+  height: 20%;
+  border: 0.5vw solid #0000;
+  border-bottom: 0.66vw solid;
+  border-radius: 100% / 0 0 30% 30%;
+  position: absolute;
+  top: 81%;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.coffee.black {
+  --b: var(--coffee) 0 0;
+}
+
+.coffee.americano {
+  --b: var(--water) 50%, var(--coffee) 0;
+}
+
+.coffee.lungo {
+  --b: var(--coffee) 50%, var(--water) 0;
+}
+
+.coffee.au-lait {
+  --b: var(--milk) 50%, var(--coffee) 0;
+}
+
+.coffee.latte {
+  --b: var(--milk) 66%, var(--coffee) 0;
+}
+
+.coffee.cappuccino {
+  --b: var(--foam) 33%, var(--milk) 0 66%, var(--coffee) 0;
+}
+
+.coffee.espresso {
+  --b: #0000 66%, var(--coffee) 0;
+}
+
+.coffee.macchiato {
+  --b: var(--milk) 33%, var(--coffee) 0;
+}
+
+.coffee.mocha {
+  --b: var(--milk) 20%, #210 0 60%, var(--coffee) 0;
+}
+</style>

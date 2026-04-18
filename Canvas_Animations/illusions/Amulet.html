@@ -1,0 +1,56 @@
+<canvas id="canv"></canvas>
+
+<style>
+    body {
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+</style>
+
+<script>
+    var c = document.getElementById('canv');
+var $ = c.getContext('2d');
+var w = c.width = window.innerWidth;
+var h = c.height = window.innerHeight;
+F = 0;
+u = 0;
+function D() {
+  F++;
+  $.fillStyle = 'hsla(239, 95%, 5%, .2)';
+  $.fillRect(0, 0, w, h);
+  for (i = 50; i--;) {
+    t = F / 20 + i *.120;
+    $.fillStyle = col(u,1);
+    E(50+i*Math.cos(t),40%i*Math.sin(t));
+    E(40+i*Math.cos(t),20%i*Math.sin(t));
+    E(20+i*Math.sin(t),80%i*Math.cos(t));
+    E(10+i*Math.sin(t),70%i*Math.cos(t));
+  }
+  window.requestAnimationFrame(D);
+};
+function E(a, b) {
+  G(a, b);
+  G(-a, b);
+  G(-a, -b);
+  G(a, -b);
+  G(b, -a);
+  G(-b, -a);
+  G(-b, a);
+  G(b, a);
+}
+function col(a, b) {
+  return "hsla(" + (Math.sin(t) + 2) * 150 + ",80%,60%," + i + ")";
+}
+function G(a, b) {
+  $.beginPath();
+  $.arc(w / 2 + a, h / 2 + b, 1, 0, 2 * Math.PI, false);
+  $.closePath();
+  $.fill()
+}
+window.addEventListener('resize',function(){
+  c.width = w = window.innerWidth;
+  c.height = h =  window.innerHeight;
+}, false);
+D();
+</script>

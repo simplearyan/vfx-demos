@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stickman Graph Plotter</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Nunito:wght@500;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, h3, button {
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar for point history */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        #graph-container {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col md:flex-row">
+
+    <!-- Sidebar Controls -->
+    <aside class="w-full md:w-80 h-auto md:h-full glass-panel flex flex-col z-10 shrink-0 shadow-2xl">
+        <div class="p-6 border-b border-slate-700/50">
+            <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                    <i data-lucide="rocket" class="text-white w-6 h-6"></i>
+                </div>
+                <h1 class="text-xl font-extrabold tracking-tight text-white">Graph Assistant</h1>
+            </div>
+            <p class="text-xs text-slate-400 font-semibold">Enter coordinates to deploy the stickman.</p>
+        </div>
+
+        <div class="p-6 border-b border-slate-700/50">
+            <form id="plot-form" class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1 tracking-wider uppercase">X-Axis</label>
+                        <input type="number" id="input-x" required step="any" placeholder="e.g. 5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-400 mb-1 tracking-wider uppercase">Y-Axis</label>
+                        <input type="number" id="input-y" required step="any" placeholder="e.g. 3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition mono">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-cyan-600/25 flex items-center justify-center active:scale-[0.98]">
+                    <i data-lucide="crosshair" class="w-4 h-4 mr-2"></i> Plot Point
+                </button>
+                <button type="button" onclick="plotRandom()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition border border-slate-700 flex items-center justify-center active:scale-[0.98]">
+                    <i data-lucide="dices" class="w-3.5 h-3.5 mr-2"></i> Random Point
+                </button>
+            </form>
+        </div>
+
+        <!-- Plotted History -->
+        <div class="flex-1 overflow-hidden flex flex-col">
+            <div class="px-6 py-4 flex justify-between items-center border-b border-slate-700/50">
+                <h3 class="text-xs font-bold text-slate-400 tracking-wider uppercase">Plotted Points</h3>
+                <button onclick="clearGraph()" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition flex items-center">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5 mr-1"></i> Clear
+                </button>
+            </div>
+            <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <!-- Points injected here -->
+                <div class="text-center text-slate-500 text-xs py-4 italic" id="empty-state">No points plotted yet.</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Canvas Area -->
+    <main id="graph-container" class="flex-1 relative cursor-crosshair">
+        <canvas id="graph-canvas"></canvas>
+        
+        <!-- Graph Labels -->
+        <div class="absolute top-4 left-4 text-xs font-bold text-slate-500 tracking-widest mono bg-slate-900/50 px-2 py-1 rounded backdrop-blur border border-slate-800">Y-AXIS</div>
+        <div class="absolute bottom-4 right-4 text-xs font-bold text-slate-500 tracking-widest mono bg-slate-900/50 px-2 py-1 rounded backdrop-blur border border-slate-800">X-AXIS</div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Core Variables & Setup ---
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('graph-container');
+
+        let cw, ch;
+        let originX, originY;
+        const scale = 40; // Pixels per logical unit
+        
+        let plottedPoints = [];
+        let actionQueue = [];
+        let particles = [];
+
+        function resize() {
+            cw = container.clientWidth;
+            ch = container.clientHeight;
+            canvas.width = cw;
+            canvas.height = ch;
+            originX = Math.floor(cw / 2);
+            originY = Math.floor(ch / 2);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Coordinate transforms
+        const toPx = (lx, ly) => ({ x: originX + lx * scale, y: originY - ly * scale });
+        const toLogical = (px, py) => ({ lx: (px - originX) / scale, ly: (originY - py) / scale });
+
+        // --- Jetpack Stickman Character ---
+        const char = {
+            x: originX,
+            y: originY,
+            vx: 0,
+            vy: 0,
+            facing: 1, // 1 for right, -1 for left
+            state: 'IDLE', // IDLE, FLYING, PLOTTING
+            armAngle: Math.PI / 2, // Down
+            targetPoint: null, // {px, py, lx, ly}
+            timer: 0
+        };
+
+        // --- Linear Interpolation ---
+        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+        const lerpAngle = (a, b, t) => {
+            let delta = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+            return a + delta * t;
+        };
+
+        // --- Math / Drawing Helpers ---
+        function drawGrid() {
+            ctx.lineWidth = 1;
+            
+            // Draw faint grid lines
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)'; // slate-700 faint
+            ctx.beginPath();
+            for (let x = originX % scale; x < cw; x += scale) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, ch);
+            }
+            for (let y = originY % scale; y < ch; y += scale) {
+                ctx.moveTo(0, y); ctx.lineTo(cw, y);
+            }
+            ctx.stroke();
+
+            // Draw thick Axes
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.8)'; // slate-400
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, originY); ctx.lineTo(cw, originY); // X Axis
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, ch); // Y Axis
+            ctx.stroke();
+
+            // Draw Tick Marks and Numbers
+            ctx.fillStyle = '#64748b'; // slate-500
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = -20; i <= 20; i++) {
+                if (i === 0) continue;
+                // X ticks
+                let px = originX + i * scale;
+                if (px > 0 && px < cw) {
+                    ctx.beginPath(); ctx.moveTo(px, originY - 4); ctx.lineTo(px, originY + 4); ctx.stroke();
+                    if(i % 2 === 0) ctx.fillText(i, px, originY + 15);
+                }
+                // Y ticks
+                let py = originY - i * scale;
+                if (py > 0 && py < ch) {
+                    ctx.beginPath(); ctx.moveTo(originX - 4, py); ctx.lineTo(originX + 4, py); ctx.stroke();
+                    if(i % 2 === 0) {
+                        ctx.textAlign = 'right';
+                        ctx.fillText(i, originX - 10, py);
+                        ctx.textAlign = 'center';
+                    }
+                }
+            }
+        }
+
+        function drawStickman() {
+            // Apply slight bobbing effect if idle or flying
+            let bob = 0;
+            if (char.state !== 'PLOTTING') {
+                bob = Math.sin(Date.now() / 200) * 4;
+            }
+
+            ctx.save();
+            ctx.translate(char.x, char.y + bob);
+            ctx.scale(char.facing, 1);
+
+            // Coordinates are now local to character center (0,0)
+            // Note: because we scale(facing, 1), x is always "forward"
+
+            // 1. Draw Jetpack (On back, so x is negative)
+            ctx.fillStyle = '#475569'; // slate-600
+            ctx.beginPath(); ctx.roundRect(-20, -15, 12, 30, 4); ctx.fill();
+            ctx.fillStyle = '#38bdf8'; // cyan trim
+            ctx.fillRect(-20, -10, 12, 4);
+            // Jetpack nozzle
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath(); ctx.moveTo(-18, 15); ctx.lineTo(-10, 15); ctx.lineTo(-12, 22); ctx.lineTo(-16, 22); ctx.fill();
+
+            // 2. Draw Body
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Torso
+            ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(0, 15); ctx.stroke();
+            
+            // Legs (Bent if flying)
+            ctx.beginPath(); 
+            ctx.moveTo(0, 15); ctx.lineTo(-10, 30); ctx.lineTo(-5, 45); // Back leg
+            ctx.moveTo(0, 15); ctx.lineTo(10, 25); ctx.lineTo(5, 45);  // Front leg
+            ctx.stroke();
+
+            // Back Arm (Idle)
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(-10, 5); ctx.lineTo(0, 20); ctx.stroke();
+
+            // Head
+            ctx.fillStyle = '#0f172a'; // Match bg to hollow out head
+            ctx.beginPath(); ctx.arc(0, -40, 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            
+            // Cute Eyes (Looking forward/up)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); ctx.arc(5, -42, 2, 0, Math.PI*2); ctx.fill(); // Front eye
+            ctx.beginPath(); ctx.arc(12, -42, 2, 0, Math.PI*2); ctx.fill(); // Edge eye
+            
+            // Smile
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(8, -38, 4, 0, Math.PI * 0.8); ctx.stroke();
+
+            // Front Arm (The drawing arm)
+            ctx.save();
+            ctx.translate(0, -15); // Shoulder pivot
+            
+            // If facing left (-1), the global armAngle needs to be inverted for local drawing
+            let localAngle = char.facing === 1 ? char.armAngle : Math.PI - char.armAngle;
+            ctx.rotate(localAngle);
+
+            // Draw Arm
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(30, 0); ctx.stroke();
+            
+            // Draw glowing chalk/marker in hand
+            ctx.strokeStyle = '#22d3ee'; // cyan-400
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(25, -5); ctx.lineTo(40, -10); ctx.stroke();
+            
+            // Glow effect at tip
+            if (char.state === 'PLOTTING') {
+                ctx.beginPath(); ctx.arc(40, -10, 4, 0, Math.PI*2);
+                ctx.fillStyle = '#22d3ee'; ctx.fill();
+                ctx.shadowBlur = 15; ctx.shadowColor = '#22d3ee';
+                ctx.fill(); ctx.shadowBlur = 0;
+            }
+            
+            ctx.restore();
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    return;
+                }
+                
+                ctx.fillStyle = `rgba(34, 211, 238, ${p.life})`; // cyan glow
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Add inner white hot core
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.life})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, (p.size * p.life) * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawPlottedPoints() {
+            plottedPoints.forEach(p => {
+                const px = p.px;
+                const py = p.py;
+                
+                // Point glow
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#22d3ee';
+                
+                // Outer ring
+                ctx.strokeStyle = '#22d3ee';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.stroke();
+                
+                // Inner dot
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+                
+                ctx.shadowBlur = 0; // reset
+
+                // Draw Coordinate Label
+                ctx.fillStyle = '#94a3b8'; // slate-400
+                ctx.font = '11px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`(${p.lx.toFixed(1)}, ${p.ly.toFixed(1)})`, px + 12, py - 12);
+            });
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            // 1. State Machine
+            if (char.state === 'IDLE' && actionQueue.length > 0) {
+                // Get next point
+                char.targetPoint = actionQueue.shift();
+                char.state = 'FLYING';
+                
+                // Determine stand position (Stand 60px to the left, unless it's too far left on screen)
+                let offsetX = -60; 
+                if (char.targetPoint.px < 100) offsetX = 60; // Stand on right if cramped
+                char.facing = offsetX < 0 ? 1 : -1;
+                
+                char.targetX = char.targetPoint.px + offsetX;
+                char.targetY = char.targetPoint.py + 10; // Slightly below so arm reaches up
+            }
+
+            if (char.state === 'FLYING') {
+                // Move towards target
+                const dx = char.targetX - char.x;
+                const dy = char.targetY - char.y;
+                const dist = Math.hypot(dx, dy);
+
+                // Update facing direction dynamically based on movement if not super close
+                if (dist > 10) {
+                    char.facing = dx > 0 ? 1 : -1;
+                }
+
+                // Smooth ease out
+                char.vx = dx * 0.08;
+                char.vy = dy * 0.08;
+
+                char.x += char.vx;
+                char.y += char.vy;
+
+                // Idle arm while flying
+                char.armAngle = lerpAngle(char.armAngle, Math.PI / 2, 0.1); // Arm down
+
+                // Spawn Jetpack Particles
+                if (dist > 5 || Math.abs(char.vx) > 0.5) {
+                    const jetX = char.x - (14 * char.facing);
+                    const jetY = char.y + 10 + Math.sin(Date.now()/200)*4;
+                    for(let i=0; i<2; i++) {
+                        particles.push({
+                            x: jetX + (Math.random() - 0.5) * 6,
+                            y: jetY,
+                            vx: -char.vx * 0.2 + (Math.random() - 0.5),
+                            vy: Math.random() * 2 + 1,
+                            life: 1.0,
+                            size: Math.random() * 4 + 3
+                        });
+                    }
+                }
+
+                // Check Arrival
+                if (dist < 2) {
+                    char.state = 'PLOTTING';
+                    char.timer = 0;
+                    // Face the point definitively
+                    char.facing = (char.targetPoint.px > char.x) ? 1 : -1;
+                }
+            }
+
+            if (char.state === 'PLOTTING') {
+                char.timer++;
+                
+                // Keep bobbing particles alive gently to hold hover
+                const jetX = char.x - (14 * char.facing);
+                const jetY = char.y + 10 + Math.sin(Date.now()/200)*4;
+                if(Math.random() > 0.5) {
+                    particles.push({ x: jetX, y: jetY, vx: 0, vy: 1.5, life: 0.8, size: 3 });
+                }
+
+                // Calculate angle from shoulder to target point
+                const shoulderX = char.x;
+                const shoulderY = char.y - 15 + Math.sin(Date.now() / 200) * 4; // account for bob
+                const targetAngle = Math.atan2(char.targetPoint.py - shoulderY, char.targetPoint.px - shoulderX);
+                
+                // Lerp arm to point at it
+                char.armAngle = lerpAngle(char.armAngle, targetAngle, 0.2);
+
+                // At frame 30, "lock in" the point
+                if (char.timer === 30) {
+                    plottedPoints.push(char.targetPoint);
+                    updateHistoryUI();
+                }
+
+                // At frame 60, done plotting
+                if (char.timer > 60) {
+                    char.state = 'IDLE';
+                }
+            }
+
+            // Idle Hover Particles
+            if (char.state === 'IDLE') {
+                char.armAngle = lerpAngle(char.armAngle, Math.PI / 2, 0.1); // Arm down
+                const jetX = char.x - (14 * char.facing);
+                const jetY = char.y + 10 + Math.sin(Date.now()/200)*4;
+                if(Math.random() > 0.7) {
+                    particles.push({ x: jetX, y: jetY, vx: 0, vy: 1, life: 0.6, size: 2 });
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawGrid();
+            drawPlottedPoints();
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // --- Interactivity ---
+        
+        function queuePoint(lx, ly) {
+            const pxCoords = toPx(lx, ly);
+            actionQueue.push({
+                lx: lx,
+                ly: ly,
+                px: pxCoords.x,
+                py: pxCoords.y
+            });
+        }
+
+        document.getElementById('plot-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const x = parseFloat(document.getElementById('input-x').value);
+            const y = parseFloat(document.getElementById('input-y').value);
+            if(!isNaN(x) && !isNaN(y)) {
+                queuePoint(x, y);
+                // Clear inputs for next
+                document.getElementById('input-x').value = '';
+                document.getElementById('input-y').value = '';
+                document.getElementById('input-x').focus();
+            }
+        });
+
+        function plotRandom() {
+            // Generate logical coords between -10 and 10
+            const x = parseFloat((Math.random() * 20 - 10).toFixed(1));
+            const y = parseFloat((Math.random() * 14 - 7).toFixed(1)); // slightly less vertical range
+            queuePoint(x, y);
+        }
+
+        // Click on canvas to plot
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            const logical = toLogical(px, py);
+            
+            // Round to 1 decimal place for neatness
+            const lx = Math.round(logical.lx * 10) / 10;
+            const ly = Math.round(logical.ly * 10) / 10;
+            
+            queuePoint(lx, ly);
+        });
+
+        function updateHistoryUI() {
+            const list = document.getElementById('history-list');
+            const empty = document.getElementById('empty-state');
+            
+            if (empty) empty.remove();
+            
+            // Get latest point
+            const p = plottedPoints[plottedPoints.length - 1];
+            
+            const el = document.createElement('div');
+            el.className = 'bg-slate-800/50 border border-slate-700/50 rounded-lg p-3 flex justify-between items-center animate-pulse';
+            el.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+                    <span class="text-sm font-bold text-slate-200 mono">P(${p.lx}, ${p.ly})</span>
+                </div>
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Plotted</span>
+            `;
+            
+            // Prepend to top
+            list.insertBefore(el, list.firstChild);
+            
+            // Remove pulse after a moment
+            setTimeout(() => { el.classList.remove('animate-pulse'); }, 1000);
+        }
+
+        function clearGraph() {
+            plottedPoints = [];
+            actionQueue = [];
+            document.getElementById('history-list').innerHTML = '<div class="text-center text-slate-500 text-xs py-4 italic" id="empty-state">No points plotted yet.</div>';
+            
+            // Return character to origin gracefully
+            actionQueue.push({
+                lx: 0, ly: 0, px: originX, py: originY
+            });
+        }
+
+        // Start engine
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

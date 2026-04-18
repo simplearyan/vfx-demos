@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Stick Figure Animator</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP for smooth animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Rough.js for the sketchy, hand-drawn aesthetic -->
+    <script src="https://unpkg.com/roughjs@latest/bundled/rough.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        :root {
+            /* Dynamic thickness controlled by JavaScript */
+            --thickness: 22px; 
+            --thin-thickness: 9px;
+        }
+
+        svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: 55vh;
+            overflow: visible;
+        }
+
+        .stroke-main {
+            stroke: #2d3436;
+            stroke-width: var(--thickness);
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: stroke-width 0.2s ease;
+        }
+        
+        /* Thin strokes for facial features to keep them clean for morphing */
+        .stroke-thin {
+            stroke: #2d3436;
+            stroke-width: var(--thin-thickness);
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: stroke-width 0.2s ease;
+        }
+
+        .fill-main {
+            fill: #2d3436;
+        }
+        .head-fill {
+            fill: #f8f9fa;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <div class="text-center mb-4 mt-4">
+        <h1 class="text-3xl font-bold text-gray-800 tracking-tight">2D Educational Avatar</h1>
+        <p class="text-gray-500 font-medium">Customize thickness to maximize cuteness!</p>
+    </div>
+
+    <div id="canvas-container" class="relative w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
+        <svg viewBox="0 0 400 400" id="character">
+            <!-- Ground Shadow -->
+            <ellipse id="shadow" cx="200" cy="385" rx="70" ry="8" fill="#e2e8f0" />
+
+            <g id="body-group">
+                <!-- ================== CLEAN SVG PARTS ================== -->
+                <g id="clean-parts">
+                    <line x1="200" y1="170" x2="200" y2="280" class="stroke-main" />
+                    <line x1="200" y1="280" x2="140" y2="380" class="stroke-main" />
+                    <line x1="200" y1="280" x2="260" y2="380" class="stroke-main" />
+                </g>
+
+                <!-- ================== ROUGH SVG PARTS ================== -->
+                <g id="rough-parts">
+                    <g id="rough-spine"></g>
+                    <g id="rough-leg-l"></g>
+                    <g id="rough-leg-r"></g>
+                </g>
+
+                <!-- ARMS (Wrapped for GSAP Animation) -->
+                <g id="arm-left">
+                    <path id="clean-arm-l" d="M 200 190 Q 130 200 120 280" class="stroke-main" />
+                    <g id="rough-arm-l"></g>
+                </g>
+                <g id="arm-right">
+                    <path id="clean-arm-r" d="M 200 190 Q 270 200 280 280" class="stroke-main" />
+                    <g id="rough-arm-r"></g>
+                </g>
+
+                <!-- HEAD (Wrapped for GSAP Animation) -->
+                <g id="head-group">
+                    <circle id="clean-head" cx="200" cy="120" r="60" class="stroke-main head-fill" />
+                    <g id="rough-head"></g>
+                    
+                    <!-- Facial features remain standard SVG for clean morphing & expression -->
+                    <g id="eyebrows">
+                        <path id="brow-l" d="M 160 95 Q 175 90 185 95" class="stroke-thin" />
+                        <path id="brow-r" d="M 240 95 Q 225 90 215 95" class="stroke-thin" />
+                    </g>
+                    <g id="eyes">
+                        <circle cx="175" cy="115" r="10" class="fill-main" id="eye-l" />
+                        <circle cx="225" cy="115" r="10" class="fill-main" id="eye-r" />
+                    </g>
+                    <path id="mouth" d="M 185 145 Q 200 160 215 145" class="stroke-thin" />
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <!-- Customization Panel -->
+    <div class="mt-4 flex flex-wrap gap-6 justify-center items-center bg-white px-6 py-4 rounded-2xl shadow-sm border border-gray-100 w-full max-w-2xl">
+        <button id="btn-toggle-style" class="px-5 py-2.5 bg-gray-800 text-white font-bold rounded-xl transition-colors shadow-sm whitespace-nowrap">
+            🎨 Style: Sketchy
+        </button>
+        
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-bold text-gray-700">Thickness</label>
+            <input type="range" id="range-thick" min="8" max="35" value="22" class="w-28 accent-gray-800 cursor-pointer">
+        </div>
+
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-bold text-gray-700">Roughness</label>
+            <input type="range" id="range-rough" min="0" max="4" step="0.1" value="1.5" class="w-28 accent-gray-800 cursor-pointer transition-opacity">
+        </div>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="mt-4 flex gap-4 flex-wrap justify-center w-full max-w-2xl">
+        <button id="btn-wave" class="flex-1 px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-all shadow-sm">
+            👋 Wave
+        </button>
+        <button id="btn-idea" class="flex-1 px-4 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-xl transition-all shadow-sm">
+            💡 Idea!
+        </button>
+        <button id="btn-confused" class="flex-1 px-4 py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-all shadow-sm">
+            🤔 Confused
+        </button>
+        <button id="btn-talk" class="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all shadow-sm">
+            💬 Talk
+        </button>
+        <button id="btn-reset" class="flex-1 px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all shadow-sm">
+            Reset
+        </button>
+    </div>
+
+    <script>
+        // --- 1. Settings & Customization Logic ---
+        const svg = document.getElementById('character');
+        const rc = rough.svg(svg);
+
+        let isRough = true;
+        let thickness = 22; // Thicker default = cuter
+        let roughnessVal = 1.5;
+
+        const btnToggle = document.getElementById('btn-toggle-style');
+        const rangeThick = document.getElementById('range-thick');
+        const rangeRough = document.getElementById('range-rough');
+
+        function drawRough() {
+            // Clear current rough elements
+            const parts = ['rough-spine', 'rough-leg-l', 'rough-leg-r', 'rough-arm-l', 'rough-arm-r', 'rough-head'];
+            parts.forEach(id => document.getElementById(id).innerHTML = '');
+
+            const sketchOpts = { 
+                stroke: '#2d3436', 
+                strokeWidth: thickness, 
+                roughness: roughnessVal, 
+                bowing: 2 
+            };
+            
+            document.getElementById('rough-spine').appendChild(rc.line(200, 170, 200, 280, sketchOpts));
+            document.getElementById('rough-leg-l').appendChild(rc.line(200, 280, 140, 380, sketchOpts));
+            document.getElementById('rough-leg-r').appendChild(rc.line(200, 280, 260, 380, sketchOpts));
+            document.getElementById('rough-arm-l').appendChild(rc.curve([[200, 190], [130, 200], [120, 280]], sketchOpts));
+            document.getElementById('rough-arm-r').appendChild(rc.curve([[200, 190], [270, 200], [280, 280]], sketchOpts));
+            document.getElementById('rough-head').appendChild(rc.circle(200, 120, 120, { 
+                ...sketchOpts, fill: '#f8f9fa', fillStyle: 'solid' 
+            }));
+        }
+
+        function updateStyles() {
+            // Update CSS Variables for smooth SVG & face parts
+            document.documentElement.style.setProperty('--thickness', thickness + 'px');
+            document.documentElement.style.setProperty('--thin-thickness', (thickness * 0.45) + 'px');
+            
+            // Proportionally scale the eyes so they don't get lost in thick strokes
+            document.getElementById('eye-l').setAttribute('r', thickness * 0.45);
+            document.getElementById('eye-r').setAttribute('r', thickness * 0.45);
+
+            if (isRough) {
+                // Hide Clean, Show Rough
+                document.getElementById('clean-parts').style.display = 'none';
+                document.getElementById('clean-arm-l').style.display = 'none';
+                document.getElementById('clean-arm-r').style.display = 'none';
+                document.getElementById('clean-head').style.display = 'none';
+                
+                document.getElementById('rough-parts').style.display = '';
+                document.getElementById('rough-arm-l').style.display = '';
+                document.getElementById('rough-arm-r').style.display = '';
+                document.getElementById('rough-head').style.display = '';
+                
+                drawRough();
+
+                // Update UI
+                btnToggle.innerText = '🎨 Style: Sketchy';
+                btnToggle.classList.replace('bg-blue-100', 'bg-gray-800');
+                btnToggle.classList.replace('text-blue-700', 'text-white');
+                rangeRough.disabled = false;
+                rangeRough.classList.remove('opacity-50');
+            } else {
+                // Hide Rough, Show Clean
+                document.getElementById('clean-parts').style.display = '';
+                document.getElementById('clean-arm-l').style.display = '';
+                document.getElementById('clean-arm-r').style.display = '';
+                document.getElementById('clean-head').style.display = '';
+                
+                document.getElementById('rough-parts').style.display = 'none';
+                document.getElementById('rough-arm-l').style.display = 'none';
+                document.getElementById('rough-arm-r').style.display = 'none';
+                document.getElementById('rough-head').style.display = 'none';
+
+                // Update UI
+                btnToggle.innerText = '✨ Style: Clean';
+                btnToggle.classList.replace('bg-gray-800', 'bg-blue-100');
+                btnToggle.classList.replace('text-white', 'text-blue-700');
+                rangeRough.disabled = true;
+                rangeRough.classList.add('opacity-50');
+            }
+        }
+
+        // Bind Customization Events
+        btnToggle.addEventListener('click', () => { isRough = !isRough; updateStyles(); });
+        rangeThick.addEventListener('input', (e) => { thickness = e.target.value; updateStyles(); });
+        rangeRough.addEventListener('input', (e) => { roughnessVal = e.target.value; if(isRough) drawRough(); });
+
+        // Initialize Character
+        updateStyles();
+
+        // --- 2. Fix Pivot Points ---
+        gsap.set(["#arm-left", "#arm-right"], { svgOrigin: "200 190" });
+        gsap.set("#head-group", { svgOrigin: "200 120" });
+        gsap.set("#body-group", { svgOrigin: "200 380" });
+
+        // --- 3. Base Animations ---
+        gsap.to("#body-group", { scaleY: 0.98, scaleX: 1.01, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
+
+        function blink() {
+            gsap.to(["#eye-l", "#eye-r"], {
+                scaleY: 0.1, transformOrigin: "center", duration: 0.1, yoyo: true, repeat: 1,
+                onComplete: () => setTimeout(blink, Math.random() * 3000 + 2000)
+            });
+        }
+        setTimeout(blink, 2000); 
+
+        document.addEventListener("mousemove", (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20; 
+            const y = (e.clientY / window.innerHeight - 0.5) * 15; 
+            gsap.to("#eyes", { x: x, y: y, duration: 0.3, ease: "power2.out" });
+            gsap.to("#head-group", { rotation: x * 0.4, duration: 0.5, ease: "power2.out" });
+        });
+
+        // --- 4. Toggle Pose Management ---
+        let activeAnim = null;
+        let activeLoop = null; 
+
+        const btns = {
+            wave: document.getElementById('btn-wave'),
+            idea: document.getElementById('btn-idea'),
+            confused: document.getElementById('btn-confused')
+        };
+
+        function resetPoses() {
+            if(activeLoop) activeLoop.kill();
+            gsap.killTweensOf(["#arm-left", "#arm-right", "#head-group", "#mouth", "#brow-l", "#brow-r", "#body-group"]);
+            
+            gsap.to(["#arm-left", "#arm-right"], { rotation: 0, y: 0, duration: 0.5, ease: "power2.out" });
+            gsap.to("#head-group", { rotation: 0, y: 0, duration: 0.5 });
+            gsap.to("#body-group", { scaleX: 1, scaleY: 1, duration: 0.5 });
+            gsap.to(["#brow-l", "#brow-r"], { y: 0, rotation: 0, duration: 0.3 });
+            gsap.to("#mouth", { attr: { d: "M 185 145 Q 200 160 215 145" }, duration: 0.5 });
+            
+            gsap.to("#body-group", { scaleY: 0.98, scaleX: 1.01, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
+
+            Object.values(btns).forEach(b => b.classList.remove('ring-4', 'ring-opacity-50', 'ring-offset-2', 'ring-gray-400'));
+            activeAnim = null;
+        }
+
+        function toggleAnim(animName, startFn, btnEl, ringColor) {
+            if (activeAnim === animName) {
+                resetPoses();
+            } else {
+                resetPoses();
+                activeAnim = animName;
+                btnEl.classList.add('ring-4', 'ring-offset-2', 'ring-opacity-50', ringColor);
+                startFn();
+            }
+        }
+
+        // --- 5. Toggle Actions ---
+        btns.wave.addEventListener("click", () => {
+            toggleAnim('wave', () => {
+                gsap.to("#arm-right", { 
+                    rotation: -130, duration: 0.3, ease: "back.out(1.5)",
+                    onComplete: () => {
+                        activeLoop = gsap.to("#arm-right", { rotation: -90, duration: 0.3, yoyo: true, repeat: -1, ease: "sine.inOut" });
+                    }
+                });
+            }, btns.wave, 'ring-blue-400');
+        });
+
+        btns.idea.addEventListener("click", () => {
+            toggleAnim('idea', () => {
+                gsap.timeline()
+                    .to("#body-group", { scaleY: 0.9, scaleX: 1.05, duration: 0.2 }, 0)
+                    .to("#head-group", { y: 10, duration: 0.2 }, 0)
+                    .to("#body-group", { scaleY: 1.05, scaleX: 0.95, duration: 0.3, ease: "back.out(2)" })
+                    .to("#head-group", { y: -15, duration: 0.3, ease: "back.out(2)" }, "<")
+                    .to(["#arm-left", "#arm-right"], { rotation: 160, y: -20, duration: 0.3, ease: "back.out(1.5)" }, "<")
+                    .to(["#brow-l", "#brow-r"], { y: -15, duration: 0.2 }, "<")
+                    .to("#mouth", { attr: { d: "M 185 145 Q 200 175 215 145" }, duration: 0.2 }, "<");
+            }, btns.idea, 'ring-yellow-400');
+        });
+
+        btns.confused.addEventListener("click", () => {
+            toggleAnim('confused', () => {
+                gsap.to("#arm-left", { rotation: 140, duration: 0.4, ease: "power2.out" });
+                gsap.to("#head-group", { rotation: -15, duration: 0.4 });
+                gsap.to("#brow-l", { y: 5, rotation: 10, svgOrigin: "172 92", duration: 0.2 });
+                gsap.to("#brow-r", { y: -5, rotation: 10, svgOrigin: "227 92", duration: 0.2 });
+                gsap.to("#mouth", { attr: { d: "M 180 150 Q 200 148 215 145" }, duration: 0.2 });
+                
+                activeLoop = gsap.to("#arm-left", { rotation: 120, duration: 0.15, yoyo: true, repeat: -1, delay: 0.4 });
+            }, btns.confused, 'ring-purple-400');
+        });
+
+        // --- 6. Talking Overlay ---
+        let isTalking = false;
+        let talkInterval;
+        const btnTalk = document.getElementById("btn-talk");
+
+        btnTalk.addEventListener("click", () => {
+            isTalking = !isTalking;
+            if (isTalking) {
+                btnTalk.classList.replace("bg-green-500", "bg-red-500");
+                btnTalk.classList.replace("hover:bg-green-600", "hover:bg-red-600");
+                btnTalk.innerText = "🛑 Stop";
+                
+                talkInterval = setInterval(() => {
+                    const isOpen = Math.random() > 0.4;
+                    const d = isOpen ? "M 185 140 Q 200 170 215 140" : "M 185 145 Q 200 148 215 145"; 
+                    gsap.to("#mouth", { attr: { d: d }, duration: 0.1 });
+                    if (isOpen) gsap.to("#head-group", { y: "-=3", duration: 0.1, yoyo: true, repeat: 1 });
+                }, 120);
+            } else {
+                btnTalk.classList.replace("bg-red-500", "bg-green-500");
+                btnTalk.classList.replace("hover:bg-red-600", "hover:bg-green-600");
+                btnTalk.innerText = "💬 Talk";
+                clearInterval(talkInterval);
+                gsap.to("#mouth", { attr: { d: "M 185 145 Q 200 160 215 145" }, duration: 0.2 });
+            }
+        });
+
+        document.getElementById("btn-reset").addEventListener("click", resetPoses);
+
+    </script>
+</body>
+</html>
