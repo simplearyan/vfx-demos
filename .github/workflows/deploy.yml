@@ -22,22 +22,16 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './vfx/package.json'
+          cache-dependency-path: 'package.json'
 
       - name: Install Dependencies 📦
-        run: |
-          cd vfx
-          npm install
+        run: npm install
 
       - name: Install Chrome for Puppeteer 🌐
-        run: |
-          cd vfx
-          npx puppeteer browsers install chrome
+        run: npx puppeteer browsers install chrome
 
       - name: Generate Build 🔨
-        run: |
-          cd vfx
-          npm run build
+        run: npm run build
         env:
           CI: true
 
@@ -45,9 +39,9 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./vfx
+          publish_dir: .
           publish_branch: gh-pages
-          force_orphan: true # Keep the gh-pages branch clean/compact
+          force_orphan: true
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           commit_message: "chore: deploy vfx lab [skip ci]"
