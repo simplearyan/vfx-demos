@@ -46,10 +46,10 @@ async function captureScreenshots(demos) {
         return;
     }
 
-    console.log(`📸 Capturing ${toCapture.length} screenshot(s)${FORCE ? ' (forced)' : ' (new only)'}…`);
+    const CONCURRENCY = 4;
+    console.log(`📸 Capturing ${toCapture.length} screenshot(s) using ${CONCURRENCY} pages…`);
 
     const isCI = !!process.env.CI;
-
     const browser = await puppeteer.launch({
         headless: 'new',
         executablePath: isCI ? undefined : (
@@ -60,27 +60,36 @@ async function captureScreenshots(demos) {
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
     });
 
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 800 });
+    const workQueue = [...toCapture];
+    const total = toCapture.length;
+    let completed = 0;
 
-    for (const [i, demo] of toCapture.entries()) {
-        const folderPath = path.join(screenshotsDir, demo.relDir);
-        if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+    const worker = async () => {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 800 });
 
-        const pngPath = path.join(folderPath, demo.name.replace('.html', '.png'));
+        while (workQueue.length > 0) {
+            const demo = workQueue.shift();
+            const currentIdx = ++completed;
+            const folderPath = path.join(screenshotsDir, demo.relDir);
+            if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
 
-        try {
-            console.log(`  [${i + 1}/${toCapture.length}] ${path.join(demo.relDir, demo.name)}`);
-            await page.goto(`file://${demo.fullPath}`, { waitUntil: 'networkidle0', timeout: 30000 });
-            
-            // Wait for common canvas identifiers or just let animations settle
-            await new Promise(r => setTimeout(r, 1200)); 
-            
-            await page.screenshot({ path: pngPath, type: 'png' });
-        } catch (err) {
-            console.error(`  ✖ Failed: ${demo.name} — ${err.message}`);
+            const pngPath = path.join(folderPath, demo.name.replace('.html', '.png'));
+
+            try {
+                console.log(`  [${currentIdx}/${total}] ${path.join(demo.relDir, demo.name)}`);
+                await page.goto(`file://${demo.fullPath}`, { waitUntil: 'networkidle0', timeout: 30000 });
+                await new Promise(r => setTimeout(r, 1200)); 
+                await page.screenshot({ path: pngPath, type: 'png' });
+            } catch (err) {
+                console.error(`  ✖ Failed: ${demo.name} — ${err.message}`);
+            }
         }
-    }
+        await page.close();
+    };
+
+    // Launch workers
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, toCapture.length) }, worker));
 
     await browser.close();
     console.log(`✅ Done capturing. Skipped: ${demos.length - toCapture.length}.`);

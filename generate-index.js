@@ -30,7 +30,9 @@ function scanRecursive(dir, relativePath = '') {
                 });
             }
         } else if (file.name.endsWith('.html') && file.name !== 'index.html') {
-            const screenshotRel = `./screenshots/${relativePath}/${file.name.replace('.html', '.png')}`.replace(/\\/g, '/');
+            const cleanRelPath = relativePath.replace(/\\/g, '/');
+            const screenshotPathStr = cleanRelPath ? `${cleanRelPath}/${file.name.replace('.html', '.png')}` : file.name.replace('.html', '.png');
+            const screenshotRel = `./screenshots/${screenshotPathStr}`;
             const screenshotAbs = path.join(rootDir, 'screenshots', relativePath, file.name.replace('.html', '.png'));
             const hasScreenshot = fs.existsSync(screenshotAbs);
 
@@ -63,6 +65,9 @@ function renderHierarchy(items, depth = 0) {
             const label = catInfo.label || item.label;
             const desc = catInfo.desc || '';
             
+            const hasSubDirectories = item.children.some(c => c.type === 'directory');
+            const hasFiles = item.children.some(c => c.type === 'file');
+            
             html += `
             <div class="section depth-${depth}">
                 <div class="section-header">
@@ -74,7 +79,7 @@ function renderHierarchy(items, depth = 0) {
                         </div>
                     </div>
                 </div>
-                <div class="section-content">
+                <div class="${hasSubDirectories ? 'section-nested' : 'section-content'}">
                     ${renderHierarchy(item.children, depth + 1)}
                 </div>
             </div>`;
@@ -212,6 +217,12 @@ function generateHTML(hierarchy) {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 2rem;
+        }
+
+        .section-nested {
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
         }
 
         /* ── Card ── */
