@@ -10,6 +10,6 @@
         "build": "node generate-index.js && node generate-preview.js"
     },
     "dependencies": {
-        "puppeteer": "^24.2.1"
+        "puppeteer-core": "^24.2.1"
     }
 }
