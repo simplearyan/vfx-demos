@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Animator Studio - Lip Sync Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e5e5e5;
+            overflow: hidden; /* Prevent bouncing on drag */
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar for Timeline & Panels */
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        #anim-canvas {
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+            max-height: calc(100vh - 180px);
+            object-fit: contain;
+        }
+        
+        .active-btn {
+            background-color: #3b82f6 !important;
+            border-color: #60a5fa !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Toolbar -->
+    <header class="h-14 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0 shadow-md z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow">
+                <i data-lucide="smile" class="text-white w-5 h-5"></i>
+            </div>
+            <h1 class="text-lg font-bold tracking-wide text-white hidden sm:block">Face & Stick Animator</h1>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <!-- Playback Controls -->
+            <div class="flex items-center bg-neutral-800 rounded-lg p-1 border border-neutral-700">
+                <button onclick="prevFrame()" class="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition" title="Previous Frame (Left Arrow)">
+                    <i data-lucide="step-back" class="w-4 h-4"></i>
+                </button>
+                <button onclick="togglePlay()" id="btn-play" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-neutral-700 rounded transition mx-1" title="Play/Pause (Space)">
+                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button onclick="nextFrame()" class="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition" title="Next Frame (Right Arrow)">
+                    <i data-lucide="step-forward" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Frame Actions -->
+            <div class="flex items-center space-x-2">
+                <button onclick="addFrame()" class="flex items-center space-x-1 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-3 py-1.5 rounded-lg text-sm font-medium transition" title="Duplicate & Add Frame (+)">
+                    <i data-lucide="plus" class="w-4 h-4 text-green-400"></i>
+                    <span class="hidden sm:inline">Add Frame</span>
+                </button>
+                <button onclick="deleteFrame()" class="p-1.5 bg-neutral-800 hover:bg-red-900/50 hover:text-red-400 border border-neutral-700 rounded-lg text-neutral-400 transition" title="Delete Current Frame">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Onion Skin Toggle -->
+            <button onclick="toggleOnionSkin()" id="btn-onion" class="p-1.5 bg-blue-900/30 text-blue-400 border border-blue-800 rounded-lg transition" title="Toggle Onion Skinning">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-3 text-sm">
+            <span class="text-neutral-400 hidden sm:inline">FPS:</span>
+            <input type="range" id="fps-slider" min="1" max="24" value="12" class="w-20 sm:w-24 accent-blue-500" oninput="updateFPS(this.value)">
+            <span id="fps-display" class="font-mono text-neutral-300 w-6">12</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-neutral-950">
+        
+        <!-- Left: Canvas Area -->
+        <main class="flex-1 relative flex items-center justify-center p-4">
+            <canvas id="anim-canvas" width="800" height="600" class="touch-none rounded-lg shadow-2xl bg-white"></canvas>
+            
+            <!-- Instructions Overlay (Fades out when interacted) -->
+            <div id="instruction-overlay" class="absolute bottom-6 left-6 bg-black/60 backdrop-blur text-xs text-neutral-300 px-3 py-2 rounded pointer-events-none transition-opacity duration-500 shadow-lg">
+                <p>• Drag joints to pose the figure</p>
+                <p>• Use right panel to set face & lips</p>
+                <p>• Use <strong>Spacebar</strong> to Play/Pause</p>
+            </div>
+        </main>
+
+        <!-- Right: Face & Lip Sync Panel -->
+        <aside class="w-full md:w-80 bg-neutral-900 border-l border-neutral-800 flex flex-col shrink-0 overflow-y-auto">
+            <div class="p-4 border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10">
+                <h2 class="text-sm font-semibold tracking-wider text-neutral-300 uppercase flex items-center">
+                    <i data-lucide="mic" class="w-4 h-4 mr-2 text-blue-400"></i> Auto Lip-Sync
+                </h2>
+            </div>
+            
+            <div class="p-4 border-b border-neutral-800">
+                <p class="text-xs text-neutral-400 mb-2">Type a script to automatically generate phonetic mouth frames starting from the current frame.</p>
+                <textarea id="lip-sync-text" class="w-full bg-neutral-950 border border-neutral-700 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-blue-500 transition resize-none h-20" placeholder="e.g. Hello world!"></textarea>
+                <button onclick="generateLipSync()" class="w-full mt-3 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2 rounded-lg text-sm transition shadow">
+                    Generate Lip Sync
+                </button>
+            </div>
+
+            <div class="p-4 border-b border-neutral-800 bg-neutral-950 sticky top-0 z-10">
+                <h2 class="text-sm font-semibold tracking-wider text-neutral-300 uppercase flex items-center">
+                    <i data-lucide="eye" class="w-4 h-4 mr-2 text-blue-400"></i> Custom Face
+                </h2>
+            </div>
+
+            <div class="p-4 space-y-5">
+                <!-- Eye Styles -->
+                <div>
+                    <h3 class="text-xs text-neutral-400 mb-2 font-medium">EYES</h3>
+                    <div class="grid grid-cols-3 gap-2" id="eye-controls">
+                        <button onclick="setFace('eyes', 'normal')" class="face-btn eye-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Normal</button>
+                        <button onclick="setFace('eyes', 'happy')" class="face-btn eye-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Happy</button>
+                        <button onclick="setFace('eyes', 'shocked')" class="face-btn eye-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Shocked</button>
+                        <button onclick="setFace('eyes', 'angry')" class="face-btn eye-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Angry</button>
+                        <button onclick="setFace('eyes', 'sad')" class="face-btn eye-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Sad</button>
+                    </div>
+                </div>
+
+                <!-- Mouth Styles -->
+                <div>
+                    <h3 class="text-xs text-neutral-400 mb-2 font-medium">MOUTH / PHONEMES</h3>
+                    <div class="grid grid-cols-2 gap-2" id="mouth-controls">
+                        <button onclick="setFace('mouth', 'rest')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">Rest / M,P,B</button>
+                        <button onclick="setFace('mouth', 'a_i')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">A, I, Y (Open)</button>
+                        <button onclick="setFace('mouth', 'e_c')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">E, C, S (Teeth)</button>
+                        <button onclick="setFace('mouth', 'o_r')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">O, R, W (Round)</button>
+                        <button onclick="setFace('mouth', 'u')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">U (Small)</button>
+                        <button onclick="setFace('mouth', 'l_th')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">L, Th (Tongue)</button>
+                        <button onclick="setFace('mouth', 'f_v')" class="face-btn mouth-btn py-1.5 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 rounded text-xs transition">F, V (Bite)</button>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Bottom Timeline -->
+    <footer class="h-28 bg-neutral-900 border-t border-neutral-800 flex flex-col shrink-0">
+        <div class="px-4 py-1.5 flex justify-between items-center bg-neutral-950 border-b border-neutral-800 text-xs text-neutral-500 font-medium shadow-inner">
+            <span>TIMELINE</span>
+            <span id="frame-counter">Frame 1 / 1</span>
+        </div>
+        <div id="timeline" class="flex-1 flex items-center px-4 space-x-2 overflow-x-auto py-2">
+            <!-- Frames injected here by JS -->
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- Core Variables ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        const timelineEl = document.getElementById('timeline');
+        const instructionOverlay = document.getElementById('instruction-overlay');
+        
+        let frames = [];
+        let currentFrameIdx = 0;
+        let isPlaying = false;
+        let fps = 12;
+        let onionSkin = true;
+        let playInterval = null;
+
+        // --- Kinematics State ---
+        let draggedNode = null;
+        let lastClickTime = 0;
+        let lastClickedNode = null;
+        let allBones = [];
+
+        // --- Initial Stick Figure Blueprint ---
+        // Using an 800x600 canvas coordinate system
+        const cx = 400, cy = 250;
+        
+        // Note: Head now includes default facial properties
+        const blueprintNodes = [
+            { id: 'head', x: cx, y: cy - 90, eyes: 'normal', mouth: 'rest' },
+            { id: 'neck', x: cx, y: cy - 40 },
+            { id: 'spine', x: cx, y: cy + 30 },
+            { id: 'pelvis', x: cx, y: cy + 90 },
+            { id: 'lShoulder', x: cx - 40, y: cy - 40 },
+            { id: 'rShoulder', x: cx + 40, y: cy - 40 },
+            { id: 'lElbow', x: cx - 70, y: cy + 10 },
+            { id: 'rElbow', x: cx + 70, y: cy + 10 },
+            { id: 'lHand', x: cx - 100, y: cy + 60 },
+            { id: 'rHand', x: cx + 100, y: cy + 60 },
+            { id: 'lHip', x: cx - 25, y: cy + 90 },
+            { id: 'rHip', x: cx + 25, y: cy + 90 },
+            { id: 'lKnee', x: cx - 30, y: cy + 170 },
+            { id: 'rKnee', x: cx + 30, y: cy + 170 },
+            { id: 'lFoot', x: cx - 40, y: cy + 250 },
+            { id: 'rFoot', x: cx + 40, y: cy + 250 }
+        ];
+
+        // Visible bones that get drawn
+        const visibleBoneDefs = [
+            ['neck', 'spine'], ['spine', 'pelvis'],
+            ['neck', 'lShoulder'], ['lShoulder', 'lElbow'], ['lElbow', 'lHand'],
+            ['neck', 'rShoulder'], ['rShoulder', 'rElbow'], ['rElbow', 'rHand'],
+            ['pelvis', 'lHip'], ['lHip', 'lKnee'], ['lKnee', 'lFoot'],
+            ['pelvis', 'rHip'], ['rHip', 'rKnee'], ['rKnee', 'rFoot']
+        ];
+
+        // Hidden structural bones to keep the torso/shoulders/hips rigid
+        const bracingBoneDefs = [
+            ['lShoulder', 'rShoulder'],
+            ['lHip', 'rHip'],
+            ['lShoulder', 'spine'], ['rShoulder', 'spine'],
+            ['lHip', 'spine'], ['rHip', 'spine'],
+            ['neck', 'pelvis']
+        ];
+
+        // Calculate lengths for all bones based on blueprint
+        function initBones() {
+            allBones = [];
+            const addBones = (defs, isVisible) => {
+                defs.forEach(pair => {
+                    const nA = blueprintNodes.find(n => n.id === pair[0]);
+                    const nB = blueprintNodes.find(n => n.id === pair[1]);
+                    const dist = Math.hypot(nB.x - nA.x, nB.y - nA.y);
+                    allBones.push({ a: pair[0], b: pair[1], length: dist, visible: isVisible });
+                });
+            };
+            addBones(visibleBoneDefs, true);
+            addBones(bracingBoneDefs, false);
+            
+            // Add initial head connection logic (neck to head)
+            const nA = blueprintNodes.find(n => n.id === 'neck');
+            const nB = blueprintNodes.find(n => n.id === 'head');
+            allBones.push({ a: 'neck', b: 'head', length: Math.hypot(nB.x - nA.x, nB.y - nA.y), visible: false });
+        }
+
+        function init() {
+            initBones();
+            frames.push(JSON.parse(JSON.stringify(blueprintNodes)));
+            frames[0].find(n => n.id === 'lFoot').pinned = true; 
+            frames[0].find(n => n.id === 'rFoot').pinned = true;
+            render();
+            updateUI();
+        }
+
+        // --- Constraint Solver (Inverse Kinematics) ---
+        function resolveConstraints(nodes) {
+            for (let iter = 0; iter < 50; iter++) {
+                allBones.forEach(b => {
+                    let nA = nodes.find(n => n.id === b.a);
+                    let nB = nodes.find(n => n.id === b.b);
+                    
+                    let dx = nB.x - nA.x;
+                    let dy = nB.y - nA.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist === 0) return;
+                    
+                    let diff = dist - b.length;
+                    let percent = diff / dist / 2;
+                    let offsetX = dx * percent;
+                    let offsetY = dy * percent;
+
+                    let aFixed = nA === draggedNode || nA.pinned;
+                    let bFixed = nB === draggedNode || nB.pinned;
+
+                    if (!aFixed && !bFixed) {
+                        nA.x += offsetX; nA.y += offsetY;
+                        nB.x -= offsetX; nB.y -= offsetY;
+                    } else if (!aFixed && bFixed) {
+                        nA.x += offsetX * 2; nA.y += offsetY * 2;
+                    } else if (aFixed && !bFixed) {
+                        nB.x -= offsetX * 2; nB.y -= offsetY * 2;
+                    }
+                });
+            }
+        }
+
+        // --- Drawing Logic ---
+        function drawGrid() {
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 1;
+            const size = 40;
+            ctx.beginPath();
+            for(let x=0; x<=canvas.width; x+=size) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            for(let y=0; y<=canvas.height; y+=size) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            ctx.stroke();
+
+            // Draw Floor
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 500); ctx.lineTo(canvas.width, 500);
+            ctx.stroke();
+        }
+
+        function drawFace(head, isMain) {
+            const eyes = head.eyes || 'normal';
+            const mouth = head.mouth || 'rest';
+            
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = isMain ? '#000000' : 'rgba(239, 68, 68, 0.25)';
+            ctx.fillStyle = isMain ? '#000000' : 'rgba(239, 68, 68, 0.25)';
+
+            // Draw Eyes based on phonetic reference chart
+            ctx.beginPath();
+            if (eyes === 'normal') {
+                ctx.arc(-10, -5, 3, 0, Math.PI*2); 
+                ctx.arc(10, -5, 3, 0, Math.PI*2); 
+                ctx.fill();
+            } else if (eyes === 'happy') {
+                ctx.arc(-10, -2, 4, Math.PI, 0); ctx.stroke();
+                ctx.beginPath(); ctx.arc(10, -2, 4, Math.PI, 0); ctx.stroke();
+            } else if (eyes === 'shocked') {
+                ctx.arc(-10, -5, 5, 0, Math.PI*2); ctx.stroke(); 
+                ctx.beginPath(); ctx.arc(-10, -5, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(10, -5, 5, 0, Math.PI*2); ctx.stroke(); 
+                ctx.beginPath(); ctx.arc(10, -5, 1.5, 0, Math.PI*2); ctx.fill();
+            } else if (eyes === 'angry') {
+                ctx.arc(-10, -3, 3, 0, Math.PI*2); ctx.arc(10, -3, 3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-16, -8); ctx.lineTo(-5, -5); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(16, -8); ctx.lineTo(5, -5); ctx.stroke();
+            } else if (eyes === 'sad') {
+                ctx.arc(-10, -3, 3, 0, Math.PI*2); ctx.arc(10, -3, 3, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(-16, -4); ctx.lineTo(-5, -8); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(16, -4); ctx.lineTo(5, -8); ctx.stroke();
+            }
+
+            // Draw Mouth based on phonetic reference chart
+            ctx.beginPath();
+            ctx.fillStyle = isMain ? '#000000' : 'transparent';
+            
+            if (mouth === 'rest') {
+                ctx.moveTo(-7, 8); ctx.lineTo(7, 8); ctx.stroke();
+            } else if (mouth === 'a_i') { // Wide open
+                ctx.arc(0, 7, 7, 0, Math.PI, false); 
+                ctx.closePath(); ctx.fill();
+                if(isMain) {
+                    ctx.fillStyle = '#ef4444'; // Tongue
+                    ctx.beginPath(); ctx.arc(0, 11, 3, 0, Math.PI, true); ctx.fill();
+                }
+            } else if (mouth === 'e_c') { // Slight open teeth
+                if(isMain) ctx.fillStyle = '#ffffff';
+                ctx.roundRect(-8, 6, 16, 5, 2); 
+                if(isMain) { ctx.fill(); ctx.stroke(); } else { ctx.stroke(); }
+                if(isMain) {
+                    ctx.beginPath(); ctx.moveTo(-8, 8.5); ctx.lineTo(8, 8.5); ctx.lineWidth = 1; ctx.stroke();
+                }
+            } else if (mouth === 'o_r') { // Round
+                ctx.arc(0, 9, 4, 0, Math.PI*2); ctx.fill();
+            } else if (mouth === 'u') { // Small Round
+                ctx.arc(0, 9, 2.5, 0, Math.PI*2); ctx.fill();
+            } else if (mouth === 'l_th') { // Tongue sticking out
+                ctx.arc(0, 7, 6, 0, Math.PI, false); ctx.closePath(); ctx.fill();
+                if(isMain) {
+                    ctx.fillStyle = '#ef4444'; // Tongue
+                    ctx.beginPath(); ctx.arc(0, 10, 4, 0, Math.PI, true); ctx.fill();
+                }
+            } else if (mouth === 'f_v') { // Top teeth biting bottom lip
+                ctx.arc(0, 7, 6, 0, Math.PI, false); ctx.fill();
+                if(isMain) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(-4, 7, 8, 3); // Teeth block
+                }
+            }
+        }
+
+        function drawFigure(nodes, styleType) {
+            const isMain = styleType === 'main';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 10;
+            
+            ctx.strokeStyle = isMain ? '#000000' : 'rgba(239, 68, 68, 0.25)';
+
+            // Draw Bones
+            ctx.beginPath();
+            allBones.forEach(b => {
+                if (!b.visible) return;
+                const nA = nodes.find(n => n.id === b.a);
+                const nB = nodes.find(n => n.id === b.b);
+                ctx.moveTo(nA.x, nA.y);
+                ctx.lineTo(nB.x, nB.y);
+            });
+            
+            // Draw Neck to Head Connection
+            const neck = nodes.find(n => n.id === 'neck');
+            const head = nodes.find(n => n.id === 'head');
+            const headRadius = 28;
+            
+            // Calculate Face Angle based on neck vector
+            const faceAngle = Math.atan2(head.y - neck.y, head.x - neck.x) + Math.PI/2;
+            
+            const headBottomX = head.x - Math.cos(faceAngle - Math.PI/2) * headRadius;
+            const headBottomY = head.y - Math.sin(faceAngle - Math.PI/2) * headRadius;
+            ctx.moveTo(neck.x, neck.y);
+            ctx.lineTo(headBottomX, headBottomY);
+            ctx.stroke();
+
+            // Draw Head Circle
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, headRadius, 0, Math.PI * 2);
+            ctx.fillStyle = isMain ? '#ffffff' : 'transparent';
+            if (isMain) ctx.fill();
+            ctx.stroke();
+
+            // Draw Facial Features
+            ctx.save();
+            ctx.translate(head.x, head.y);
+            ctx.rotate(faceAngle);
+            drawFace(head, isMain);
+            ctx.restore();
+
+            // Draw Edit Handles
+            if (isMain && !isPlaying) {
+                nodes.forEach(n => {
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = n.pinned ? '#3b82f6' : '#ef4444'; 
+                    ctx.fill();
+                    if (n.pinned) {
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            if (onionSkin && !isPlaying && currentFrameIdx > 0) {
+                drawFigure(frames[currentFrameIdx - 1], 'onion');
+            }
+            drawFigure(frames[currentFrameIdx], 'main');
+        }
+
+        // --- Auto Lip-Sync Logic ---
+        function generateLipSync() {
+            const text = document.getElementById('lip-sync-text').value.toLowerCase();
+            if(!text.trim()) return;
+            
+            // Phoneme mapping based on standard animation charts
+            const mapping = {
+                'a':'a_i', 'i':'a_i', 'y':'a_i',
+                'e':'e_c', 'c':'e_c', 's':'e_c', 'n':'e_c', 'k':'e_c', 'z':'e_c', 'j':'e_c', 'x':'e_c', 'g':'e_c', 'h':'e_c', 'd':'e_c',
+                'l':'l_th', 't':'l_th',
+                'u':'u',
+                'o':'o_r', 'r':'o_r', 'w':'o_r', 'q':'o_r',
+                'm':'rest', 'p':'rest', 'b':'rest',
+                'f':'f_v', 'v':'f_v',
+                ' ':'rest', '.':'rest', ',':'rest'
+            };
+
+            let startIdx = currentFrameIdx;
+            
+            for(let i=0; i<text.length; i++) {
+                const char = text[i];
+                let mouthStyle = mapping[char];
+                
+                if(!mouthStyle) continue; // Skip unknown chars
+                
+                // Hold each phonetic shape for 2 frames for readability
+                for(let f=0; f<2; f++) {
+                    if(startIdx >= frames.length) {
+                        // Duplicate last frame to extend timeline safely
+                        frames.push(JSON.parse(JSON.stringify(frames[frames.length-1])));
+                    }
+                    
+                    let head = frames[startIdx].find(n => n.id === 'head');
+                    head.mouth = mouthStyle;
+                    
+                    startIdx++;
+                }
+            }
+            
+            // Add a closing rest frame
+            if(startIdx >= frames.length) {
+                frames.push(JSON.parse(JSON.stringify(frames[frames.length-1])));
+            }
+            frames[startIdx].find(n => n.id === 'head').mouth = 'rest';
+            
+            currentFrameIdx = startIdx; // Jump to end of generation
+            updateUI();
+            render();
+            
+            // Flash success
+            const btn = document.querySelector('button[onclick="generateLipSync()"]');
+            btn.innerText = "Generated!";
+            btn.classList.add('bg-green-600');
+            setTimeout(() => {
+                btn.innerText = "Generate Lip Sync";
+                btn.classList.remove('bg-green-600');
+            }, 1500);
+        }
+
+        // --- Interaction Logic ---
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function handlePointerDown(e) {
+            if (isPlaying) return;
+            e.preventDefault();
+            instructionOverlay.style.opacity = '0';
+
+            const pos = getPointerPos(e);
+            let closest = null;
+            let minDist = 30; 
+            
+            frames[currentFrameIdx].forEach(n => {
+                let dist = Math.hypot(n.x - pos.x, n.y - pos.y);
+                if(dist < minDist) {
+                    minDist = dist;
+                    closest = n;
+                }
+            });
+
+            if (closest) {
+                draggedNode = closest;
+                const now = Date.now();
+                if (lastClickedNode === closest && (now - lastClickTime) < 300) {
+                    closest.pinned = !closest.pinned;
+                    draggedNode = null; 
+                    render();
+                }
+                lastClickedNode = closest;
+                lastClickTime = now;
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!draggedNode || isPlaying) return;
+            e.preventDefault();
+            const pos = getPointerPos(e);
+            draggedNode.x = pos.x;
+            draggedNode.y = pos.y;
+            resolveConstraints(frames[currentFrameIdx]);
+            render();
+        }
+
+        function handlePointerUp() {
+            if(draggedNode) {
+                draggedNode = null;
+                updateTimelineThumbnails();
+            }
+        }
+
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        window.addEventListener('touchmove', handlePointerMove, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // --- Face Control Panel Logic ---
+        function setFace(type, style) {
+            if(isPlaying) return;
+            let head = frames[currentFrameIdx].find(n => n.id === 'head');
+            if(type === 'eyes') head.eyes = style;
+            if(type === 'mouth') head.mouth = style;
+            render();
+            updateFacePanelUI();
+        }
+
+        function updateFacePanelUI() {
+            let head = frames[currentFrameIdx].find(n => n.id === 'head');
+            
+            document.querySelectorAll('.eye-btn').forEach(b => b.classList.remove('active-btn'));
+            document.querySelectorAll('.mouth-btn').forEach(b => b.classList.remove('active-btn'));
+            
+            let eBtn = document.querySelector(`.eye-btn[onclick*="${head.eyes || 'normal'}"]`);
+            if(eBtn) eBtn.classList.add('active-btn');
+            
+            let mBtn = document.querySelector(`.mouth-btn[onclick*="${head.mouth || 'rest'}"]`);
+            if(mBtn) mBtn.classList.add('active-btn');
+        }
+
+        // --- Timeline & Controls ---
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const playBtn = document.getElementById('btn-play');
+            
+            if (isPlaying) {
+                draggedNode = null;
+                playBtn.innerHTML = '<i data-lucide="square" class="w-5 h-5 fill-current"></i>';
+                playBtn.classList.replace('text-blue-400', 'text-red-400');
+                lucide.createIcons();
+                
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    render();
+                    updateTimelineUI();
+                    updateFacePanelUI();
+                }, 1000 / fps);
+            } else {
+                clearInterval(playInterval);
+                playBtn.innerHTML = '<i data-lucide="play" class="w-5 h-5 fill-current"></i>';
+                playBtn.classList.replace('text-red-400', 'text-blue-400');
+                lucide.createIcons();
+                render();
+                updateTimelineUI();
+            }
+        }
+
+        function addFrame() {
+            const newFrame = JSON.parse(JSON.stringify(frames[currentFrameIdx]));
+            frames.splice(currentFrameIdx + 1, 0, newFrame);
+            currentFrameIdx++;
+            render();
+            updateUI();
+        }
+
+        function deleteFrame() {
+            if (frames.length <= 1) return;
+            frames.splice(currentFrameIdx, 1);
+            if (currentFrameIdx >= frames.length) currentFrameIdx = frames.length - 1;
+            render();
+            updateUI();
+        }
+
+        function prevFrame() {
+            if (isPlaying) return;
+            currentFrameIdx = (currentFrameIdx - 1 + frames.length) % frames.length;
+            render();
+            updateTimelineUI();
+            updateFacePanelUI();
+        }
+
+        function nextFrame() {
+            if (isPlaying) return;
+            currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+            render();
+            updateTimelineUI();
+            updateFacePanelUI();
+        }
+
+        function toggleOnionSkin() {
+            onionSkin = !onionSkin;
+            const btn = document.getElementById('btn-onion');
+            if(onionSkin) {
+                btn.classList.add('bg-blue-900/30', 'text-blue-400', 'border-blue-800');
+                btn.classList.remove('text-neutral-500', 'border-neutral-700');
+            } else {
+                btn.classList.remove('bg-blue-900/30', 'text-blue-400', 'border-blue-800');
+                btn.classList.add('text-neutral-500', 'border-neutral-700');
+            }
+            render();
+        }
+
+        function updateFPS(val) {
+            fps = val;
+            document.getElementById('fps-display').innerText = val;
+            if (isPlaying) {
+                clearInterval(playInterval);
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    render();
+                    updateTimelineUI();
+                }, 1000 / fps);
+            }
+        }
+
+        function gotoFrame(idx) {
+            if (isPlaying) return;
+            currentFrameIdx = idx;
+            render();
+            updateTimelineUI();
+            updateFacePanelUI();
+        }
+
+        function updateUI() {
+            updateTimelineThumbnails();
+            updateTimelineUI();
+            updateFacePanelUI();
+        }
+
+        function updateTimelineThumbnails() {
+            timelineEl.innerHTML = '';
+            frames.forEach((frame, idx) => {
+                const box = document.createElement('div');
+                box.className = `h-16 w-12 shrink-0 rounded border cursor-pointer flex items-center justify-center text-xs font-mono transition-colors duration-200`;
+                box.id = `frame-box-${idx}`;
+                box.innerText = idx + 1;
+                box.onclick = () => gotoFrame(idx);
+                timelineEl.appendChild(box);
+            });
+        }
+
+        function updateTimelineUI() {
+            document.getElementById('frame-counter').innerText = `Frame ${currentFrameIdx + 1} / ${frames.length}`;
+            frames.forEach((_, idx) => {
+                const box = document.getElementById(`frame-box-${idx}`);
+                if (!box) return;
+                if (idx === currentFrameIdx) {
+                    box.className = `h-16 w-12 shrink-0 rounded border-2 border-blue-500 bg-blue-900/20 cursor-pointer flex items-center justify-center text-xs font-mono text-blue-300 transform scale-105 transition-all`;
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    box.className = `h-16 w-12 shrink-0 rounded border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 cursor-pointer flex items-center justify-center text-xs font-mono text-neutral-500 transition-all`;
+                }
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            // Ignore spacebar if typing in the lip sync box
+            if (document.activeElement === document.getElementById('lip-sync-text')) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight' && !isPlaying) {
+                nextFrame();
+            } else if (e.code === 'ArrowLeft' && !isPlaying) {
+                prevFrame();
+            } else if ((e.key === '+' || e.key === '=') && !isPlaying) {
+                addFrame();
+            }
+        });
+
+        init();
+    </script>
+</body>
+</html>

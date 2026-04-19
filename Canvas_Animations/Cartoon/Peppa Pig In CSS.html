@@ -1,0 +1,304 @@
+<body>
+    <div class="container">
+        <div id="face"></div>
+        <div id="trunk"></div>
+        <div id="nose"></div>
+        <div id="nostrilLeft"></div>
+        <div id="nostrilRight"></div>
+        <div class="eyes">
+            <div id="eyeLeftBall"></div>
+            <div id="eyeRightBall"></div>
+            <div id="pupilLeft"></div>
+            <div id="pupilRight"></div>
+        </div>
+        <div id="dress"></div>
+        <div id="blush"></div>
+        <div id="smile"></div>
+        <div id="earLeft"></div>
+        <div id="earRight"></div>
+        <div id="armLeft"></div>
+        <div id="armRight"></div>
+        <div class="handLeft">
+            <div id="finger1"></div>
+            <div id="finger2"></div>
+            <div id="finger3"></div>
+        </div>
+        <div class="handRight">
+            <div id="fingerA"></div>
+            <div id="fingerB"></div>
+            <div id="fingerC"></div>
+        </div>
+        <div id="tailA"></div>
+        <div id="tailB"></div>
+        <div id="tailC"></div>
+        <div id="tailD"></div>
+        <div id="legLeft"></div>
+        <div id="legRight"></div>
+        <div id="footLeft"></div>
+        <div id="footRight"></div>
+        <div id="yellowGrass1"></div>
+        <div id="yellowGrass2"></div>
+        <div id="yellowGrass3"></div>
+        <div id="yellowGrass4"></div>
+        <div id="yellowGrass5"></div>
+        <div id="yellowGrass6"></div>
+    </div>
+
+    <style>
+        body {
+    background: linear-gradient(to bottom, #67bdec, #79bb57);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.container {
+    position: relative;
+    justify-content: center;
+    display: flex;
+    margin: auto;
+}
+
+#face {
+    position: absolute;
+    width: 8.5em;
+    height: 8.5em;
+    background: #f5c8df;
+    border-radius: 50%;
+    transform: translate(0%, 99%);
+    display: block;
+    z-index: 3;
+}
+
+#trunk {
+    position: absolute;
+    display: block;
+    width: 7em;
+    height: 4em;
+    background: #f5c8df;
+    transform: translate(-53%, 177%) rotate(20deg);
+    border-radius: 50% 0% 0% 50%;
+    z-index: 4;
+}
+
+#nose {
+    position: absolute;
+    display: block;
+    width: 2em;
+    height: 2.4em;
+    border: #eba0cd 4px solid;
+    border-radius: 50%;
+    transform: translate(-236%,235% ) rotate(22deg);
+    z-index: 4;
+}
+
+#nostrilLeft, #nostrilRight {
+    position: absolute;
+    display: block;
+    width: 0.6em;
+    height: 0.6em;
+    background: #cb7ea0;
+    border-radius: 50%;
+    transform: translate(-1055%, 1320%);
+    z-index: 4;
+}
+
+#nostrilRight {
+    transform: translate(-900%,
+    1360%)
+}
+
+#eyeLeftBall, #eyeRightBall {
+    position: absolute;
+    display: block;
+    width: 1.2em;
+    height: 1.2em;
+    background: #fffbff;
+    border: #e9a6c7 solid 4px;
+    border-radius: 50%;
+    transform: translate(-200%, 455%);
+    z-index: 4;
+}
+
+#eyeRightBall {
+    transform: translate(-60%, 510%);
+}
+
+#pupilLeft, #pupilRight {
+    position: absolute;
+    display: block;
+    width: 0.6em;
+    height: 0.6em;
+    background: #1a1a19;
+    border-radius: 50%;
+    transform: translate(-480%, 1390%);
+    z-index: 4;
+}
+
+#pupilRight {
+    transform: translate(-80%, 1545%);
+}
+
+#blush {
+    position: absolute;
+    display: block;
+    width: 2.7em;
+    height: 2.7em;
+    border-radius: 50%;
+    background: #f3a7cb;
+    transform: translate(85%, 420%);
+    z-index: 4;
+}
+
+#smile {
+    position: absolute;
+    display: block;
+    width: 4.2em;
+    height: 5em;
+    border-bottom: 6px solid #ee448b;
+    border-radius: 60%;
+    transform: translate(-30%, 180%) rotate(20deg);
+    z-index: 4;
+}
+
+#earLeft, #earRight {
+    position: absolute;
+    display: block;
+    width: 1.3em;
+    height: 2em;
+    background: #f5c8df;
+    border-radius: 50% 50% 0% 0%;
+    transform: translate(-25%, 263%) rotate(-5deg);
+    border: solid 3px #e4a2c7;
+    z-index: 2;
+}
+
+#earRight {
+    height: 2.3em;
+    transform: translate(110%, 260%) rotate(30deg);
+}
+
+#dress {
+    position: absolute;
+    display: block;
+    width: 10em;
+    height: 10em;
+    background: #ec5b56;
+    transform: translate(-3%, 145%);
+    border-radius: 90% 90% 5% 5%;
+    border: solid 4px #dc2316;
+    box-shadow: #dc2316;
+    z-index: 2;
+}
+
+.handLeft, .handRight {
+    position: absolute;
+    display: block;
+    width: 0.5em;
+    height: 5em;
+    background: #f7c5dc;
+    transform: translate(-1400%, 355%) rotate(50deg);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.handRight {
+    transform: translate(1200%, 360%) rotate(-50deg);
+}
+
+#finger1, #finger2, #fingerA, #fingerB {
+    position: absolute;
+    display: block;
+    width: 0.3em;
+    height: 0.8em;
+    background: #f7c5dc;
+    transform: translate(-100%, 500%) rotate(40deg);
+    border-radius: 50%;
+}
+
+#finger2, #fingerB {
+    transform: translate(180%, 480%) rotate(-40deg);
+}
+
+#tailA, #tailB, #tailC, #tailD {
+    position: absolute;
+    display: block;
+    border-bottom: 6px solid #ffc3ea;;
+    border-radius: 80%;
+    width: 2em;
+    height: 1em;
+    transform: translate(280%, 1650%) rotate(20deg);
+}
+
+#tailB {
+    height: 2em;
+    transform: translate(330%, 930%) rotate(20deg);
+}
+#tailC {
+    width: 0.8em;
+    height: 2em;
+    transform: translate(690%, 940%) rotate(-70deg);
+}
+
+#tailD {
+    width: 0.9em;
+    height: 2.2em;
+    transform: translate(690%, 890%) rotate(160deg);
+}
+
+#legLeft, #legRight {
+    position: absolute;
+    display: block;
+    width: 0.5em;
+    height: 3em;
+    background: #f5c8e0;
+    transform: translate(-350%, 840%);
+}
+
+#legRight {
+    transform: translate(350%, 840%);
+}
+
+#footLeft, #footRight {
+    position: absolute;
+    display: block;
+    width: 1.8em;
+    height: 0.8em;
+    background: #1f1c1b;
+    border-radius: 70% 50% 50% 70%;
+    transform: translate(-129%, 3450%);
+}
+
+#footRight {
+    transform: translate(65%, 3450%);
+}
+
+#yellowGrass1, #yellowGrass2, #yellowGrass3, #yellowGrass4, #yellowGrass5, #yellowGrass5, #yellowGrass6 {
+    width: 0.2em;
+    height: 0.3em;
+    position: absolute;
+    display: block;
+    background: #b1e888;
+    border-radius: 50%;
+    transform: translate(-16000%, 8000%)
+}
+
+#yellowGrass2 {
+    transform: translate(-8000%, 7000%)
+}
+
+#yellowGrass3 {
+    transform: translate(-9500%, 9500%)
+}
+
+#yellowGrass4 {
+    transform: translate(1000%, 10900%)
+}
+
+#yellowGrass5 {
+    transform: translate(12000%, 6800%)
+}
+
+#yellowGrass6 {
+    transform: translate(7000%, 9000%)
+}
+    </style>

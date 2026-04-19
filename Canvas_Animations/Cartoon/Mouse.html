@@ -1,0 +1,381 @@
+<article role="img" aria-labelledby="css-art-alt">
+  <div id="css-art-alt">Cartoon of a mouse in kawaii style</div>
+  <div class="shadow"></div>
+  <div class="body">
+    <div class="tail"></div>
+    <div class="chest">
+      <div class="foot"></div>
+      <div class="foot"></div>
+      <div class="arm"></div>
+      <div class="arm"></div>
+    </div>
+  </div>
+  <div class="head">
+    <div class="ear"></div>
+    <div class="ear"></div>
+    <div class="face">
+      <div class="nose"></div>
+      <div class="eye"></div>
+      <div class="eye"></div>
+      <div class="whiskers"></div>
+      <div class="whiskers"></div>
+    </div>
+  </div>
+</article>
+
+<a id="youtube" href="https://www.youtube.com/watch?v=qlgFBTsTT6o" target="_blank">
+  <span>Watch how this component was coded</span>
+</a>
+
+
+<style>
+    article {
+  --fur: #fff8f4;
+  --fur-dark: #f8e8e0;
+  --skin: #ffc0cb; /* pink */
+  --skin-dark: #f8b0bb;
+  font-size: 0.6vmin;
+  width: 80em;
+  aspect-ratio: 1;
+  position: relative;
+
+  *, *::before, *::after {
+    position: absolute;
+    box-sizing: border-box;
+  }
+
+  #css-art-alt {
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  
+  .shadow {
+    width: 80%;
+    height: 15%;
+    background: #0001;
+    border-radius: 50%;
+    translate: -50% -50%;
+    left: 50%;
+    top: 99%;
+  }
+
+  .body {
+    width: 49%;
+    height: 40%;
+    bottom: 0;
+    left: 50%;
+    translate: -50%;
+    
+    .tail {
+      width: 50%;
+      aspect-ratio: 1;
+      left: 70%;
+      top: 18%;
+      rotate: 13deg;
+      background: 
+        radial-gradient(farthest-side at 0 0, #0000 calc(100% - 3em), #000 0 99.999%, #0000);
+      
+      &::after {
+        content: "";
+        width: 100%;
+        height: 50%;
+        border-radius: 50% / 100% 100% 0 0;
+        border-left: 3em solid;
+        border-top: 1.5em solid;
+        border-right: 0.25em solid #0000;
+        left: calc(100% - 3em);
+        translate: 0 -99%;
+      }
+    }
+    
+    .arm {
+      --p: 21%;
+      width: 25%;
+      height: 30%;
+      border: 0.75em solid;
+      border-top: 0;
+      border-bottom: 1em solid;
+      border-radius: 70% / 0 0 100% 100%;
+      top: 40%;
+      left: var(--p);
+      translate: -50%;
+      rotate: -15deg;
+      clip-path: polygon(-20% 0, 100% 15%, 120% 120%, -20% 120%);
+      box-shadow: -0.5em 1.2em var(--fur-dark);
+      
+      & ~ & {
+        left: calc(100% - var(--p));
+        rotate: 30deg;
+        clip-path: none;
+        box-shadow: 0.5em 1.5em var(--fur-dark);
+      }
+    }
+    
+    .foot {
+      --p: -6%;
+      width: 32%;
+      height: 60%;
+      border:1em solid;
+      border-bottom: 1.25em solid;
+      border-radius: 100% / 115% 115% 90% 90%;
+      bottom: 0;
+      background: 
+        radial-gradient(30% 40% at 40% 55%, var(--fur-dark) 99%, #0000)
+        var(--fur);
+      translate: -50%;
+      left: var(--p);
+      rotate: -45deg;
+      bottom: -11%;
+      clip-path: polygon(0 0, 100% 0, 100% 30%, 80% 90%, 100% 100%, 0 100%);
+      
+      & ~ & {
+        left: 104%;
+        scale: -1 1;
+        rotate: 50deg;
+        bottom: -12%;
+      }
+    }
+    
+    .chest {
+      inset: 0;
+      border-radius: 100% / 130% 130% 70% 70%;
+      border: 1em solid;
+      border-bottom: 1.25em solid;
+      box-shadow: inset 0 -1.5em var(--fur-dark);
+      background:
+        radial-gradient(70% 60% at 50% 0, var(--fur-dark) 55%, #0000 0),
+        var(--fur);
+    }
+  }
+
+  .head {
+    width: 70%;
+    height: 70%;
+    left: 50%;
+    translate: -50%;
+    
+    .ear {
+      --p: 5%;
+      width: 55%;
+      aspect-ratio: 1.05;
+      border: 1em solid;
+      border-top: 1.25em solid;
+      border-radius: 50%;
+      left: var(--p);
+      translate: -50%;
+      background: 
+        radial-gradient(100% 100% at 105% 100%, var(--fur-dark) 55%, #0000 0),
+        var(--fur);
+      overflow: hidden;
+      box-shadow: inset -1em 2em var(--fur-dark);
+      
+      & ~ & {
+        left: calc(100% - var(--p));
+        scale: -1 1;
+      }
+      
+      &::before {
+        content: "";
+        width: 75%;
+        aspect-ratio: 1.2;
+        border-radius: 50%;
+        background: 
+          radial-gradient(100% 100% at 100% 105%, var(--skin-dark) 59%, #0000 0) no-repeat,
+          var(--skin);
+        border: 0.5em solid #0000;
+        border-right: 1em solid;
+        border-top: 0.75em solid;
+        border-bottom: 0;
+        box-shadow: inset -4em 2em var(--skin-dark);
+        top: 23%;
+        left: 15%;
+        rotate: -10deg;
+      }
+    }
+
+    .face {
+      width: 90%;
+      height: 80%;
+      bottom: 0;
+      left: 50%;
+      translate: -50%;
+      border: 1em solid;
+      border-top: 1.25em solid;
+      border-bottom: 0.75em solid #000;
+      border-radius: 100% / 125% 125% 75% 75%;
+      background: var(--fur);
+      clip-path: polygon(-100% 0, 200% 0, 100% 100%, 75% 100%, 65% 96%, 35% 96%, 25% 100%, 0 100%);
+      box-shadow: 
+        inset 0 5em 0 -3em var(--fur-dark),
+        inset 0 -2em var(--fur-dark);
+
+      .eye {
+        --p: 26%;
+        width: 18%;
+        aspect-ratio: 1;
+
+        top: 50%;
+        left: var(--p);
+        translate: -50%;
+
+        &::before {
+          content: "";
+          width: 75%;
+          height: 70%;
+          background: 
+            repeating-linear-gradient(-45deg, #0000 0 12%, var(--skin-dark) 0 17.5%),
+            var(--skin);
+          box-shadow: inset 0 0 1em 1.5em pink;
+          border-radius: 50%;
+          top: 70%;
+          translate: -80%;
+        }
+
+        &::after {
+          content: "";
+          inset: 0;
+          background: 
+            radial-gradient(circle at 35% 35%, #fff 25%, #0000 calc(25% + 1px)),
+            radial-gradient(circle at 20% 69%, #fff 10%, #0000 calc(10% + 1px)),
+            #000;
+          border-radius: 50%;
+        }
+
+        & ~ & {
+          left: calc(100% - var(--p));
+          scale: -1 1;
+          
+          &::after {
+            scale: -1 1;
+          }
+        }
+      }
+      
+      .whiskers {
+        --p: -4%;
+        width: 25%;
+        aspect-ratio: 1;
+        border: 0.25em solid #0000;
+        border-top: 0.8em solid;
+        border-right: 0.75em solid #0000;
+        border-radius: 50%;
+        top: 64%;
+        translatE: -50%;
+        left: var(--p);
+        rotate: -5deg;
+        
+        & ~ & {
+          left: calc(100% - var(--p));
+          scale: -1 1;
+          rotate: 8deg;
+        }
+        
+        &::before, &::after {
+          content: "";
+          inset: 0;
+          border-radius: 50%;
+          border: inherit;
+          transform-origin: 70% 20%;
+          rotate: -35deg;
+          top: 20%;
+        }
+        
+        &::after {
+          rotate: -20deg;
+          top: 5%;
+          width: 110%;
+          translate: -10%;
+        }
+      }
+      
+      .nose {
+        width: 7%;
+        aspect-ratio: 1.5;
+        background: #000;
+        border-radius: 50%;
+        top: 61%;
+        left: 50%;
+        translate: -50%;
+        
+        &::before, &::after {
+          --p: 0.5em;
+          content: "";
+          width: 120%;
+          aspect-ratio: 1.5;
+          border-radius: 50% / 0 0 100% 100%;
+          border: 0.66em solid;
+          border-top: 0;
+          top: 80%;
+          left: 50%;
+          translate: calc(-100% + 0.25em);
+          clip-path: polygon(0 30%, 100% 0, 100% 100%, 0 100%);
+        }
+        
+        &::after {
+          translate: -0.25em;
+          scale: -1 1;
+        }
+      }
+    }
+  }
+}
+
+body {
+  background: #fec;
+}
+
+/***/
+
+#youtube {
+  z-index: 2;
+  display: block;
+  width: 100px;
+  height: 70px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: red;
+  border-radius: 50% / 11%;
+  transition: transform 0.5s;
+}
+
+#youtube:hover,
+#youtube:focus {
+  transform: scale(1.1);
+}
+
+#youtube::before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 7.5%;
+  left: -6%;
+  width: 112%;
+  height: 85%;
+  background: red;
+  border-radius: 9% / 50%;
+}
+
+#youtube::after {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  width: 45px;
+  height: 30px;
+  border: 15px solid transparent;
+  box-sizing: border-box;
+  border-left: 30px solid white;
+}
+
+#youtube span {
+  font-size: 0;
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+</style>

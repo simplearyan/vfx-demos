@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fire Light Painting Canvas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #050505;
+            touch-action: none; /* Prevent scrolling on mobile while drawing */
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+        /* Grid background for better orientation in the dark */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* Custom Range Slider Styling for Brush Size */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            transition: transform 0.1s;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-grid relative text-white">
+
+    <!-- Canvas -->
+    <canvas id="canvas"></canvas>
+
+    <!-- Brush Selector & Settings -->
+    <div class="fixed bottom-24 left-1/2 transform -translate-x-1/2 glass-panel rounded-full px-5 py-3 flex items-center gap-4 sm:gap-5 shadow-2xl z-10 transition-all duration-300 w-[90vw] sm:w-auto overflow-x-auto">
+        <div class="flex items-center gap-4 shrink-0">
+            <button data-brush="fire" class="brush-btn w-7 h-7 rounded-full bg-gradient-to-br from-yellow-400 to-red-600 border-2 border-white shadow-[0_0_10px_rgba(255,0,0,0.8)] transition-all scale-110 shrink-0" title="Fire"></button>
+            <button data-brush="neon" class="brush-btn w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-2 border-transparent hover:border-white/50 transition-all shrink-0" title="Neon"></button>
+            <button data-brush="plasma" class="brush-btn w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 border-2 border-transparent hover:border-white/50 transition-all shrink-0" title="Plasma"></button>
+            <button data-brush="magic" class="brush-btn w-7 h-7 rounded-full bg-gradient-to-br from-fuchsia-400 to-purple-600 border-2 border-transparent hover:border-white/50 transition-all shrink-0" title="Magic"></button>
+        </div>
+        
+        <div class="w-px h-6 bg-gray-600/50 hidden sm:block shrink-0"></div>
+        
+        <!-- Brush Size Slider -->
+        <div class="flex items-center gap-2 shrink-0 pl-2 sm:pl-0" title="Brush Size">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-gray-400"></i>
+            <input type="range" id="brushSize" min="0.3" max="3" step="0.1" value="1" class="w-20 sm:w-24">
+        </div>
+    </div>
+
+    <!-- UI Controls -->
+    <div class="fixed bottom-6 left-1/2 transform -translate-x-1/2 glass-panel rounded-full px-6 py-3 flex items-center gap-6 shadow-2xl z-10 transition-all duration-300 hover:border-orange-500/50">
+        
+        <!-- Status Indicator -->
+        <div id="statusIndicator" class="absolute -top-10 left-1/2 transform -translate-x-1/2 bg-orange-500/20 text-orange-400 border border-orange-500/30 px-4 py-1 rounded-full text-xs font-semibold tracking-wider uppercase opacity-0 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+            Ready
+        </div>
+
+        <button id="btnUndo" class="flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-all group active:scale-95" title="Undo Last Stroke">
+            <i data-lucide="undo-2" class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform"></i>
+            <span class="text-[10px] uppercase font-bold tracking-wider">Undo</span>
+        </button>
+
+        <button id="btnClear" class="flex flex-col items-center gap-1 text-gray-400 hover:text-red-400 transition-all group active:scale-95" title="Clear Canvas">
+            <i data-lucide="trash-2" class="w-5 h-5 group-hover:-translate-y-0.5 transition-transform"></i>
+            <span class="text-[10px] uppercase font-bold tracking-wider">Clear</span>
+        </button>
+
+        <div class="w-px h-8 bg-gray-700"></div>
+
+        <button id="btnPlay" class="flex flex-col items-center gap-1 text-orange-400 hover:text-orange-300 transition-all group scale-110 active:scale-100" title="Play Animation">
+            <div id="playIconContainer" class="bg-orange-500/20 p-2 rounded-full group-hover:bg-orange-500/30 transition-colors">
+                <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+            </div>
+            <span class="text-[10px] uppercase font-bold tracking-wider">Animate</span>
+        </button>
+    </div>
+
+    <!-- Header info -->
+    <div class="fixed top-6 left-6 pointer-events-none">
+        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-red-500 to-yellow-500 drop-shadow-lg">IgniteType</h1>
+        <p class="text-sm text-gray-400 font-medium tracking-wide">Refined Light Painting Engine</p>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // --- Core Variables ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        // State
+        let paths = []; // Stores strokes: { brush: 'fire', scale: 1.0, points: [...] }
+        let currentPath = null;
+        let isDrawing = false;
+        let isAnimating = false;
+        let animationFrameId = null;
+        
+        // Settings
+        let currentBrushId = 'fire';
+        let currentBrushScale = 1.0; 
+
+        // UI Elements
+        const btnUndo = document.getElementById('btnUndo');
+        const btnClear = document.getElementById('btnClear');
+        const btnPlay = document.getElementById('btnPlay');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const playIconContainer = document.getElementById('playIconContainer');
+        const brushBtns = document.querySelectorAll('.brush-btn');
+        const brushSizeInput = document.getElementById('brushSize');
+
+        // Brush Presets Config
+        const brushes = {
+            fire: {
+                composite: 'lighter',
+                layers: [
+                    { width: 30, color: 'rgba(255, 0, 0, 0.03)', blur: 25, shadow: 'rgba(255, 0, 0, 0.8)' },
+                    { width: 15, color: 'rgba(255, 60, 0, 0.08)', blur: 15, shadow: 'rgba(255, 80, 0, 0.9)' },
+                    { width: 6, color: 'rgba(255, 200, 0, 0.4)', blur: 8, shadow: 'rgba(255, 200, 0, 1)' },
+                    { width: 2, color: 'rgba(255, 255, 255, 0.9)', blur: 2, shadow: 'rgba(255, 255, 255, 1)' }
+                ]
+            },
+            neon: {
+                composite: 'lighter',
+                layers: [
+                    { width: 30, color: 'rgba(0, 50, 255, 0.03)', blur: 25, shadow: 'rgba(0, 100, 255, 0.8)' },
+                    { width: 15, color: 'rgba(0, 150, 255, 0.08)', blur: 15, shadow: 'rgba(0, 200, 255, 0.9)' },
+                    { width: 6, color: 'rgba(0, 255, 255, 0.4)', blur: 8, shadow: 'rgba(0, 255, 255, 1)' },
+                    { width: 2, color: 'rgba(255, 255, 255, 0.9)', blur: 2, shadow: 'rgba(255, 255, 255, 1)' }
+                ]
+            },
+            plasma: {
+                composite: 'lighter',
+                layers: [
+                    { width: 30, color: 'rgba(0, 255, 50, 0.03)', blur: 25, shadow: 'rgba(0, 255, 50, 0.8)' },
+                    { width: 15, color: 'rgba(100, 255, 0, 0.08)', blur: 15, shadow: 'rgba(150, 255, 0, 0.9)' },
+                    { width: 6, color: 'rgba(200, 255, 0, 0.4)', blur: 8, shadow: 'rgba(200, 255, 0, 1)' },
+                    { width: 2, color: 'rgba(255, 255, 255, 0.9)', blur: 2, shadow: 'rgba(255, 255, 255, 1)' }
+                ]
+            },
+            magic: {
+                composite: 'lighter',
+                layers: [
+                    { width: 35, color: 'rgba(150, 0, 255, 0.03)', blur: 30, shadow: 'rgba(150, 0, 255, 0.8)' },
+                    { width: 18, color: 'rgba(200, 50, 255, 0.08)', blur: 18, shadow: 'rgba(200, 50, 255, 0.9)' },
+                    { width: 8, color: 'rgba(255, 100, 255, 0.4)', blur: 10, shadow: 'rgba(255, 100, 255, 1)' },
+                    { width: 2, color: 'rgba(255, 255, 255, 0.9)', blur: 2, shadow: 'rgba(255, 255, 255, 1)' }
+                ]
+            }
+        };
+
+        // --- Initialization & Responsive Scaling ---
+        function resizeCanvas() {
+            // Handle High DPI displays for crisp rendering (Scalability Fix)
+            const dpr = window.devicePixelRatio || 1;
+            
+            // Set actual internal canvas resolution
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+            
+            // Set visual CSS size
+            canvas.style.width = `${window.innerWidth}px`;
+            canvas.style.height = `${window.innerHeight}px`;
+            
+            // Normalize coordinate system
+            ctx.scale(dpr, dpr);
+            
+            redrawAll();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- Utility Functions ---
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+
+        let statusTimeout;
+        function showStatus(text) {
+            clearTimeout(statusTimeout);
+            statusIndicator.textContent = text;
+            statusIndicator.style.opacity = '1';
+            statusTimeout = setTimeout(() => {
+                if(!isAnimating) statusIndicator.style.opacity = '0';
+            }, 2000);
+        }
+
+        // --- Drawing Engine ---
+
+        // Modified to accept dynamic scale for scalable stroke thicknesses
+        function drawSegment(p1, p2, brushId, scale = 1.0) {
+            const brush = brushes[brushId] || brushes.fire;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.globalCompositeOperation = brush.composite;
+
+            brush.layers.forEach(layer => {
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                
+                // Apply brush scaling dynamically
+                ctx.lineWidth = layer.width * scale;
+                ctx.strokeStyle = layer.color;
+                ctx.shadowBlur = layer.blur * scale;
+                ctx.shadowColor = layer.shadow;
+                
+                ctx.stroke();
+            });
+        }
+
+        function redrawAll() {
+            // Clear entire canvas factoring in high DPR
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            paths.forEach(path => {
+                for (let i = 1; i < path.points.length; i++) {
+                    drawSegment(path.points[i - 1], path.points[i], path.brush, path.scale);
+                }
+            });
+        }
+
+        // --- Event Handlers (Mouse & Touch) ---
+
+        function startDrawing(e) {
+            if (isAnimating) stopAnimation();
+            isDrawing = true;
+            
+            const pos = getPos(e);
+            currentPath = {
+                brush: currentBrushId,
+                scale: currentBrushScale,
+                points: [{ x: pos.x, y: pos.y, time: Date.now() }]
+            };
+            paths.push(currentPath);
+            updateUI();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+
+            const pos = getPos(e);
+            const lastPoint = currentPath.points[currentPath.points.length - 1];
+
+            // Distance check prevents blowout/blobbing when drawing too slowly
+            if (getDistance(lastPoint, pos) > 3) {
+                const newPoint = { x: pos.x, y: pos.y, time: Date.now() };
+                currentPath.points.push(newPoint);
+                drawSegment(lastPoint, newPoint, currentPath.brush, currentPath.scale);
+            }
+        }
+
+        function stopDrawing() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            // Draw a dot if just a single tap
+            if (currentPath.points.length === 1) {
+                const p = currentPath.points[0];
+                drawSegment(p, {x: p.x + 1, y: p.y + 1}, currentPath.brush, currentPath.scale);
+            }
+            updateUI();
+        }
+
+        function getPos(e) {
+            // Normalize touch vs mouse coordinates
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        // Attach Event Listeners
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+        canvas.addEventListener('touchcancel', stopDrawing);
+
+        // --- Controls & Brushes ---
+
+        // Brush Selection
+        brushBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                brushBtns.forEach(b => {
+                    b.classList.remove('border-white', 'scale-110');
+                    b.classList.add('border-transparent');
+                    b.style.boxShadow = 'none';
+                });
+                
+                const target = e.currentTarget;
+                target.classList.remove('border-transparent');
+                target.classList.add('border-white', 'scale-110');
+                
+                currentBrushId = target.dataset.brush;
+                
+                const colors = {
+                    fire: 'rgba(255,0,0,0.8)',
+                    neon: 'rgba(0,150,255,0.8)',
+                    plasma: 'rgba(0,255,50,0.8)',
+                    magic: 'rgba(200,50,255,0.8)'
+                };
+                target.style.boxShadow = `0 0 10px ${colors[currentBrushId]}`;
+                
+                showStatus(currentBrushId.charAt(0).toUpperCase() + currentBrushId.slice(1) + ' Brush');
+            });
+        });
+
+        // Brush Size Slider event
+        brushSizeInput.addEventListener('input', (e) => {
+            currentBrushScale = parseFloat(e.target.value);
+            const percentage = Math.round(currentBrushScale * 100);
+            showStatus(`Brush Size: ${percentage}%`);
+        });
+
+        btnUndo.addEventListener('click', () => {
+            if (isAnimating || paths.length === 0) return;
+            paths.pop();
+            redrawAll();
+            updateUI();
+            showStatus('Undo');
+        });
+
+        btnClear.addEventListener('click', () => {
+            if (isAnimating) stopAnimation();
+            if (paths.length === 0) return;
+            
+            // Add slight fade-out effect for refinement
+            canvas.style.transition = 'opacity 0.2s';
+            canvas.style.opacity = '0';
+            
+            setTimeout(() => {
+                paths = [];
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.style.opacity = '1';
+                updateUI();
+                showStatus('Canvas Cleared');
+            }, 200);
+        });
+
+        btnPlay.addEventListener('click', () => {
+            if (paths.length === 0) return;
+            if (isAnimating) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+
+        function updateUI() {
+            btnUndo.disabled = paths.length === 0 || isAnimating;
+            btnClear.disabled = paths.length === 0 && !isAnimating;
+            
+            const span = btnPlay.querySelector('span');
+            
+            if (isAnimating) {
+                playIconContainer.innerHTML = '<i data-lucide="square" class="w-6 h-6 fill-current"></i>';
+                span.textContent = 'Stop';
+                btnPlay.classList.add('text-red-400');
+                btnPlay.classList.remove('text-orange-400');
+                playIconContainer.classList.add('bg-red-500/20');
+                playIconContainer.classList.remove('bg-orange-500/20');
+            } else {
+                playIconContainer.innerHTML = '<i data-lucide="play" class="w-6 h-6 fill-current"></i>';
+                span.textContent = 'Animate';
+                btnPlay.classList.remove('text-red-400');
+                btnPlay.classList.add('text-orange-400');
+                playIconContainer.classList.remove('bg-red-500/20');
+                playIconContainer.classList.add('bg-orange-500/20');
+            }
+            lucide.createIcons();
+        }
+
+        // --- Animation Engine ---
+
+        function startAnimation() {
+            isAnimating = true;
+            updateUI();
+            showStatus('Animating...');
+            
+            // Clear taking DPR into account
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let pathIndex = 0;
+            let pointIndex = 1;
+            const pointsPerFrame = 2; // Controls playback speed
+
+            function animateLoop() {
+                if (!isAnimating) return;
+
+                for (let i = 0; i < pointsPerFrame; i++) {
+                    if (pathIndex >= paths.length) {
+                        stopAnimation();
+                        showStatus('Animation Complete');
+                        return;
+                    }
+
+                    const currentAnimPath = paths[pathIndex];
+                    
+                    if (pointIndex < currentAnimPath.points.length) {
+                        const p1 = currentAnimPath.points[pointIndex - 1];
+                        const p2 = currentAnimPath.points[pointIndex];
+                        // Pass exact brush style and scale recorded for this specific path
+                        drawSegment(p1, p2, currentAnimPath.brush, currentAnimPath.scale);
+                        pointIndex++;
+                    } else {
+                        pathIndex++;
+                        pointIndex = 1;
+                    }
+                }
+
+                animationFrameId = requestAnimationFrame(animateLoop);
+            }
+
+            animateLoop();
+        }
+
+        function stopAnimation() {
+            isAnimating = false;
+            cancelAnimationFrame(animationFrameId);
+            redrawAll(); // Instantly jump to final state
+            updateUI();
+            statusIndicator.style.opacity = '0';
+        }
+
+        // Initialize UI state
+        updateUI();
+
+    </script>
+</body>
+</html>

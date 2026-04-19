@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Figure Animation Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb; /* gray-50 */
+            color: #111827; /* gray-900 */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Clean Canvas */
+        #anim-canvas {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 20px 20px;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .char-btn.active {
+            outline: 3px solid #3b82f6; /* blue-500 */
+            outline-offset: 2px;
+            transform: scale(1.1);
+        }
+
+        .anim-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row antialiased select-none bg-gray-50">
+
+    <!-- Left Sidebar Control Panel -->
+    <aside class="w-full md:w-80 h-auto md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0 z-20 shadow-sm">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-white shrink-0">
+            <div class="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 text-white">
+                <i data-lucide="clapperboard" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-gray-900 leading-none">Stick Studio</h1>
+                <p class="text-xs text-gray-500 font-medium mt-1">Animation Viewer</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            <!-- Character Selection -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Character</h2>
+                    <span id="char-name" class="text-[10px] font-bold text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">The Second Coming</span>
+                </div>
+                
+                <div id="char-grid" class="grid grid-cols-4 gap-4">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Animation Selection -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Animation</h2>
+                <div id="anim-list" class="grid grid-cols-2 gap-2">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Playback Toggle -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Controls</h2>
+                <button id="btn-play" onclick="togglePlay()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl text-sm transition flex items-center justify-center border border-gray-200">
+                    <i data-lucide="pause" class="w-4 h-4 mr-2"></i>
+                    <span>Pause Animation</span>
+                </button>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Workspace (Canvas) -->
+    <main class="flex-1 flex flex-col items-center justify-center bg-gray-50 p-4 md:p-8 relative">
+        <div class="w-full h-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative flex items-center justify-center">
+            
+            <canvas id="anim-canvas" class="touch-none"></canvas>
+            
+            <!-- Ground Line Overlay -->
+            <div class="absolute bottom-1/4 left-0 w-full h-[2px] bg-gray-200 pointer-events-none"></div>
+
+            <!-- Hint Overlay -->
+            <div class="absolute top-4 left-4 bg-white/80 backdrop-blur text-xs font-bold text-gray-500 px-3 py-1.5 rounded-lg pointer-events-none border border-gray-100 shadow-sm">
+                FPS: 60 | Engine: Dynamic IK
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Data & State ---
+        const characters = [
+            { id: 'tsc', name: 'The Second Coming', color: '#FF8800', hollow: true },
+            { id: 'tco', name: 'The Chosen One', color: '#000000', hollow: false },
+            { id: 'tdl', name: 'The Dark Lord', color: '#dc2626', hollow: false },
+            { id: 'green', name: 'Green', color: '#22c55e', hollow: false },
+            { id: 'blue', name: 'Blue', color: '#3b82f6', hollow: false },
+            { id: 'yellow', name: 'Yellow', color: '#eab308', hollow: false },
+            { id: 'purple', name: 'Purple', color: '#a855f7', hollow: false }
+        ];
+
+        const animations = [
+            { id: 'Idle', icon: 'user' },
+            { id: 'Walk', icon: 'footprints' },
+            { id: 'Run', icon: 'zap' },
+            { id: 'Punch', icon: 'swords' },
+            { id: 'Fly', icon: 'rocket' },
+            { id: 'Dance', icon: 'music' }
+        ];
+
+        let currentChar = characters[0];
+        let currentAnim = 'Idle';
+        let isPlaying = true;
+
+        // Engine State
+        let timer = 0;
+        let cycle = 0;
+        let particles = [];
+
+        // --- UI Initialization ---
+        function initUI() {
+            const charGrid = document.getElementById('char-grid');
+            characters.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = `char-btn w-12 h-12 rounded-full border-2 border-gray-200 shadow-sm transition mx-auto flex items-center justify-center ${c.id === currentChar.id ? 'active' : ''}`;
+                // Setup visual representation inside button
+                if(c.hollow) {
+                    btn.innerHTML = `<div class="w-8 h-8 rounded-full border-[4px] bg-white" style="border-color: ${c.color};"></div>`;
+                } else {
+                    btn.innerHTML = `<div class="w-8 h-8 rounded-full" style="background-color: ${c.color};"></div>`;
+                }
+                btn.onclick = () => selectCharacter(c);
+                charGrid.appendChild(btn);
+            });
+
+            const animList = document.getElementById('anim-list');
+            animations.forEach(a => {
+                const btn = document.createElement('button');
+                btn.id = `anim-btn-${a.id}`;
+                btn.className = `anim-btn flex flex-col items-center justify-center py-3 rounded-xl border border-gray-200 text-gray-600 font-bold text-xs transition hover:bg-gray-50 ${a.id === currentAnim ? 'active' : ''}`;
+                btn.innerHTML = `<i data-lucide="${a.icon}" class="w-5 h-5 mb-1.5"></i> ${a.id}`;
+                btn.onclick = () => selectAnimation(a.id);
+                animList.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function selectCharacter(c) {
+            currentChar = c;
+            document.getElementById('char-name').innerText = c.name;
+            document.getElementById('char-name').style.color = c.color;
+            
+            // Update active states
+            document.querySelectorAll('.char-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', characters[idx].id === c.id);
+            });
+        }
+
+        function selectAnimation(animId) {
+            currentAnim = animId;
+            timer = 0; // Reset animation loops
+            cycle = 0;
+            particles = []; // Clear old particles
+            
+            // Update active states
+            document.querySelectorAll('.anim-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-600', 'bg-white');
+            });
+            const activeBtn = document.getElementById(`anim-btn-${animId}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-gray-600', 'bg-white');
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('btn-play');
+            if (isPlaying) {
+                btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4 mr-2"></i><span>Pause Animation</span>';
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4 mr-2"></i><span>Play Animation</span>';
+            }
+            lucide.createIcons();
+        }
+
+        // --- Canvas Engine ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        let cw, ch;
+        let cx, cy; // Center of screen, origin for stickman
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch * 0.75); // Ground level at bottom 1/4
+        }
+        window.addEventListener('resize', resize);
+
+        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+        function spawnImpact(px, py, color) {
+            for(let i=0; i<12; i++) {
+                particles.push({
+                    x: px, y: py,
+                    vx: (Math.random() - 0.5) * 15,
+                    vy: (Math.random() - 0.5) * 15,
+                    life: 1, size: Math.random() * 4 + 2,
+                    color: Math.random() > 0.5 ? color : '#cbd5e1'
+                });
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if (p.life <= 0) { particles.splice(i, 1); return; }
+                
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.rect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawStickman() {
+            ctx.save();
+            
+            // Base positioning
+            let baseOffsetX = 0;
+            let baseOffsetY = 0;
+            let lean = 0;
+            let bob = 0;
+            
+            // Joints
+            let l1x=0, l1y=35, k1x=0, k1y=20;
+            let l2x=0, l2y=35, k2x=0, k2y=20;
+            let a1x=-10, a1y=5, a2x=10, a2y=5;
+            let e1x=0, e1y=0, e2x=0, e2y=0; // Elbows (if needed, otherwise straight arm)
+
+            // Calculate state based on currentAnim
+            if (currentAnim === 'Idle') {
+                cycle += 0.05;
+                bob = Math.sin(cycle) * 2;
+                l1x = -12; l2x = 12; k1x = -6; k2x = 6;
+                a1x = -15; a2x = 15; a1y = 15; a2y = 15;
+            } 
+            else if (currentAnim === 'Walk') {
+                cycle += 0.15;
+                bob = Math.abs(Math.sin(cycle * 2)) * 3;
+                lean = 0.05;
+                
+                let s = Math.sin(cycle);
+                let c = Math.cos(cycle);
+                // Leg 1
+                l1x = s * 22; l1y = 35 - Math.max(0, c) * 12;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 6; k1y = 10 + (l1y-10)/2;
+                // Leg 2
+                let s2 = Math.sin(cycle + Math.PI);
+                let c2 = Math.cos(cycle + Math.PI);
+                l2x = s2 * 22; l2y = 35 - Math.max(0, c2) * 12;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 6; k2y = 10 + (l2y-10)/2;
+                // Arms (straight swing)
+                a1x = s2 * 18; a1y = 5 + Math.abs(s2)*2;
+                a2x = s * 18;  a2y = 5 + Math.abs(s)*2;
+            }
+            else if (currentAnim === 'Run') {
+                cycle += 0.3;
+                bob = Math.abs(Math.sin(cycle * 2)) * 6;
+                lean = 0.3;
+                
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                
+                l1x = s * 35; l1y = 35 - Math.max(0, c) * 20;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 12; k1y = 10 + (l1y-10)/2;
+                
+                l2x = s2 * 35; l2y = 35 - Math.max(0, c2) * 20;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 12; k2y = 10 + (l2y-10)/2;
+                
+                // Exaggerated Arm Swing (Bend at elbow simulation by breaking it up, or just straight)
+                a1x = s2 * 30; a1y = -10 + Math.abs(s2)*10;
+                a2x = s * 30;  a2y = -10 + Math.abs(s)*10;
+            }
+            else if (currentAnim === 'Punch') {
+                let pCycle = timer % 60;
+                
+                // Wide stance
+                l1x = -15; l2x = 25; k1x = -10; k2x = 15;
+                l1y = 35; l2y = 35; k1y = 22; k2y = 22;
+                
+                // Back arm guarding
+                a1x = -15; a1y = -5;
+                
+                if (pCycle < 15) {
+                    // Wind up
+                    let p = pCycle / 15;
+                    a2x = lerp(10, -30, p); a2y = lerp(10, -15, p);
+                    lean = lerp(0, -0.15, p);
+                } else if (pCycle < 22) {
+                    // Strike!
+                    let p = (pCycle - 15) / 7;
+                    a2x = lerp(-30, 45, p); a2y = lerp(-15, -15, p);
+                    lean = lerp(-0.15, 0.3, p);
+                    if (pCycle === 21) spawnImpact(cx + 45, cy - 15, currentChar.color);
+                } else if (pCycle < 40) {
+                    // Hold
+                    a2x = 45; a2y = -15; lean = 0.3;
+                } else {
+                    // Retract
+                    let p = (pCycle - 40) / 20;
+                    a2x = lerp(45, 10, p); a2y = lerp(-15, 10, p);
+                    lean = lerp(0.3, 0, p);
+                }
+            }
+            else if (currentAnim === 'Fly') {
+                cycle += 0.1;
+                bob = Math.sin(cycle) * 8;
+                baseOffsetY = -80; // Lift off ground
+                lean = 0.6; // Horizontal
+                
+                // Trailing legs
+                l1x = -25; l1y = 10; k1x = -10; k1y = 5;
+                l2x = -35; l2y = 15; k2x = -15; k2y = 10;
+                
+                // Superman arms
+                a2x = 40; a2y = -25; // Pointing forward
+                a1x = -25; a1y = 5; // Tucked back
+
+                // Trail Particles
+                if (Math.random() > 0.4) {
+                    particles.push({
+                        x: cx - 40, y: cy + baseOffsetY + bob,
+                        vx: -5 - Math.random()*2, vy: (Math.random() - 0.5)*2,
+                        life: 1, size: Math.random()*3+2,
+                        color: currentChar.color
+                    });
+                }
+            }
+            else if (currentAnim === 'Dance') {
+                cycle += 0.2;
+                bob = Math.abs(Math.sin(cycle*2)) * 12; // Bouncing squat
+                
+                let s = Math.sin(cycle);
+                lean = s * 0.15; // Wiggle torso
+                
+                // Squatting legs
+                l1x = -15; l1y = 35 - bob; k1x = -20 - s*5; k1y = 20;
+                l2x = 15; l2y = 35 - bob; k2x = 20 - s*5; k2y = 20;
+                
+                // Waving arms
+                a1x = 25; a1y = -25 + Math.sin(cycle*4)*15;
+                a2x = -25; a2y = -25 + Math.cos(cycle*4)*15;
+            }
+
+            // Apply Global Positioning
+            ctx.translate(cx + baseOffsetX, cy + baseOffsetY - bob);
+            ctx.rotate(lean);
+
+            // Draw Alan Becker Style 
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = currentChar.color;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(0, -38, 16, 0, Math.PI * 2);
+            if (currentChar.hollow) {
+                ctx.fillStyle = '#ffffff'; // Matches canvas background
+                ctx.fill();
+                ctx.stroke();
+            } else {
+                ctx.fillStyle = currentChar.color;
+                ctx.fill();
+            }
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(0, -22);
+            ctx.lineTo(0, 10);
+            ctx.stroke();
+
+            // Legs
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(k1x, k1y); ctx.lineTo(l1x, l1y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(k2x, k2y); ctx.lineTo(l2x, l2y); ctx.stroke();
+
+            // Arms
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(a1x, a1y); ctx.stroke(); // Back arm
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(a2x, a2y); ctx.stroke(); // Front arm
+
+            ctx.restore();
+
+            // Draw Drop Shadow (Fixed on ground)
+            if (currentAnim !== 'Fly') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.beginPath();
+                let shadowW = 20 + Math.abs(l2x - l1x);
+                ctx.ellipse(cx, cy + 35, shadowW/2, 4, 0, 0, Math.PI*2);
+                ctx.fill();
+            } else {
+                // Faint shadow when flying
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 35, 15, 3, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            if (isPlaying) {
+                timer++;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Run
+        initUI();
+        resize();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

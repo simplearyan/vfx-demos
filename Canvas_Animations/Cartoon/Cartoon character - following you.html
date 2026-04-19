@@ -1,0 +1,377 @@
+<div class="smiley__wrapper" id="smiley__wrapper">
+  <div class="smiley__hair-background"></div>
+  <div class="smiley__shirt"></div>
+  <div class="smiley__neck"></div>
+  <div class="smiley">
+    <div class="smiley__face">
+      <div class="smiley__eyes">
+        <div class="smiley__eye smiley__eye--left"></div>
+        <div class="smiley__eye smiley__eye--right"></div>
+      </div>
+      <div class="smiley__ears">
+        <div class="smiley__ear smiley__ear--left"></div>
+        <div class="smiley__ear smiley__ear--right"></div>
+      </div>
+      <div class="smiley__nose"></div>
+      <div class="smiley__blushes">
+        <div class="smiley__blush smiley__blush--left"></div>
+        <div class="smiley__blush smiley__blush--right"></div>
+      </div>
+      <div class="smiley__mouth"></div>
+    </div>
+  </div>
+    <div class="smiley__hair-background smiley__hair-background--wrapper">
+    <div class="smiley__hair">
+        <div class="smiley__hair-part smiley__hair-part--left"></div>
+        <div class="smiley__hair-part smiley__hair-part--right"></div>
+      </div>
+  </div>
+</div>
+
+
+
+<style>
+    $white: #FFF;
+$blue: #419197;
+$dark-blue: #12486B;
+$yellow: #F5FCCD;
+$red: #ff7d66;
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient($white -100%, $blue);
+}
+
+.smiley {
+  $component-class: &;
+  position: relative;
+  width: 12rem;
+  height: 12rem;
+  background-color: $yellow;
+  border-radius: 45% 45% 50% 50%;
+  overflow: hidden;
+  &__wrapper {
+    position: relative;
+    top: -1rem;
+    padding: 2rem 1rem 1rem;
+    &--left {
+      #{$component-class} {
+        &__face {
+          left: 10%;
+        }
+        &__nose {
+          box-shadow: -4px 4px 0 0 $dark-blue;
+        }
+        &__hair-background {
+          left: 5%;
+          border-top-right-radius: 50%;
+          border-bottom-left-radius: 40%;
+        }
+        &__hair {
+          left: -52%;
+        }
+        &__neck {
+          background-position: 80% 0;
+        }
+        &__shirt {
+          border-radius: 5rem 4rem 0 0;
+        }
+      }
+    }
+    &--right {
+      #{$component-class} {
+        &__face {
+          left: 40%;
+        }
+        &__nose {
+          box-shadow: 4px 4px 0 0 $dark-blue;
+        }
+        &__hair-background {
+          left: -2%;
+          border-top-left-radius: 50%;
+          border-bottom-right-radius: 40%;
+        }
+        &__hair {
+          left: 0;
+        }
+        &__neck {
+          background-position: 20% 0;
+        }
+        &__shirt {
+          border-radius: 4rem 5rem 0 0;
+        }
+      }
+    }
+    &--top {
+      #{$component-class} {
+        &__face {
+          top: 10%;
+        }
+        &__hair-background {
+          top: 5%;
+        }
+        &__hair {
+          top: -38%;
+        }
+        &__hair-part:before {
+          bottom: -60%;
+        }
+        &__neck {
+          bottom: -10%;
+        }
+        &__shirt {
+          height: 5.2rem;
+        }
+      }
+    }
+    &--bottom {
+      #{$component-class} {
+        &__face {
+          top: 40%;
+        }
+        &__hair-background {
+          top: -2%;
+        }
+        &__hair {
+          top: 1%;
+        }
+      }
+    }
+  }
+  &__hair-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: $dark-blue;
+    width: 100%;
+    height: 90%;
+    border-radius: 45% 45% 35% 35%;
+    transition-property: top, left, border-radius;
+    transition-duration: 1s;
+    &--wrapper  {
+      display: flex;
+      justify-content: center;
+      background-color: transparent;
+      overflow: hidden;
+    }
+  }
+  &__face {
+    position: absolute;
+    top: 25%;
+    left: 25%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    width: 50%;
+    height: 50%;
+    transition-property: top, left;
+    transition-duration: 1s;
+    &:before {
+      content: '';
+      position: absolute;
+      top: -100%;
+      left: -100%;
+      display: flex;
+      width: 300%;
+      height: 300%;
+      background: radial-gradient(circle, transparent 20%, $red 100%);
+    }
+  }
+  &__hair {
+    position: absolute;
+    top: -17%;
+    left: -25%;
+    display: flex;
+    width: 150%;
+    height: 60%;
+    transition-property: top, left;
+    transition-duration: 1s;
+  }
+  &__hair-part {
+    position: relative;
+    height: 100%;
+    background-color: $dark-blue;
+    box-shadow: 0 4px 8px 4px rgba($dark-blue, 0.2);
+    &:before {
+      content: '';
+      position: absolute;
+      bottom: -55%;
+      width: 2.5rem;
+      height: 100%;
+      background-color: $dark-blue;
+      transition: bottom 1s;
+    }
+    &--left {
+      width: 45%;
+      border-radius: 0 0 30% 0;
+      &:before {
+        left: 0;
+        transform: rotate(30deg);
+      }
+    }
+    &--right {
+      width: 55%;
+      border-radius: 0 0 0 10%;
+      &:before {
+        right: 0;
+        transform: rotate(-30deg);
+      }
+    }
+  }
+  &__eyes {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    width: 100%;
+    height: 40%;
+  }
+  &__eye {
+    position: relative;
+    width: 1rem;
+    height: 1rem;
+    background: linear-gradient($blue, $dark-blue);
+    border-radius: 50%;
+    @keyframes blink {
+      0%, 49%, 51%, 100% {
+        height: 1rem;
+      }
+      50% {
+        height: 0;
+      }
+    }
+    animation: blink;
+    animation-duration: 6s;
+    animation-iteration-count: infinite;
+    &:after {
+      content: '';
+      position: absolute;
+      top: 0.2rem;
+      left: 0.2rem;
+      width: 0.2rem;
+      height: 0.2rem;
+      background-color: $white;
+      border-radius: 50%;
+    }
+  }
+  &__ears {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    width: 235%;
+    height: 30%;
+  }
+  &__ear {
+    width: 0.5rem;
+    height: 100%;
+    border-top: 2px solid $dark-blue;
+    border-bottom: 2px solid $dark-blue;
+    &--left {
+      border-radius: 200px 0 0 200px;
+      border-left: 4px solid $dark-blue;
+    }
+    &--right {
+      border-radius: 0 200px 200px 0;
+      border-right: 4px solid $dark-blue;
+    }
+  }
+  &__nose {
+    position: absolute;
+    top: 40%;
+    width: 1rem; 
+    height: 1rem; 
+    background-color: $yellow;
+    border-radius: 0.4rem;
+    box-shadow: 0 4px 0 0 $dark-blue;
+    transition: box-shadow 1s ease;
+  }
+  &__blushes {
+    position: relative;
+    top: -10%;
+    display: flex;
+    justify-content: space-between;
+    width: 160%;
+    height: 20%;
+  }
+  &__blush {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: rgba($red, 60%);
+    filter: blur(4px);
+  }
+  &__mouth {
+    position: relative;
+    width: 40%;
+    height: 5%;
+    border-left: 2px solid $dark-blue;
+    border-bottom: 5px solid $dark-blue;
+    border-right: 2px solid $dark-blue;
+    border-radius: 0 0 200px 200px;
+    border-top: none;
+  }
+  &__neck {
+    position: absolute;
+    left: calc(50% - 2rem);
+    bottom: -2rem;
+    width: 4rem;
+    height: 5rem;
+    background: linear-gradient(90deg, $red 0, $yellow 50%, $red 100%);
+    background-size: 300% 100%;
+    background-position: 50% 0;
+    border-radius: 0 0 2rem 2rem;
+    transition-property: bottom, background-position;
+    transition-duration: 1s;
+    box-shadow: inset 0 30px 8px 4px rgba($dark-blue, 0.2);
+  }
+  &__shirt {
+    position: absolute;
+    left: 0;
+    bottom: -5rem;
+    width: 100%;
+    height: 5.6rem;
+    background: linear-gradient($red, $white);
+    border-radius: 5rem 5rem 0 0;
+    transition-property: border-radius, height;
+    transition-duration: 1s;
+  }
+}
+</style>
+
+<script>
+    const className = 'smiley__wrapper';
+const smiley = document.getElementById(className);
+
+const mouseFunction = (mouse) => {
+  const clientX = mouse.clientX ? mouse.clientX : mouse.touches[0].clientX;
+  const clientY = mouse.clientY ? mouse.clientY : mouse.touches[0].clientY;
+  if (clientX > window.innerWidth / 2 + 20) {
+    smiley.classList.add(`${className}--right`);
+    smiley.classList.remove(`${className}--left`);
+  } else if (clientX < window.innerWidth / 2 - 20) {
+    smiley.classList.add(`${className}--left`);
+    smiley.classList.remove(`${className}--right`);
+  } else {
+    smiley.classList.remove(`${className}--right`);
+    smiley.classList.remove(`${className}--left`);
+  }
+  if (clientY > window.innerHeight / 2 + 20) {
+    smiley.classList.add(`${className}--bottom`);
+    smiley.classList.remove(`${className}--top`);
+  } else if (clientY < window.innerHeight / 2 - 20) {
+    smiley.classList.add(`${className}--top`);
+    smiley.classList.remove(`${className}--bottom`);
+  } else {
+    smiley.classList.remove(`${className}--bottom`);
+    smiley.classList.remove(`${className}--top`);
+  }
+};
+
+// In a PROD case we should use a "throttle function" for these events
+window.addEventListener('mousemove', mouseFunction);
+window.addEventListener('touchstart', mouseFunction);
+</script>

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinetic Typography: Stats Question</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP for Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- KaTeX for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,900;1,900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #09090b; /* Zinc 950 */
+            color: #f4f4f5;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Utility for masking text animations */
+        .clip-text {
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .clip-text span {
+            display: inline-block;
+            transform: translateY(110%);
+        }
+
+        /* Absolute positioning for scenes */
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Glowing Effects */
+        .glow-emerald {
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(16, 185, 129, 0.4);
+        }
+        
+        .glow-indigo {
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.4);
+        }
+
+        .glow-pink {
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(236, 72, 153, 0.4);
+        }
+
+        /* Math Container Glassmorphism */
+        .math-glass {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(63, 63, 70, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        /* KaTeX overrides for better glowing display */
+        .katex-display {
+            margin: 0 !important;
+            padding: 1rem 2rem;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900 to-black">
+
+    <!-- Scene 1: The Intro Flash -->
+    <div id="scene1" class="scene">
+        <h2 class="text-5xl md:text-8xl font-black tracking-tighter uppercase flex flex-col items-center leading-none">
+            <div class="clip-text"><span class="s1-word text-zinc-500">Practice</span></div>
+            <div class="clip-text"><span class="s1-word text-white">Problem</span></div>
+            <div class="clip-text mt-4"><span class="s1-word text-indigo-500 glow-indigo text-8xl md:text-[12rem] leading-none">#01</span></div>
+        </h2>
+    </div>
+
+    <!-- Scene 2: The Real World Setup -->
+    <div id="scene2" class="scene text-center px-6">
+        <h2 class="text-3xl md:text-6xl font-black uppercase leading-tight tracking-tight">
+            <div class="clip-text"><span class="s2-word text-zinc-400">The lifespan of a</span></div><br>
+            <div class="clip-text"><span class="s2-word text-white">Machine Part</span></div><br>
+            <div class="clip-text"><span class="s2-word text-zinc-500 text-2xl md:text-4xl">is a continuous random variable <span class="text-pink-400 font-bold italic">X</span></span></div>
+        </h2>
+    </div>
+
+    <!-- Scene 3: The PDF Formula (KaTeX) -->
+    <div id="scene3" class="scene text-center w-full px-4">
+        <h3 id="s3-title" class="text-2xl md:text-4xl font-bold tracking-widest text-zinc-400 uppercase mb-8 opacity-0">
+            With Probability Density Function:
+        </h3>
+        
+        <!-- Glassmorphism Math Container -->
+        <div id="s3-math" class="math-glass rounded-3xl opacity-0 transform scale-90">
+            <div id="katex-pdf" class="text-2xl md:text-4xl text-emerald-400 font-semibold drop-shadow-lg">
+                <!-- KaTeX injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene 4: The Core Question -->
+    <div id="scene4" class="scene flex-col w-full px-4 text-center">
+        <h1 class="text-4xl md:text-7xl font-black uppercase text-white mb-4">
+            <div class="clip-text"><span class="s4-word">What is the</span></div><br>
+            <div class="clip-text"><span class="s4-word text-pink-500 glow-pink">Expected</span></div>
+            <div class="clip-text"><span class="s4-word text-pink-500 glow-pink">Lifespan?</span></div>
+        </h1>
+        
+        <div id="s4-math" class="math-glass rounded-2xl mt-6 opacity-0 transform translate-y-8">
+            <div id="katex-expected" class="text-xl md:text-3xl text-indigo-300 font-bold">
+                <!-- KaTeX injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Replay Button -->
+    <button id="btn-replay" class="absolute bottom-10 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full backdrop-blur-md border border-white/10 transition-colors opacity-0 pointer-events-none z-50 flex items-center gap-2 shadow-lg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Replay Animation
+    </button>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- 1. Render KaTeX Formulas ---
+            // The PDF Equation
+            katex.render("f(x) = \\begin{cases} \\frac{1}{2} e^{-x/2} & x > 0 \\\\ 0 & \\text{otherwise} \\end{cases}", document.getElementById('katex-pdf'), {
+                displayMode: true,
+                throwOnError: false
+            });
+
+            // The Expected Value Question
+            katex.render("E[X] = \\int_{0}^{\\infty} x \\cdot \\frac{1}{2} e^{-x/2} \\,dx = \\text{?}", document.getElementById('katex-expected'), {
+                displayMode: true,
+                throwOnError: false
+            });
+
+            // --- 2. GSAP Initialization ---
+            gsap.set(".scene", { autoAlpha: 1, opacity: 0 }); // Makes scenes visible to GSAP but visually hidden
+            gsap.set("#scene1", { opacity: 1 });
+
+            const masterTl = gsap.timeline({ paused: true });
+
+            // --- Scene 1: "PRACTICE PROBLEM #01" ---
+            masterTl.to(".s1-word", {
+                y: "0%",
+                duration: 0.5,
+                stagger: 0.15,
+                ease: "expo.out"
+            })
+            .to(".s1-word", {
+                y: "-110%",
+                duration: 0.4,
+                stagger: 0.1,
+                ease: "expo.in",
+                delay: 0.8
+            })
+            .set("#scene1", { opacity: 0 });
+
+            // --- Scene 2: "The lifespan of a Machine Part..." ---
+            masterTl.set("#scene2", { opacity: 1 })
+            .to(".s2-word", {
+                y: "0%",
+                duration: 0.6,
+                stagger: 0.2,
+                ease: "back.out(1.2)"
+            })
+            .to("#scene2", {
+                scale: 1.2,
+                opacity: 0,
+                filter: "blur(10px)",
+                duration: 0.6,
+                ease: "power2.in",
+                delay: 1.5
+            });
+
+            // --- Scene 3: The Math PDF Reveal ---
+            masterTl.set("#scene3", { opacity: 1 })
+            .to("#s3-title", {
+                opacity: 1,
+                y: -10,
+                duration: 0.6,
+                ease: "power2.out"
+            })
+            .to("#s3-math", {
+                opacity: 1,
+                scale: 1,
+                duration: 0.8,
+                ease: "elastic.out(1, 0.6)"
+            }, "-=0.2")
+            // Hold on screen, then swipe up and away
+            .to("#scene3", {
+                y: "-100vh",
+                opacity: 0,
+                duration: 0.7,
+                ease: "power3.in",
+                delay: 2.5
+            });
+
+            // --- Scene 4: "What is the Expected Lifespan?" ---
+            masterTl.set("#scene3", { y: "0" }) // Reset scene 3 position for future replays
+            masterTl.set("#scene4", { opacity: 1 })
+            .to(".s4-word", {
+                y: "0%",
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "expo.out"
+            })
+            .to("#s4-math", {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: "back.out(1.5)"
+            }, "+=0.2")
+            
+            // --- Show Replay Button ---
+            .to("#btn-replay", {
+                opacity: 1,
+                pointerEvents: "auto",
+                y: -20,
+                duration: 0.5
+            }, "+=0.5");
+
+            // Play the timeline
+            masterTl.play();
+
+            // --- Replay Logic ---
+            document.getElementById('btn-replay').addEventListener('click', () => {
+                gsap.to("#btn-replay", { opacity: 0, pointerEvents: "none", duration: 0.2 });
+                masterTl.restart();
+            });
+        });
+    </script>
+</body>
+</html>

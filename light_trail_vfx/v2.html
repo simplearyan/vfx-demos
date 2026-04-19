@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Light Trail VFX</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #000;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            filter: contrast(1.1) brightness(1.2);
+        }
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.5rem;
+            border-radius: 1.25rem;
+            display: flex;
+            gap: 1.5rem;
+            color: white;
+            font-family: sans-serif;
+            align-items: center;
+        }
+        input[type="range"] {
+            cursor: pointer;
+        }
+        .mode-btn {
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls shadow-2xl">
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase font-bold opacity-50 mb-1">Color</span>
+            <input type="color" id="colorPicker" value="#ff9500" class="w-8 h-8 rounded-full cursor-pointer bg-transparent border-none">
+        </div>
+
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase font-bold opacity-50 mb-1">Brush Mode</span>
+            <div class="flex gap-1">
+                <button id="classicMode" class="mode-btn active px-3 py-1 rounded-md text-xs">Classic</button>
+                <button id="thickMode" class="mode-btn px-3 py-1 rounded-md text-xs">3D Thick</button>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-center">
+            <span class="text-[10px] uppercase font-bold opacity-50 mb-1">Glow</span>
+            <input type="range" id="glowSlider" min="5" max="80" value="35" class="accent-orange-500 w-24">
+        </div>
+
+        <div class="flex flex-col items-center">
+            <button id="clearBtn" class="bg-red-500/20 hover:bg-red-500/40 border border-red-500/30 px-4 py-2 rounded-lg text-xs transition-colors">Clear All</button>
+        </div>
+        
+        <div class="hidden md:flex flex-col justify-center text-[10px] opacity-40 border-l border-white/10 pl-4">
+            Drag: Draw<br>
+            Dbl Click: Wireframe
+        </div>
+    </div>
+
+    <canvas id="vfxCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('vfxCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = document.getElementById('colorPicker');
+        const glowSlider = document.getElementById('glowSlider');
+        const clearBtn = document.getElementById('clearBtn');
+        const classicModeBtn = document.getElementById('classicMode');
+        const thickModeBtn = document.getElementById('thickMode');
+
+        let width, height;
+        let isDrawing = false;
+        let brushMode = 'classic'; // 'classic' or '3d'
+        let points = [];
+        let trails = [];
+        let wireframes = [];
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Mode Toggles
+        classicModeBtn.onclick = () => {
+            brushMode = 'classic';
+            classicModeBtn.classList.add('active');
+            thickModeBtn.classList.remove('active');
+        };
+        thickModeBtn.onclick = () => {
+            brushMode = '3d';
+            thickModeBtn.classList.add('active');
+            classicModeBtn.classList.remove('active');
+        };
+
+        // Interaction logic
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            points = [{x: e.clientX, y: e.clientY}];
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            points.push({x: e.clientX, y: e.clientY});
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (points.length > 2) {
+                trails.push({
+                    pts: [...points],
+                    color: colorPicker.value,
+                    glow: parseInt(glowSlider.value),
+                    mode: brushMode
+                });
+            }
+            isDrawing = false;
+            points = [];
+        });
+
+        canvas.addEventListener('dblclick', (e) => {
+            const size = 120 + Math.random() * 60;
+            wireframes.push({
+                x: e.clientX, y: e.clientY, 
+                size, 
+                color: colorPicker.value,
+                rot: Math.random() * Math.PI,
+                rotSpeed: (Math.random() - 0.5) * 0.01
+            });
+        });
+
+        clearBtn.addEventListener('click', () => {
+            trails = [];
+            wireframes = [];
+        });
+
+        function drawClassicTrail(trailPoints, color, glow) {
+            if (trailPoints.length < 2) return;
+
+            ctx.beginPath();
+            ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+
+            for (let i = 1; i < trailPoints.length - 2; i++) {
+                const xc = (trailPoints[i].x + trailPoints[i+1].x) / 2;
+                const yc = (trailPoints[i].y + trailPoints[i+1].y) / 2;
+                ctx.quadraticCurveTo(trailPoints[i].x, trailPoints[i].y, xc, yc);
+            }
+
+            ctx.shadowBlur = glow;
+            ctx.shadowColor = color;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function draw3DTrail(trailPoints, color, glow) {
+            if (trailPoints.length < 2) return;
+
+            // We draw the stroke in segments to apply a gradient/fade from tail to head
+            for (let i = 1; i < trailPoints.length; i++) {
+                const p1 = trailPoints[i - 1];
+                const p2 = trailPoints[i];
+                
+                // Ratio increases as we get closer to the leading edge (the head)
+                const ratio = i / trailPoints.length;
+                
+                // 3D effect: The trail is thicker and more opaque at the head
+                const thickness = 2 + (ratio * 18);
+                const opacity = ratio; 
+                
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+
+                ctx.shadowBlur = glow * ratio;
+                ctx.shadowColor = color;
+                
+                // Set stroke style with dynamic opacity
+                ctx.globalAlpha = opacity;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = thickness;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                // Core highlight (white center)
+                if (ratio > 0.5) {
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = thickness * 0.3;
+                    ctx.shadowBlur = 0;
+                    ctx.stroke();
+                }
+                
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        function drawWireframe(wire) {
+            ctx.save();
+            ctx.translate(wire.x, wire.y);
+            ctx.rotate(wire.rot);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -wire.size);
+            ctx.lineTo(wire.size/2, 0);
+            ctx.lineTo(0, wire.size);
+            ctx.lineTo(-wire.size/2, 0);
+            ctx.closePath();
+            
+            ctx.strokeStyle = wire.color;
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = wire.color;
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -wire.size); ctx.lineTo(0, wire.size);
+            ctx.moveTo(-wire.size/2, 0); ctx.lineTo(wire.size/2, 0);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // Solid Black Background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Background Bokeh (City Lights Feel)
+            ctx.shadowBlur = 0;
+            for(let i=0; i<20; i++) {
+                const xPos = (width * (i/20) + (Math.sin(Date.now()*0.0005 + i)*50)) % width;
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.05 + Math.random()*0.05})`;
+                ctx.beginPath();
+                ctx.arc(xPos, height * 0.75 + (Math.cos(i)*30), 1.5, 0, Math.PI*2);
+                ctx.fill();
+            }
+
+            ctx.globalCompositeOperation = 'screen';
+
+            // Draw saved trails
+            trails.forEach(t => {
+                if (t.mode === '3d') {
+                    draw3DTrail(t.pts, t.color, t.glow);
+                } else {
+                    drawClassicTrail(t.pts, t.color, t.glow);
+                }
+            });
+
+            // Draw active drawing
+            if (isDrawing) {
+                if (brushMode === '3d') {
+                    draw3DTrail(points, colorPicker.value, parseInt(glowSlider.value));
+                } else {
+                    drawClassicTrail(points, colorPicker.value, parseInt(glowSlider.value));
+                }
+            }
+
+            // Draw wireframes
+            wireframes.forEach(w => {
+                w.rot += w.rotSpeed;
+                drawWireframe(w);
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

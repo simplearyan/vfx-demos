@@ -1,0 +1,140 @@
+<div class="hero-container">
+  <img src="https://images.unsplash.com/photo-1523712999610-f77fbcfc3843?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" alt="Autumn Garden" class="hero-image">
+  
+  <canvas id="leaf-canvas"></canvas>
+
+  <div class="hero-content">
+    <h1>Capture the Autumn Glow</h1>
+    <p>Premium seasonal web effects for high-end brands.</p>
+    <div class="btn-group">
+        <a href="#" class="cta-btn">View Our Portfolio</a>
+        <a href="https://www.youtube.com/@creative_web" target="_blank" class="yt-link">Creative Web YouTube</a>
+    </div>
+  </div>
+</div>
+
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+body, html {
+  width: 100%; height: 100%;
+  overflow: hidden; background: #2c1e1a;
+}
+
+.hero-container {
+  position: relative;
+  width: 100%; height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.hero-image {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; z-index: 1;
+  filter: brightness(0.65) contrast(1.1);
+}
+
+#leaf-canvas {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 2; pointer-events: none;
+}
+
+.hero-content {
+  position: relative; z-index: 3;
+  text-align: center; color: white;
+  font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+h1 { font-size: clamp(2rem, 8vw, 4rem); margin-bottom: 10px; }
+
+.btn-group { margin-top: 30px; display: flex; gap: 15px; justify-content: center; }
+
+.cta-btn {
+  background: #e67e22; /* Autumn Orange */
+  color: white; padding: 12px 28px;
+  text-decoration: none; border-radius: 50px;
+  font-weight: bold; transition: 0.3s;
+}
+
+.yt-link {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(8px);
+  color: white; padding: 12px 28px;
+  text-decoration: none; border-radius: 50px;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+</style>
+
+<script>
+    const canvas = document.getElementById('leaf-canvas');
+const ctx = canvas.getContext('2d');
+
+let width, height, leaves = [];
+const leafCount = 35;
+
+// These colors match a premium autumn palette
+const leafColors = ['#d35400', '#e67e22', '#f39c12', '#c0392b'];
+
+function init() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  leaves = [];
+  for (let i = 0; i < leafCount; i++) {
+    leaves.push({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      size: Math.random() * 15 + 10,
+      color: leafColors[Math.floor(Math.random() * leafColors.length)],
+      speedY: Math.random() * 1.5 + 1,
+      speedX: Math.random() * 2 - 1,
+      rotation: Math.random() * 360,
+      rotationSpeed: Math.random() * 2 - 1,
+      oscillation: Math.random() * 0.02 + 0.01,
+      phase: Math.random() * Math.PI * 2
+    });
+  }
+}
+
+// Drawing a leaf shape via code so it never fails to load
+function drawLeaf(l) {
+  ctx.save();
+  const currentX = l.x + Math.sin(l.phase) * 30;
+  ctx.translate(currentX, l.y);
+  ctx.rotate(l.rotation * Math.PI / 180);
+  
+  ctx.fillStyle = l.color;
+  ctx.beginPath();
+  // Simple organic leaf shape using quadratic curves
+  ctx.moveTo(0, 0);
+  ctx.quadraticCurveTo(l.size, -l.size, 0, -l.size * 2);
+  ctx.quadraticCurveTo(-l.size, -l.size, 0, 0);
+  ctx.fill();
+  
+  ctx.restore();
+}
+
+function update() {
+  ctx.clearRect(0, 0, width, height);
+  leaves.forEach(l => {
+    l.y += l.speedY;
+    l.rotation += l.rotationSpeed;
+    l.phase += l.oscillation;
+    
+    if (l.y > height + 20) {
+      l.y = -40;
+      l.x = Math.random() * width;
+    }
+    drawLeaf(l);
+  });
+  requestAnimationFrame(update);
+}
+
+window.addEventListener('resize', init);
+init();
+update();
+</script>

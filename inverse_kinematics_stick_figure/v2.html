@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Animator Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #e5e5e5;
+            overflow: hidden; /* Prevent bouncing on drag */
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar for Timeline */
+        .timeline-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: #1e1e1e;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        #anim-canvas {
+            background-color: #ffffff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            cursor: crosshair;
+            width: 100%;
+            max-height: calc(100vh - 180px);
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Toolbar -->
+    <header class="h-14 bg-neutral-900 border-b border-neutral-800 flex items-center justify-between px-4 shrink-0 shadow-md z-10">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-blue-600 rounded flex items-center justify-center shadow">
+                <i data-lucide="activity" class="text-white w-5 h-5"></i>
+            </div>
+            <h1 class="text-lg font-bold tracking-wide text-white hidden sm:block">Stick Animator</h1>
+        </div>
+
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <!-- Playback Controls -->
+            <div class="flex items-center bg-neutral-800 rounded-lg p-1 border border-neutral-700">
+                <button onclick="prevFrame()" class="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition" title="Previous Frame (Left Arrow)">
+                    <i data-lucide="step-back" class="w-4 h-4"></i>
+                </button>
+                <button onclick="togglePlay()" id="btn-play" class="p-1.5 text-blue-400 hover:text-blue-300 hover:bg-neutral-700 rounded transition mx-1" title="Play/Pause (Space)">
+                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                </button>
+                <button onclick="nextFrame()" class="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded transition" title="Next Frame (Right Arrow)">
+                    <i data-lucide="step-forward" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Frame Actions -->
+            <div class="flex items-center space-x-2">
+                <button onclick="addFrame()" class="flex items-center space-x-1 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 px-3 py-1.5 rounded-lg text-sm font-medium transition" title="Duplicate & Add Frame (+)">
+                    <i data-lucide="plus" class="w-4 h-4 text-green-400"></i>
+                    <span class="hidden sm:inline">Add Frame</span>
+                </button>
+                <button onclick="deleteFrame()" class="p-1.5 bg-neutral-800 hover:bg-red-900/50 hover:text-red-400 border border-neutral-700 rounded-lg text-neutral-400 transition" title="Delete Current Frame">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <!-- Onion Skin Toggle -->
+            <button onclick="toggleOnionSkin()" id="btn-onion" class="p-1.5 bg-blue-900/30 text-blue-400 border border-blue-800 rounded-lg transition" title="Toggle Onion Skinning">
+                <i data-lucide="layers" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="flex items-center space-x-3 text-sm">
+            <span class="text-neutral-400 hidden sm:inline">FPS:</span>
+            <input type="range" id="fps-slider" min="1" max="24" value="12" class="w-20 sm:w-24 accent-blue-500" oninput="updateFPS(this.value)">
+            <span id="fps-display" class="font-mono text-neutral-300 w-6">12</span>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 bg-neutral-950 relative">
+        
+        <!-- Canvas Container -->
+        <div class="relative w-full max-w-4xl aspect-[4/3] flex items-center justify-center">
+            <canvas id="anim-canvas" width="800" height="600" class="touch-none"></canvas>
+            
+            <!-- Instructions Overlay (Fades out when interacted) -->
+            <div id="instruction-overlay" class="absolute bottom-4 left-4 bg-black/60 backdrop-blur text-xs text-neutral-300 px-3 py-2 rounded pointer-events-none transition-opacity duration-500">
+                <p>• Drag joints to pose the figure</p>
+                <p>• Double-click a joint to <strong class="text-blue-400">Pin/Unpin</strong> it</p>
+                <p>• Use <strong>Spacebar</strong> to Play/Pause</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Timeline -->
+    <footer class="h-28 bg-neutral-900 border-t border-neutral-800 flex flex-col shrink-0">
+        <div class="px-4 py-1.5 flex justify-between items-center bg-neutral-950 border-b border-neutral-800 text-xs text-neutral-500 font-medium">
+            <span>TIMELINE</span>
+            <span id="frame-counter">Frame 1 / 1</span>
+        </div>
+        <div id="timeline" class="flex-1 flex items-center px-4 space-x-2 overflow-x-auto timeline-scroll py-2">
+            <!-- Frames injected here by JS -->
+        </div>
+    </footer>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- Core Variables ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        const timelineEl = document.getElementById('timeline');
+        const instructionOverlay = document.getElementById('instruction-overlay');
+        
+        let frames = [];
+        let currentFrameIdx = 0;
+        let isPlaying = false;
+        let fps = 12;
+        let onionSkin = true;
+        let playInterval = null;
+
+        // --- Kinematics State ---
+        let draggedNode = null;
+        let lastClickTime = 0;
+        let lastClickedNode = null;
+        let allBones = [];
+
+        // --- Initial Stick Figure Blueprint ---
+        // Using an 800x600 canvas coordinate system
+        const cx = 400, cy = 250;
+        const blueprintNodes = [
+            { id: 'head', x: cx, y: cy - 90 },
+            { id: 'neck', x: cx, y: cy - 40 },
+            { id: 'spine', x: cx, y: cy + 30 },
+            { id: 'pelvis', x: cx, y: cy + 90 },
+            { id: 'lShoulder', x: cx - 40, y: cy - 40 },
+            { id: 'rShoulder', x: cx + 40, y: cy - 40 },
+            { id: 'lElbow', x: cx - 70, y: cy + 10 },
+            { id: 'rElbow', x: cx + 70, y: cy + 10 },
+            { id: 'lHand', x: cx - 100, y: cy + 60 },
+            { id: 'rHand', x: cx + 100, y: cy + 60 },
+            { id: 'lHip', x: cx - 25, y: cy + 90 },
+            { id: 'rHip', x: cx + 25, y: cy + 90 },
+            { id: 'lKnee', x: cx - 30, y: cy + 170 },
+            { id: 'rKnee', x: cx + 30, y: cy + 170 },
+            { id: 'lFoot', x: cx - 40, y: cy + 250 },
+            { id: 'rFoot', x: cx + 40, y: cy + 250 }
+        ];
+
+        // Visible bones that get drawn
+        const visibleBoneDefs = [
+            ['neck', 'spine'], ['spine', 'pelvis'],
+            ['neck', 'lShoulder'], ['lShoulder', 'lElbow'], ['lElbow', 'lHand'],
+            ['neck', 'rShoulder'], ['rShoulder', 'rElbow'], ['rElbow', 'rHand'],
+            ['pelvis', 'lHip'], ['lHip', 'lKnee'], ['lKnee', 'lFoot'],
+            ['pelvis', 'rHip'], ['rHip', 'rKnee'], ['rKnee', 'rFoot']
+        ];
+
+        // Hidden structural bones to keep the torso/shoulders/hips rigid
+        const bracingBoneDefs = [
+            ['lShoulder', 'rShoulder'],
+            ['lHip', 'rHip'],
+            ['lShoulder', 'spine'], ['rShoulder', 'spine'],
+            ['lHip', 'spine'], ['rHip', 'spine'],
+            ['neck', 'pelvis']
+        ];
+
+        // Calculate lengths for all bones based on blueprint
+        function initBones() {
+            allBones = [];
+            const addBones = (defs, isVisible) => {
+                defs.forEach(pair => {
+                    const nA = blueprintNodes.find(n => n.id === pair[0]);
+                    const nB = blueprintNodes.find(n => n.id === pair[1]);
+                    const dist = Math.hypot(nB.x - nA.x, nB.y - nA.y);
+                    allBones.push({ a: pair[0], b: pair[1], length: dist, visible: isVisible });
+                });
+            };
+            addBones(visibleBoneDefs, true);
+            addBones(bracingBoneDefs, false);
+            
+            // Add initial head connection logic (neck to head)
+            const nA = blueprintNodes.find(n => n.id === 'neck');
+            const nB = blueprintNodes.find(n => n.id === 'head');
+            allBones.push({ a: 'neck', b: 'head', length: Math.hypot(nB.x - nA.x, nB.y - nA.y), visible: false });
+        }
+
+        // --- Initialization ---
+        function init() {
+            initBones();
+            // Create frame 1
+            frames.push(JSON.parse(JSON.stringify(blueprintNodes)));
+            frames[0].find(n => n.id === 'lFoot').pinned = true; // Pin feet by default to help beginners
+            frames[0].find(n => n.id === 'rFoot').pinned = true;
+            render();
+            updateUI();
+        }
+
+        // --- Constraint Solver (Inverse Kinematics) ---
+        function resolveConstraints(nodes) {
+            // Run 50 iterations for extreme rigidity (Animator vs Animation style)
+            for (let iter = 0; iter < 50; iter++) {
+                allBones.forEach(b => {
+                    let nA = nodes.find(n => n.id === b.a);
+                    let nB = nodes.find(n => n.id === b.b);
+                    
+                    let dx = nB.x - nA.x;
+                    let dy = nB.y - nA.y;
+                    let dist = Math.hypot(dx, dy);
+                    if (dist === 0) return;
+                    
+                    let diff = dist - b.length;
+                    let percent = diff / dist / 2;
+                    let offsetX = dx * percent;
+                    let offsetY = dy * percent;
+
+                    // If a node is pinned or being dragged, it acts as infinite mass
+                    let aFixed = nA === draggedNode || nA.pinned;
+                    let bFixed = nB === draggedNode || nB.pinned;
+
+                    if (!aFixed && !bFixed) {
+                        nA.x += offsetX; nA.y += offsetY;
+                        nB.x -= offsetX; nB.y -= offsetY;
+                    } else if (!aFixed && bFixed) {
+                        nA.x += offsetX * 2; nA.y += offsetY * 2;
+                    } else if (aFixed && !bFixed) {
+                        nB.x -= offsetX * 2; nB.y -= offsetY * 2;
+                    }
+                });
+            }
+        }
+
+        // --- Drawing Logic ---
+        function drawGrid() {
+            ctx.strokeStyle = '#e5e5e5';
+            ctx.lineWidth = 1;
+            const size = 40;
+            ctx.beginPath();
+            for(let x=0; x<=canvas.width; x+=size) { ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); }
+            for(let y=0; y<=canvas.height; y+=size) { ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); }
+            ctx.stroke();
+
+            // Draw "Floor" line
+            ctx.strokeStyle = '#d4d4d4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 500); ctx.lineTo(canvas.width, 500);
+            ctx.stroke();
+        }
+
+        function drawFigure(nodes, styleType) {
+            // styleType: 'main' or 'onion'
+            const isMain = styleType === 'main';
+            
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = isMain ? 10 : 10;
+            
+            if (isMain) {
+                ctx.strokeStyle = '#000000'; // Pure black for the classic look
+            } else {
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.25)'; // Faint red for onion skin
+            }
+
+            // Draw Bones
+            ctx.beginPath();
+            allBones.forEach(b => {
+                if (!b.visible) return;
+                const nA = nodes.find(n => n.id === b.a);
+                const nB = nodes.find(n => n.id === b.b);
+                ctx.moveTo(nA.x, nA.y);
+                ctx.lineTo(nB.x, nB.y);
+            });
+            
+            // Connect neck to the bottom edge of the head circle dynamically
+            const neck = nodes.find(n => n.id === 'neck');
+            const head = nodes.find(n => n.id === 'head');
+            const headRadius = 26;
+            const angle = Math.atan2(head.y - neck.y, head.x - neck.x);
+            const headBottomX = head.x - Math.cos(angle) * headRadius;
+            const headBottomY = head.y - Math.sin(angle) * headRadius;
+            ctx.moveTo(neck.x, neck.y);
+            ctx.lineTo(headBottomX, headBottomY);
+            
+            ctx.stroke();
+
+            // Draw Head (Empty Circle)
+            ctx.beginPath();
+            ctx.arc(head.x, head.y, headRadius, 0, Math.PI * 2);
+            ctx.fillStyle = isMain ? '#ffffff' : 'transparent';
+            if (isMain) ctx.fill();
+            ctx.stroke();
+
+            // Draw Edit Handles (Only for active frame while paused)
+            if (isMain && !isPlaying) {
+                nodes.forEach(n => {
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 6, 0, Math.PI * 2);
+                    // Blue if pinned, Red if normal
+                    ctx.fillStyle = n.pinned ? '#3b82f6' : '#ef4444'; 
+                    ctx.fill();
+                    
+                    if (n.pinned) {
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                    }
+                });
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            // Onion Skin
+            if (onionSkin && !isPlaying && currentFrameIdx > 0) {
+                drawFigure(frames[currentFrameIdx - 1], 'onion');
+            }
+
+            // Current Frame
+            drawFigure(frames[currentFrameIdx], 'main');
+        }
+
+        // --- Interaction Logic ---
+        function getPointerPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handlePointerDown(e) {
+            if (isPlaying) return;
+            e.preventDefault(); // prevent scrolling
+            
+            // Hide instructions
+            instructionOverlay.style.opacity = '0';
+
+            const pos = getPointerPos(e);
+            let closest = null;
+            let minDist = 30; // Grab radius
+            
+            let currentNodes = frames[currentFrameIdx];
+            currentNodes.forEach(n => {
+                let dist = Math.hypot(n.x - pos.x, n.y - pos.y);
+                if(dist < minDist) {
+                    minDist = dist;
+                    closest = n;
+                }
+            });
+
+            if (closest) {
+                draggedNode = closest;
+                
+                // Double click to Pin/Unpin logic
+                const now = Date.now();
+                if (lastClickedNode === closest && (now - lastClickTime) < 300) {
+                    closest.pinned = !closest.pinned;
+                    draggedNode = null; // cancel drag if they pinned it
+                    render();
+                }
+                lastClickedNode = closest;
+                lastClickTime = now;
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!draggedNode || isPlaying) return;
+            e.preventDefault();
+            
+            const pos = getPointerPos(e);
+            draggedNode.x = pos.x;
+            draggedNode.y = pos.y;
+            
+            resolveConstraints(frames[currentFrameIdx]);
+            render();
+        }
+
+        function handlePointerUp() {
+            if(draggedNode) {
+                draggedNode = null;
+                updateTimelineThumbnails(); // Update the thumbnail after modifying
+            }
+        }
+
+        // Event Listeners for Canvas
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+        
+        canvas.addEventListener('touchstart', handlePointerDown, {passive: false});
+        window.addEventListener('touchmove', handlePointerMove, {passive: false});
+        window.addEventListener('touchend', handlePointerUp);
+
+        // --- Timeline & Controls ---
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btnIcon = document.querySelector('#btn-play i');
+            
+            if (isPlaying) {
+                draggedNode = null;
+                btnIcon.setAttribute('data-lucide', 'square'); // Change to stop icon
+                document.getElementById('btn-play').classList.replace('text-blue-400', 'text-red-400');
+                lucide.createIcons();
+                
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    render();
+                    updateTimelineUI();
+                }, 1000 / fps);
+            } else {
+                clearInterval(playInterval);
+                btnIcon.setAttribute('data-lucide', 'play');
+                document.getElementById('btn-play').classList.replace('text-red-400', 'text-blue-400');
+                lucide.createIcons();
+                render();
+                updateTimelineUI();
+            }
+        }
+
+        function addFrame() {
+            // Deep copy current frame
+            const newFrame = JSON.parse(JSON.stringify(frames[currentFrameIdx]));
+            frames.splice(currentFrameIdx + 1, 0, newFrame);
+            currentFrameIdx++;
+            render();
+            updateUI();
+        }
+
+        function deleteFrame() {
+            if (frames.length <= 1) return; // Need at least 1 frame
+            frames.splice(currentFrameIdx, 1);
+            if (currentFrameIdx >= frames.length) currentFrameIdx = frames.length - 1;
+            render();
+            updateUI();
+        }
+
+        function prevFrame() {
+            if (isPlaying) return;
+            currentFrameIdx = (currentFrameIdx - 1 + frames.length) % frames.length;
+            render();
+            updateTimelineUI();
+        }
+
+        function nextFrame() {
+            if (isPlaying) return;
+            currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+            render();
+            updateTimelineUI();
+        }
+
+        function toggleOnionSkin() {
+            onionSkin = !onionSkin;
+            const btn = document.getElementById('btn-onion');
+            if(onionSkin) {
+                btn.classList.add('bg-blue-900/30', 'text-blue-400', 'border-blue-800');
+                btn.classList.remove('text-neutral-500', 'border-neutral-700');
+            } else {
+                btn.classList.remove('bg-blue-900/30', 'text-blue-400', 'border-blue-800');
+                btn.classList.add('text-neutral-500', 'border-neutral-700');
+            }
+            render();
+        }
+
+        function updateFPS(val) {
+            fps = val;
+            document.getElementById('fps-display').innerText = val;
+            if (isPlaying) {
+                clearInterval(playInterval);
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    render();
+                    updateTimelineUI();
+                }, 1000 / fps);
+            }
+        }
+
+        function gotoFrame(idx) {
+            if (isPlaying) return;
+            currentFrameIdx = idx;
+            render();
+            updateTimelineUI();
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            updateTimelineThumbnails();
+            updateTimelineUI();
+        }
+
+        function updateTimelineThumbnails() {
+            timelineEl.innerHTML = '';
+            frames.forEach((frame, idx) => {
+                const box = document.createElement('div');
+                box.className = `h-16 w-12 shrink-0 rounded border cursor-pointer flex items-center justify-center text-xs font-mono transition-colors duration-200`;
+                box.id = `frame-box-${idx}`;
+                box.innerText = idx + 1;
+                box.onclick = () => gotoFrame(idx);
+                timelineEl.appendChild(box);
+            });
+        }
+
+        function updateTimelineUI() {
+            document.getElementById('frame-counter').innerText = `Frame ${currentFrameIdx + 1} / ${frames.length}`;
+            
+            // Update Active State Classes
+            frames.forEach((_, idx) => {
+                const box = document.getElementById(`frame-box-${idx}`);
+                if (!box) return;
+                if (idx === currentFrameIdx) {
+                    box.className = `h-16 w-12 shrink-0 rounded border-2 border-blue-500 bg-blue-900/20 cursor-pointer flex items-center justify-center text-xs font-mono text-blue-300 transform scale-105 transition-all`;
+                    // Auto-scroll timeline to keep active frame in view
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                } else {
+                    box.className = `h-16 w-12 shrink-0 rounded border border-neutral-700 bg-neutral-800 hover:bg-neutral-700 cursor-pointer flex items-center justify-center text-xs font-mono text-neutral-500 transition-all`;
+                }
+            });
+        }
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight' && !isPlaying) {
+                nextFrame();
+            } else if (e.code === 'ArrowLeft' && !isPlaying) {
+                prevFrame();
+            } else if ((e.key === '+' || e.key === '=') && !isPlaying) {
+                addFrame();
+            }
+        });
+
+        // Start App
+        init();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<div style="width: 100%; max-width: 2000px; height: 0; padding-top: 80%; position: relative;">
+    <canvas id="canvas" width="2000" height="1600" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; right: 0; bottom: 0; ">
+        Your browser doesn't include support for the canvas element.
+    </canvas>
+</div>
+
+<p>planet illustrations from <a href="http://www.irasutoya.com/2013/07/blog-post_23.html" target="_blank">irasutoya.com</a></p>
+
+<a
+  class="git"
+  target="_blank"   href='https://github.com/suekam/canvas-solar-system'
+>
+    <svg class="octicon octicon-mark-github v-align-middle" height="32" viewBox="0 0 16 16" version="1.1" width="32" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path></svg>
+</a>
+
+<style>
+    body {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    margin: 0;
+    background: #181818;
+    text-align: center;
+  position: relative;
+}
+#canvas {
+    margin: 0 auto;
+    display: block;
+}
+p{
+    color: #eee;
+    text-decoration: none;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin: 30px 0 60px;
+    display: inline-block;
+}
+a{
+  color: #eee;
+}
+* { box-sizing: border-box }
+$triangleSize: 7em;
+$gitGray: #24292e;
+a.git {
+  position: absolute;
+  display: block;
+  color: #fff;
+  right: 0;
+  top: 0;
+  width: $triangleSize;
+  height: $triangleSize;
+  cursor: pointer;
+  overflow: hidden;
+  font-family: sans-serif;  
+  &:after {
+    position: absolute;
+    content: 'fork me'; 
+    letter-spacing: 4px;
+    transform: rotate(45deg) translate(-50px, -38px);
+    bottom: 0;
+    left: 0;
+    width: 13em;
+    font-weight: bold;
+    margin: -5px;
+    font-size: 12px;
+    text-transform: uppercase;
+    text-align: center;
+    transition: .3s ease all;
+  }
+  &:before {
+    position: absolute;
+    content: '';
+    right: 0;
+    top: 0;
+    border-top: $triangleSize/2 solid $gitGray;
+    border-right: $triangleSize/2 solid $gitGray;
+    border-left: $triangleSize/2 solid transparent;
+    border-bottom: $triangleSize/2 solid transparent;
+    width: 0%;
+    height: 0%;
+  }
+  &:hover {
+    color: rgba(255,255,255,.7)
+  }
+  .octicon {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: 0;
+    margin: 10px;
+    transform: rotate(45deg);
+  }
+}
+.octicon {
+  display: inline-block;
+  vertical-align: text-top;
+  fill: currentColor;
+  transition: .3s ease all;
+}
+</style>
+
+
+<script>
+    var planets = [
+  "sun",
+  "mercury",
+  "venus",
+  "earth",
+  "moon",
+  "mars",
+  "jupiter",
+  "saturn",
+  "uranus",
+  "neptune",
+  "pluto",
+],
+  scale = [1, 9, 7, 6, 11, 8, 2, 3, 4, 5, 10],
+  orbitV = [0.8, 47.4, 35.0, 29.8, 1.0, 24.1, 13.1, 9.7, 6.8, 5.4, 4.7];
+(moon = {}),
+  (canvasX = document.getElementById("canvas").width),
+  (canvasY = document.getElementById("canvas").height);
+
+function loadPlanets() {
+  planets.forEach(function (el, i, arr) {
+    var star = {};
+    star.name = el;
+    star.img = new Image();
+    star.img.src =
+      "https://raw.githubusercontent.com/suekam/canvas-solar-system/master/images/" +
+      el +
+      ".png";
+    star.scale = scale[i];
+    star.orbitV = orbitV[i];
+    arr[i] = star;
+  });
+
+  // Extract the moon from the planets array because it's treated differently
+  planets.forEach(function (el, i, arr) {
+    if (planets[i].name === "moon") {
+      moon = planets[i];
+      planets.splice(i, 1);
+    }
+  });
+}
+
+function printImg(img, x, y, w, h) {
+  var ctx = document.getElementById("canvas").getContext("2d");
+  ctx.drawImage(img, x, y, w, h);
+}
+
+function drawMoon(earth, time) {
+  var ctx = document.getElementById("canvas").getContext("2d");
+
+  moon.w = (moon.img.width * (1 / moon.scale) * 1) / 2;
+  moon.h = (moon.img.height * (1 / moon.scale) * 1) / 2;
+
+  var moonOrbitRadius = 50; // Distance of the moon from Earth
+
+  // Calculate the moon's position relative to the Earth's position
+  var moonAngle =
+    ((((2 * Math.PI) / 60) * time.getSeconds() +
+      ((2 * Math.PI) / 60000) * time.getMilliseconds()) *
+      moon.orbitV) /
+    6;
+
+  var moonX = earth.x + moonOrbitRadius * Math.cos(moonAngle) - moon.w / 2;
+  var moonY = earth.y + moonOrbitRadius * Math.sin(moonAngle) - moon.h / 2;
+
+  ctx.beginPath();
+  ctx.arc(earth.x, earth.y, moonOrbitRadius, 0, Math.PI * 2, false); // Moon's orbit
+  ctx.stroke();
+
+  // Draw the moon
+  printImg(moon.img, moonX, moonY, moon.w, moon.h);
+}
+
+function draw() {
+  var ctx = document.getElementById("canvas").getContext("2d");
+  ctx.clearRect(0, 0, canvasX, canvasY);
+
+  ctx.fillStyle = "#181818";
+  ctx.fillRect(0, 0, canvasX, canvasY);
+
+  ctx.fillStyle = "rgba(255,255,255,.008)";
+  ctx.strokeStyle = "rgba(89,153,188,0.15)";
+  ctx.save();
+  ctx.translate(canvasX / 2, canvasY / 2);
+  var pos = 0;
+  var time = new Date();
+
+  for (var i = 0; i < planets.length; i++) {
+    ctx.save();
+
+    var w = (planets[i].img.width * (1 / planets[i].scale) * 1) / 2,
+      h = (planets[i].img.height * (1 / planets[i].scale) * 1) / 2,
+      x = pos - w / 2,
+      y = 0 - h / 2;
+
+    ctx.rotate(
+      ((((2 * Math.PI) / 60) * time.getSeconds() +
+        ((2 * Math.PI) / 60000) * time.getMilliseconds()) *
+        planets[i].orbitV) /
+        6
+    );
+
+    if (i !== 0) {
+      ctx.beginPath();
+      ctx.arc(0, 0, Math.abs(x) + w / 2, 0, Math.PI * 2, false); // Planet's orbit
+      ctx.stroke();
+    }
+
+    printImg(planets[i].img, x, y, w, h);
+
+    if (planets[i].name === "earth") {
+      // Pass the Earth's position and size to the drawMoon function
+      drawMoon({ x, y, w, h }, time);
+    }
+
+    pos = pos + w / 1.5 + 30;
+    ctx.restore();
+  }
+
+  ctx.restore();
+  window.requestAnimationFrame(draw);
+}
+
+function init() {
+  loadPlanets();
+  window.requestAnimationFrame(draw);
+}
+
+window.onload = function () {
+  init();
+};
+
+</script>

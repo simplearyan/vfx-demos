@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math FX: Sparkler Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000000;
+            font-family: system-ui, -apple-system, sans-serif;
+            color: white;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        /* UI Overlay Layer */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to canvas if needed */
+            display: flex;
+        }
+
+        .glass-panel {
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.08);
+            pointer-events: auto; /* Re-enable clicks for the panel */
+            box-shadow: 5px 0 25px rgba(0,0,0,0.5);
+        }
+
+        .nav-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .nav-btn.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-left: 3px solid #60a5fa;
+        }
+
+        .category-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #6b7280;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        /* Presentation Text */
+        #presentation-text {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .glow-text {
+            text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+        }
+        
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas for Sparkler / Light Painting FX -->
+    <canvas id="fxCanvas"></canvas>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        
+        <!-- Left Sidebar Navigation -->
+        <div class="glass-panel w-72 h-full flex flex-col">
+            <div class="p-6 border-b border-white/10">
+                <h1 class="text-2xl font-bold tracking-tight text-white drop-shadow-md flex items-center gap-2">
+                    <i data-lucide="sparkles" class="text-orange-400"></i>
+                    Math<span class="text-blue-500 font-light">FX</span>
+                </h1>
+                <p class="text-xs text-gray-400 font-medium tracking-wide mt-1 uppercase">Light Painting Studio</p>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scroll p-4 space-y-1">
+                
+                <div class="category-title">Vectors</div>
+                <button class="nav-btn active" data-topic="vector-add">
+                    <i data-lucide="arrow-up-right" class="w-4 h-4"></i> Vector Addition
+                </button>
+                <button class="nav-btn" data-topic="vector-scale">
+                    <i data-lucide="maximize-2" class="w-4 h-4"></i> Scalar Multiplication
+                </button>
+
+                <div class="category-title">Matrices & Data</div>
+                <button class="nav-btn" data-topic="matrix-size">
+                    <i data-lucide="grid-3x3" class="w-4 h-4"></i> Rows & Columns
+                </button>
+
+                <div class="category-title">Matrix Operations</div>
+                <button class="nav-btn" data-topic="matrix-add">
+                    <i data-lucide="plus-square" class="w-4 h-4"></i> Addition
+                </button>
+                <button class="nav-btn" data-topic="matrix-scale">
+                    <i data-lucide="scaling" class="w-4 h-4"></i> Scalar Multiplication
+                </button>
+                <button class="nav-btn" data-topic="matrix-transpose">
+                    <i data-lucide="flip-vertical" class="w-4 h-4"></i> Transpose (T)
+                </button>
+
+                <div class="category-title">Matrix Types</div>
+                <button class="nav-btn" data-topic="type-rect">Rectangular & Square</button>
+                <button class="nav-btn" data-topic="type-diagonal">Diagonal Matrix</button>
+                <button class="nav-btn" data-topic="type-scalar">Scalar Matrix</button>
+                <button class="nav-btn" data-topic="type-identity">Identity Matrix (I)</button>
+                <button class="nav-btn" data-topic="type-zero">Zero Matrix (0)</button>
+                <button class="nav-btn" data-topic="type-triangular">Triangular Matrix</button>
+                
+            </div>
+            
+            <div class="p-4 border-t border-white/10">
+                <button id="btnReplay" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl font-semibold text-sm transition-colors flex items-center justify-center gap-2 text-white pointer-events-auto">
+                    <i data-lucide="play" class="w-4 h-4"></i> Replay Animation
+                </button>
+            </div>
+        </div>
+
+        <!-- Center Presentation Text -->
+        <div id="presentation-text" class="flex-1 flex flex-col items-center justify-start pt-12">
+            <h2 id="titleText" class="text-4xl font-bold tracking-widest uppercase text-white glow-text mb-2 transition-opacity duration-500 opacity-0">Title</h2>
+            <p id="subText" class="text-xl text-gray-300 font-light transition-opacity duration-500 opacity-0">Subtitle description</p>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Canvas & Visual Engine Setup ---
+        const canvas = document.getElementById('fxCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let centerX, centerY;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            // Shift center to accommodate the sidebar (288px width)
+            centerX = 288 + (width - 288) / 2;
+            centerY = height / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Particle System (The Sparkler Effect) ---
+        let particles = [];
+        let persistentPaths = []; // Lines that stay drawn
+        let textsToDraw = []; // Text that stays on screen
+
+        class Particle {
+            constructor(x, y, color, isSpark = true) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                this.isSpark = isSpark;
+                
+                if (isSpark) {
+                    // Flying sparks
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 5 + 2;
+                    this.vx = Math.cos(angle) * speed;
+                    this.vy = Math.sin(angle) * speed;
+                    this.life = 1.0;
+                    this.decay = Math.random() * 0.03 + 0.02;
+                    this.gravity = 0.15;
+                    this.size = Math.random() * 2 + 1;
+                } else {
+                    // Light trail core
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.life = 1.0;
+                    this.decay = 0.01;
+                    this.gravity = 0;
+                    this.size = 4;
+                }
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += this.gravity;
+                this.life -= this.decay;
+            }
+            draw(ctx) {
+                if (this.life <= 0) return; // Prevent drawing if dead
+
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.beginPath();
+                // Ensure radius is never negative using Math.max
+                const radius = Math.max(0, this.size * this.life);
+                ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                // Extra glow for sparks
+                if(this.isSpark && this.life > 0.5) {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        function createSparklerAt(x, y, color, density = 3) {
+            // Create core glow
+            particles.push(new Particle(x, y, color, false));
+            // Create flying sparks
+            for(let i=0; i<density; i++) {
+                particles.push(new Particle(x, y, color, true));
+            }
+        }
+
+        // --- Animation Loop ---
+        function animateLoop() {
+            // Fade effect for long exposure light painting
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)'; // Trail length determined by opacity
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw Persistent Paths (Vectors, Grids)
+            ctx.globalCompositeOperation = 'lighter';
+            persistentPaths.forEach(p => {
+                ctx.beginPath();
+                ctx.moveTo(p.sx, p.sy);
+                ctx.lineTo(p.ex, p.ey);
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = p.width || 3;
+                ctx.shadowBlur = p.glow || 15;
+                ctx.shadowColor = p.color;
+                ctx.stroke();
+                
+                // Draw Arrowhead if needed
+                if (p.isArrow) {
+                    const angle = Math.atan2(p.ey - p.sy, p.ex - p.sx);
+                    ctx.beginPath();
+                    ctx.moveTo(p.ex, p.ey);
+                    ctx.lineTo(p.ex - 15 * Math.cos(angle - Math.PI/6), p.ey - 15 * Math.sin(angle - Math.PI/6));
+                    ctx.lineTo(p.ex - 15 * Math.cos(angle + Math.PI/6), p.ey - 15 * Math.sin(angle + Math.PI/6));
+                    ctx.closePath();
+                    ctx.fillStyle = p.color;
+                    ctx.fill();
+                }
+            });
+
+            // Draw Persistent Texts (Matrix numbers, labels)
+            textsToDraw.forEach(t => {
+                ctx.font = t.font || "bold 24px monospace";
+                ctx.fillStyle = t.color;
+                ctx.shadowBlur = t.glow || 15;
+                ctx.shadowColor = t.color;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(t.text, t.x, t.y);
+            });
+            ctx.shadowBlur = 0; // reset
+
+            // Update & Draw Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animateLoop);
+        }
+        animateLoop();
+
+        // --- Choreography Engine ---
+        let currentAnimation = null;
+        let isPlaying = false;
+
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        function setTitles(title, sub, color = '#ffffff') {
+            const t = document.getElementById('titleText');
+            const s = document.getElementById('subText');
+            t.style.opacity = 0;
+            s.style.opacity = 0;
+            setTimeout(() => {
+                t.textContent = title;
+                t.style.color = color;
+                s.textContent = sub;
+                t.style.opacity = 1;
+                s.style.opacity = 1;
+            }, 300);
+        }
+
+        function clearScene() {
+            particles = [];
+            persistentPaths = [];
+            textsToDraw = [];
+            ctx.clearRect(0,0,width,height);
+            document.getElementById('titleText').style.opacity = 0;
+            document.getElementById('subText').style.opacity = 0;
+        }
+
+        // Animate a wand drawing a line/arrow over time
+        async function drawLineAnim(sx, sy, ex, ey, duration, color, isArrow = false, width = 3) {
+            const steps = Math.floor(duration / 16); // roughly 60fps
+            const dx = (ex - sx) / steps;
+            const dy = (ey - sy) / steps;
+            
+            let cx = sx;
+            let cy = sy;
+
+            for(let i=0; i<steps; i++) {
+                if(!isPlaying) return; // Exit if animation cancelled
+                cx += dx;
+                cy += dy;
+                createSparklerAt(cx, cy, color, 4);
+                await sleep(16);
+            }
+            
+            // Save to persistent paths so it stays on screen
+            if(isPlaying) persistentPaths.push({sx, sy, ex, ey, color, isArrow, width});
+        }
+
+        // Animate a sparkler exploding to reveal text
+        async function popTextAnim(text, x, y, color, font = "bold 24px monospace", glow = 15) {
+            if(!isPlaying) return;
+            // Explosion of sparks
+            for(let i=0; i<20; i++) createSparklerAt(x, y, color, 1);
+            textsToDraw.push({text, x, y, color, font, glow});
+            await sleep(200);
+        }
+
+        // Helper to draw Matrix brackets
+        async function drawMatrixBrackets(x, y, w, h, color) {
+            const dur = 300;
+            // Left bracket
+            await drawLineAnim(x, y-h/2, x-20, y-h/2, dur/3, color);
+            await drawLineAnim(x-20, y-h/2, x-20, y+h/2, dur, color);
+            await drawLineAnim(x-20, y+h/2, x, y+h/2, dur/3, color);
+            // Right bracket
+            await drawLineAnim(x+w, y-h/2, x+w+20, y-h/2, dur/3, color);
+            await drawLineAnim(x+w+20, y-h/2, x+w+20, y+h/2, dur, color);
+            await drawLineAnim(x+w+20, y+h/2, x+w, y+h/2, dur/3, color);
+        }
+
+        // --- Topic Animations ---
+
+        const animations = {
+            'vector-add': async () => {
+                setTitles("Vector Addition", "Tip-to-Tail Method: u + v", "#60a5fa");
+                await sleep(1000);
+                
+                // Vector U
+                await drawLineAnim(centerX - 100, centerY + 100, centerX, centerY, 800, "#3b82f6", true);
+                await popTextAnim("u", centerX - 50, centerY + 70, "#3b82f6", "italic bold 30px serif");
+                await sleep(500);
+
+                // Vector V (starts at tip of U)
+                await drawLineAnim(centerX, centerY, centerX + 150, centerY + 50, 800, "#ec4899", true);
+                await popTextAnim("v", centerX + 80, centerY + 10, "#ec4899", "italic bold 30px serif");
+                await sleep(500);
+
+                // Resultant Vector U+V
+                await drawLineAnim(centerX - 100, centerY + 100, centerX + 150, centerY + 50, 1000, "#f59e0b", true, 5);
+                await popTextAnim("u + v", centerX + 25, centerY + 100, "#f59e0b", "italic bold 30px serif", 30);
+            },
+            
+            'vector-scale': async () => {
+                setTitles("Scalar Multiplication", "Stretching/Shrinking a Vector: 2v", "#a855f7");
+                await sleep(1000);
+
+                // Original Vector
+                await drawLineAnim(centerX - 150, centerY + 50, centerX - 50, centerY - 20, 800, "#a855f7", true);
+                await popTextAnim("v", centerX - 100, centerY - 10, "#a855f7", "italic bold 30px serif");
+                await sleep(1000);
+
+                // Sparkler traces over and extends
+                await drawLineAnim(centerX - 150, centerY + 50, centerX + 150, centerY - 160, 1500, "#fcd34d", true, 6);
+                await popTextAnim("2v", centerX + 50, centerY - 110, "#fcd34d", "italic bold 36px serif", 25);
+            },
+
+            'matrix-size': async () => {
+                setTitles("Matrix Dimensions", "Rows (Horizontal) × Columns (Vertical)", "#10b981");
+                await sleep(1000);
+
+                await drawMatrixBrackets(centerX - 60, centerY, 120, 150, "#ffffff");
+                
+                const grid = [
+                    ['a', 'b', 'c'],
+                    ['d', 'e', 'f']
+                ];
+                
+                for(let r=0; r<2; r++) {
+                    for(let c=0; c<3; c++) {
+                        await popTextAnim(grid[r][c], centerX - 40 + c*40, centerY - 30 + r*60, "#9ca3af");
+                    }
+                }
+                await sleep(500);
+
+                // Highlight Rows
+                setTitles("Matrix Dimensions", "2 Rows", "#f43f5e");
+                await drawLineAnim(centerX - 80, centerY - 30, centerX + 80, centerY - 30, 400, "#f43f5e", false, 15);
+                await drawLineAnim(centerX - 80, centerY + 30, centerX + 80, centerY + 30, 400, "#f43f5e", false, 15);
+                await sleep(1000);
+                persistentPaths = persistentPaths.slice(0, 6); // Remove highlighs
+
+                // Highlight Columns
+                setTitles("Matrix Dimensions", "2 Rows × 3 Columns", "#3b82f6");
+                await drawLineAnim(centerX - 40, centerY - 70, centerX - 40, centerY + 70, 400, "#3b82f6", false, 15);
+                await drawLineAnim(centerX, centerY - 70, centerX, centerY + 70, 400, "#3b82f6", false, 15);
+                await drawLineAnim(centerX + 40, centerY - 70, centerX + 40, centerY + 70, 400, "#3b82f6", false, 15);
+            },
+
+            'matrix-add': async () => {
+                setTitles("Matrix Addition", "Add corresponding elements", "#06b6d4");
+                await sleep(800);
+
+                // Mat A
+                await drawMatrixBrackets(centerX - 250, centerY, 80, 100, "#fff");
+                await popTextAnim("1", centerX - 230, centerY - 25, "#3b82f6");
+                await popTextAnim("2", centerX - 190, centerY - 25, "#3b82f6");
+                await popTextAnim("3", centerX - 230, centerY + 25, "#3b82f6");
+                await popTextAnim("4", centerX - 190, centerY + 25, "#3b82f6");
+
+                await popTextAnim("+", centerX - 120, centerY, "#fff", "bold 40px monospace");
+
+                // Mat B
+                await drawMatrixBrackets(centerX - 60, centerY, 80, 100, "#fff");
+                await popTextAnim("5", centerX - 40, centerY - 25, "#ec4899");
+                await popTextAnim("6", centerX, centerY - 25, "#ec4899");
+                await popTextAnim("7", centerX - 40, centerY + 25, "#ec4899");
+                await popTextAnim("8", centerX, centerY + 25, "#ec4899");
+
+                await popTextAnim("=", centerX + 70, centerY, "#fff", "bold 40px monospace");
+
+                // Mat C (Result)
+                await sleep(500);
+                await drawMatrixBrackets(centerX + 130, centerY, 80, 100, "#f59e0b");
+                await popTextAnim("6", centerX + 150, centerY - 25, "#f59e0b", "bold 30px monospace", 25);
+                await sleep(200);
+                await popTextAnim("8", centerX + 190, centerY - 25, "#f59e0b", "bold 30px monospace", 25);
+                await sleep(200);
+                await popTextAnim("10", centerX + 150, centerY + 25, "#f59e0b", "bold 30px monospace", 25);
+                await sleep(200);
+                await popTextAnim("12", centerX + 190, centerY + 25, "#f59e0b", "bold 30px monospace", 25);
+            },
+
+            'matrix-scale': async () => {
+                setTitles("Scalar Multiplication", "Multiply every element by scalar", "#8b5cf6");
+                await sleep(800);
+
+                await popTextAnim("3", centerX - 150, centerY, "#fcd34d", "bold 50px monospace", 30);
+                await drawMatrixBrackets(centerX - 80, centerY, 80, 100, "#fff");
+                
+                await popTextAnim("2", centerX - 60, centerY - 25, "#fff");
+                await popTextAnim("-1", centerX - 20, centerY - 25, "#fff");
+                await popTextAnim("0", centerX - 60, centerY + 25, "#fff");
+                await popTextAnim("4", centerX - 20, centerY + 25, "#fff");
+
+                await popTextAnim("=", centerX + 50, centerY, "#fff", "bold 40px monospace");
+
+                await sleep(500);
+                // Sparkler lines indicating multiplication
+                await drawLineAnim(centerX - 130, centerY, centerX - 70, centerY - 25, 300, "#fcd34d", false, 1);
+                await drawLineAnim(centerX - 130, centerY, centerX - 30, centerY - 25, 300, "#fcd34d", false, 1);
+                
+                await drawMatrixBrackets(centerX + 110, centerY, 80, 100, "#8b5cf6");
+                await popTextAnim("6", centerX + 130, centerY - 25, "#8b5cf6", "bold 30px monospace", 20);
+                await popTextAnim("-3", centerX + 170, centerY - 25, "#8b5cf6", "bold 30px monospace", 20);
+                await popTextAnim("0", centerX + 130, centerY + 25, "#8b5cf6", "bold 30px monospace", 20);
+                await popTextAnim("12", centerX + 170, centerY + 25, "#8b5cf6", "bold 30px monospace", 20);
+            },
+
+            'matrix-transpose': async () => {
+                setTitles("Matrix Transpose (Aᵀ)", "Rows become columns. Main diagonal stays.", "#0ea5e9");
+                await sleep(1000);
+
+                await drawMatrixBrackets(centerX - 200, centerY, 120, 120, "#fff");
+                await popTextAnim("1", centerX - 180, centerY - 40, "#fff"); // diag
+                await popTextAnim("2", centerX - 140, centerY - 40, "#f43f5e"); // top right
+                await popTextAnim("3", centerX - 100, centerY - 40, "#f43f5e"); // top right
+
+                await popTextAnim("4", centerX - 180, centerY, "#3b82f6"); // bot left
+                await popTextAnim("5", centerX - 140, centerY, "#fff"); // diag
+                await popTextAnim("6", centerX - 100, centerY, "#f43f5e"); // top right
+
+                await popTextAnim("7", centerX - 180, centerY + 40, "#3b82f6"); // bot left
+                await popTextAnim("8", centerX - 140, centerY + 40, "#3b82f6"); // bot left
+                await popTextAnim("9", centerX - 100, centerY + 40, "#fff"); // diag
+
+                // Highlight diagonal
+                await drawLineAnim(centerX-200, centerY-60, centerX-80, centerY+60, 500, "rgba(255,255,255,0.5)", false, 10);
+                
+                await popTextAnim("➔", centerX - 20, centerY, "#fff", "bold 40px monospace");
+
+                await sleep(800);
+                await drawMatrixBrackets(centerX + 60, centerY, 120, 120, "#0ea5e9");
+                
+                // Transposed drawing
+                await popTextAnim("1", centerX + 80, centerY - 40, "#fff");
+                await popTextAnim("4", centerX + 120, centerY - 40, "#3b82f6"); // moved
+                await popTextAnim("7", centerX + 160, centerY - 40, "#3b82f6"); // moved
+
+                await popTextAnim("2", centerX + 80, centerY, "#f43f5e"); // moved
+                await popTextAnim("5", centerX + 120, centerY, "#fff");
+                await popTextAnim("8", centerX + 160, centerY, "#3b82f6"); // moved
+
+                await popTextAnim("3", centerX + 80, centerY + 40, "#f43f5e"); // moved
+                await popTextAnim("6", centerX + 120, centerY + 40, "#f43f5e"); // moved
+                await popTextAnim("9", centerX + 160, centerY + 40, "#fff");
+                
+                // Trace the flip
+                await drawLineAnim(centerX - 140, centerY - 40, centerX + 80, centerY, 800, "#f43f5e", true, 2);
+                await drawLineAnim(centerX - 180, centerY, centerX + 120, centerY - 40, 800, "#3b82f6", true, 2);
+
+            },
+
+            'type-rect': async () => {
+                setTitles("Rectangular vs Square Matrix", "Depends on number of rows (m) and columns (n)", "#eab308");
+                await sleep(800);
+
+                // Rectangular
+                await drawMatrixBrackets(centerX - 250, centerY, 120, 80, "#fff");
+                await popTextAnim("1", centerX - 230, centerY - 20, "#9ca3af");
+                await popTextAnim("2", centerX - 190, centerY - 20, "#9ca3af");
+                await popTextAnim("3", centerX - 150, centerY - 20, "#9ca3af");
+                await popTextAnim("4", centerX - 230, centerY + 20, "#9ca3af");
+                await popTextAnim("5", centerX - 190, centerY + 20, "#9ca3af");
+                await popTextAnim("6", centerX - 150, centerY + 20, "#9ca3af");
+                await popTextAnim("Rectangular (2x3)", centerX - 190, centerY + 80, "#eab308", "16px sans-serif");
+                
+                // Draw box around it
+                await drawLineAnim(centerX - 250, centerY - 50, centerX - 130, centerY - 50, 200, "#eab308", false, 2);
+                await drawLineAnim(centerX - 130, centerY - 50, centerX - 130, centerY + 50, 200, "#eab308", false, 2);
+                await drawLineAnim(centerX - 130, centerY + 50, centerX - 250, centerY + 50, 200, "#eab308", false, 2);
+                await drawLineAnim(centerX - 250, centerY + 50, centerX - 250, centerY - 50, 200, "#eab308", false, 2);
+
+                await sleep(500);
+
+                // Square
+                await drawMatrixBrackets(centerX + 50, centerY, 120, 120, "#fff");
+                for(let r=0; r<3; r++){
+                    for(let c=0; c<3; c++){
+                        await popTextAnim("x", centerX + 70 + c*40, centerY - 40 + r*40, "#9ca3af");
+                    }
+                }
+                await popTextAnim("Square (3x3)", centerX + 110, centerY + 100, "#eab308", "16px sans-serif");
+                
+                // Draw box
+                await drawLineAnim(centerX + 50, centerY - 70, centerX + 170, centerY - 70, 200, "#10b981", false, 2);
+                await drawLineAnim(centerX + 170, centerY - 70, centerX + 170, centerY + 70, 200, "#10b981", false, 2);
+                await drawLineAnim(centerX + 170, centerY + 70, centerX + 50, centerY + 70, 200, "#10b981", false, 2);
+                await drawLineAnim(centerX + 50, centerY + 70, centerX + 50, centerY - 70, 200, "#10b981", false, 2);
+            },
+
+            'type-diagonal': async () => {
+                setTitles("Diagonal Matrix", "Non-zero elements ONLY on the main diagonal", "#a855f7");
+                await sleep(800);
+
+                await drawMatrixBrackets(centerX - 60, centerY, 120, 120, "#fff");
+                
+                const grid = [
+                    ['5', '0', '0'],
+                    ['0', '-2', '0'],
+                    ['0', '0', '8']
+                ];
+                
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let color = r===c ? "#a855f7" : "#4b5563"; // Dim zeros
+                        let font = r===c ? "bold 32px monospace" : "18px monospace";
+                        await popTextAnim(grid[r][c], centerX - 40 + c*40, centerY - 40 + r*40, color, font);
+                        await sleep(100);
+                    }
+                }
+
+                await sleep(500);
+                // Sparkler highlights the diagonal
+                await drawLineAnim(centerX - 60, centerY - 60, centerX + 60, centerY + 60, 800, "#d946ef", false, 20);
+            },
+
+            'type-scalar': async () => {
+                setTitles("Scalar Matrix", "A Diagonal matrix where all main elements are EQUAL", "#f97316");
+                await sleep(800);
+
+                await drawMatrixBrackets(centerX - 60, centerY, 120, 120, "#fff");
+                
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let val = r===c ? '4' : '0';
+                        let color = r===c ? "#f97316" : "#4b5563"; 
+                        let font = r===c ? "bold 32px monospace" : "18px monospace";
+                        await popTextAnim(val, centerX - 40 + c*40, centerY - 40 + r*40, color, font);
+                    }
+                }
+
+                await sleep(500);
+                await drawLineAnim(centerX - 60, centerY - 60, centerX + 60, centerY + 60, 800, "#fdba74", false, 15);
+            },
+
+            'type-identity': async () => {
+                setTitles("Identity Matrix (I)", "Diagonal elements are 1, others are 0. (Matrix equivalent of 1)", "#22d3ee");
+                await sleep(800);
+
+                await drawMatrixBrackets(centerX - 60, centerY, 120, 120, "#fff");
+                
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let val = r===c ? '1' : '0';
+                        let color = r===c ? "#ffffff" : "#334155"; 
+                        let font = r===c ? "bold 36px monospace" : "18px monospace";
+                        await popTextAnim(val, centerX - 40 + c*40, centerY - 40 + r*40, color, font, r===c ? 25 : 0);
+                        await sleep(50);
+                    }
+                }
+
+                await sleep(500);
+                // Intense bright sparkler
+                await drawLineAnim(centerX - 60, centerY - 60, centerX + 60, centerY + 60, 600, "#22d3ee", false, 30);
+            },
+
+            'type-zero': async () => {
+                setTitles("Zero Matrix (0)", "All elements are exactly zero.", "#64748b");
+                await sleep(800);
+
+                await drawMatrixBrackets(centerX - 60, centerY, 120, 120, "#475569");
+                
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        await popTextAnim("0", centerX - 40 + c*40, centerY - 40 + r*40, "#94a3b8", "bold 24px monospace", 5);
+                    }
+                }
+                
+                // Subtle slow swirl
+                await drawLineAnim(centerX - 80, centerY, centerX + 80, centerY, 1000, "#334155", false, 40);
+            },
+
+            'type-triangular': async () => {
+                setTitles("Triangular Matrix", "Upper or Lower elements are zero", "#ec4899");
+                await sleep(800);
+
+                await popTextAnim("Upper", centerX - 140, centerY - 80, "#ec4899", "16px sans-serif");
+                await drawMatrixBrackets(centerX - 200, centerY, 120, 120, "#fff");
+                const gridU = [
+                    ['1', '2', '3'],
+                    ['0', '4', '5'],
+                    ['0', '0', '6']
+                ];
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let color = gridU[r][c] === '0' ? "#4b5563" : "#ec4899";
+                        await popTextAnim(gridU[r][c], centerX - 180 + c*40, centerY - 40 + r*40, color);
+                    }
+                }
+                // Draw triangle highlight
+                await drawLineAnim(centerX-200, centerY-60, centerX-80, centerY-60, 300, "#ec4899", false, 2);
+                await drawLineAnim(centerX-80, centerY-60, centerX-80, centerY+60, 300, "#ec4899", false, 2);
+                await drawLineAnim(centerX-80, centerY+60, centerX-200, centerY-60, 400, "#ec4899", false, 2);
+
+
+                await popTextAnim("Lower", centerX + 100, centerY - 80, "#3b82f6", "16px sans-serif");
+                await drawMatrixBrackets(centerX + 40, centerY, 120, 120, "#fff");
+                const gridL = [
+                    ['1', '0', '0'],
+                    ['2', '4', '0'],
+                    ['3', '5', '6']
+                ];
+                for(let r=0; r<3; r++) {
+                    for(let c=0; c<3; c++) {
+                        let color = gridL[r][c] === '0' ? "#4b5563" : "#3b82f6";
+                        await popTextAnim(gridL[r][c], centerX + 60 + c*40, centerY - 40 + r*40, color);
+                    }
+                }
+                // Draw triangle highlight
+                await drawLineAnim(centerX+40, centerY-60, centerX+40, centerY+60, 300, "#3b82f6", false, 2);
+                await drawLineAnim(centerX+40, centerY+60, centerX+160, centerY+60, 300, "#3b82f6", false, 2);
+                await drawLineAnim(centerX+160, centerY+60, centerX+40, centerY-60, 400, "#3b82f6", false, 2);
+            }
+        };
+
+        // --- Interaction Logic ---
+        let currentTopic = 'vector-add';
+
+        async function playTopic(topic) {
+            isPlaying = false; // Kill previous animation
+            await sleep(50); // Give loop a moment to exit
+            
+            isPlaying = true;
+            clearScene();
+            
+            if(animations[topic]) {
+                await animations[topic]();
+            }
+        }
+
+        // Setup Buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Update UI
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                // Play
+                currentTopic = e.currentTarget.dataset.topic;
+                playTopic(currentTopic);
+            });
+        });
+
+        document.getElementById('btnReplay').addEventListener('click', () => {
+            playTopic(currentTopic);
+        });
+
+        // Start initial animation
+        playTopic(currentTopic);
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Stats: Expected Value</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP for Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- KaTeX CSS & JS for Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+
+    <style>
+        body {
+            background-color: #09090b; /* Zinc 950 - Deep modern black */
+            color: #f4f4f5;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-image: radial-gradient(circle at top, rgba(39, 39, 42, 0.4) 0%, transparent 70%);
+        }
+
+        /* SVG Graph Styling */
+        #graph-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: visible;
+        }
+
+        .bar {
+            fill: url(#gradient-bars);
+            opacity: 0;
+            transform-origin: bottom;
+            /* SVG rounded corners */
+            rx: 6; 
+        }
+
+        .curve {
+            stroke: #f472b6; /* Pink 400 */
+            stroke-width: 5;
+            stroke-linecap: round;
+            fill: none;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            opacity: 0;
+            filter: drop-shadow(0 0 12px rgba(236, 72, 153, 0.6)); /* Beautiful pink glow */
+        }
+
+        .area-fill {
+            fill: url(#gradient-pink);
+            opacity: 0;
+        }
+
+        /* Math Typography Tweaks */
+        .katex-display {
+            margin: 0 !important;
+            padding: 1rem;
+        }
+        
+        .math-container {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+        }
+
+        /* Grid lines */
+        .grid-line {
+            stroke: #27272a; /* Zinc 800 */
+            stroke-width: 1.5;
+            stroke-dasharray: 6 6;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <!-- Main Card -->
+    <div class="w-full max-w-3xl bg-zinc-900/80 backdrop-blur-xl rounded-[2rem] shadow-2xl shadow-black/50 border border-zinc-800/80 overflow-hidden flex flex-col">
+        
+        <!-- Header -->
+        <div class="px-8 py-6 border-b border-zinc-800/80 bg-zinc-900/50 flex flex-col items-center text-center">
+            <h1 class="text-3xl font-extrabold text-white tracking-tight">
+                Expected Value: 
+                <span class="text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-lg ml-1">Discrete</span> 
+                <span class="text-zinc-500 font-medium mx-2">vs</span> 
+                <span class="text-pink-400 bg-pink-500/10 px-3 py-1 rounded-lg">Continuous</span>
+            </h1>
+            <p class="text-zinc-400 mt-3 text-sm font-medium tracking-wide uppercase letter-spacing-wider">Visualizing the shift from Summations to Integrals</p>
+        </div>
+
+        <!-- Visualization Stage -->
+        <div class="p-8 relative">
+            
+            <!-- Graph Area -->
+            <div id="graph-container" class="mb-10 border-b-2 border-l-2 border-zinc-700/50 pl-2 pb-2">
+                <svg viewBox="0 0 600 250" class="w-full h-full" preserveAspectRatio="none">
+                    <defs>
+                        <!-- Gradient for Discrete Bars -->
+                        <linearGradient id="gradient-bars" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#818cf8" /> <!-- Indigo 400 -->
+                            <stop offset="100%" stop-color="#3b82f6" /> <!-- Blue 500 -->
+                        </linearGradient>
+
+                        <!-- Gradient for Continuous Curve Area -->
+                        <linearGradient id="gradient-pink" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#ec4899" stop-opacity="0.4" /> <!-- Pink 500 -->
+                            <stop offset="100%" stop-color="#ec4899" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Background Grid -->
+                    <line x1="0" y1="50" x2="600" y2="50" class="grid-line" />
+                    <line x1="0" y1="100" x2="600" y2="100" class="grid-line" />
+                    <line x1="0" y1="150" x2="600" y2="150" class="grid-line" />
+                    <line x1="0" y1="200" x2="600" y2="200" class="grid-line" />
+
+                    <!-- Discrete Bars (Chunky & Rounded) -->
+                    <g id="discrete-bars">
+                        <rect x="50" y="200" width="40" height="50" class="bar" />
+                        <rect x="100" y="150" width="40" height="100" class="bar" />
+                        <rect x="150" y="80" width="40" height="170" class="bar" />
+                        <rect x="200" y="50" width="40" height="200" class="bar" />
+                        <rect x="250" y="30" width="40" height="220" class="bar" />
+                        <rect x="300" y="30" width="40" height="220" class="bar" />
+                        <rect x="350" y="50" width="40" height="200" class="bar" />
+                        <rect x="400" y="80" width="40" height="170" class="bar" />
+                        <rect x="450" y="150" width="40" height="100" class="bar" />
+                        <rect x="500" y="200" width="40" height="50" class="bar" />
+                    </g>
+
+                    <!-- Continuous Curve (Smooth Gaussian) -->
+                    <g id="continuous-group">
+                        <path id="curve-fill" d="M 30 250 C 150 250, 180 30, 270 30 C 330 30, 450 250, 570 250 Z" class="area-fill" />
+                        <path id="main-curve" d="M 30 250 C 150 250, 180 30, 270 30 C 330 30, 450 250, 570 250" class="curve" />
+                    </g>
+                </svg>
+            </div>
+
+            <!-- Math Formula Stage -->
+            <div class="relative h-28 bg-zinc-950/80 rounded-2xl border border-zinc-800/80 flex items-center justify-center overflow-hidden shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]">
+                
+                <!-- Initial State -->
+                <div id="math-initial" class="math-container text-zinc-500 font-medium text-lg opacity-100 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-zinc-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    Select a data type below to view its formula
+                </div>
+
+                <!-- Discrete Formula -->
+                <div id="math-discrete" class="math-container text-indigo-300 text-2xl font-semibold drop-shadow-md">
+                    <!-- KaTeX injected here -->
+                </div>
+
+                <!-- Continuous Formula -->
+                <div id="math-continuous" class="math-container text-pink-300 text-2xl font-semibold drop-shadow-md">
+                    <!-- KaTeX injected here -->
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="px-8 py-6 bg-zinc-900 border-t border-zinc-800/80 flex gap-4">
+            <button id="btn-discrete" class="flex-1 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-indigo-900/30 transform hover:-translate-y-0.5 border border-indigo-500/30 active:scale-95">
+                <span class="opacity-70 mr-2 text-sm">1.</span> Show Discrete Data
+            </button>
+            <button id="btn-continuous" class="flex-1 bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-pink-900/30 transform hover:-translate-y-0.5 border border-fuchsia-500/30 opacity-40 cursor-not-allowed active:scale-95" disabled>
+                <span class="opacity-70 mr-2 text-sm">2.</span> Smooth to Continuous
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Wait for KaTeX and DOM to load
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // 1. Render Mathematical Formulas using KaTeX
+            katex.render("E[X] = \\sum_{x} x \\cdot P(X = x)", document.getElementById('math-discrete'), {
+                displayMode: true,
+                throwOnError: false
+            });
+
+            katex.render("E[X] = \\int_{-\\infty}^{\\infty} x \\cdot f(x) \\,dx", document.getElementById('math-continuous'), {
+                displayMode: true,
+                throwOnError: false
+            });
+
+            // 2. Setup DOM Elements
+            const btnDiscrete = document.getElementById('btn-discrete');
+            const btnContinuous = document.getElementById('btn-continuous');
+            
+            let currentState = 'initial'; // initial, discrete, continuous
+
+            // GSAP Default setup
+            gsap.set(".bar", { scaleY: 0, opacity: 0 });
+            gsap.set("#math-discrete", { y: 25 });
+            gsap.set("#math-continuous", { y: 25 });
+
+            // 3. Animation: Show Discrete State
+            btnDiscrete.addEventListener('click', () => {
+                if(currentState === 'discrete') return;
+                currentState = 'discrete';
+
+                // Update UI Buttons
+                btnContinuous.disabled = false;
+                btnContinuous.classList.remove('opacity-40', 'cursor-not-allowed');
+
+                const tl = gsap.timeline();
+
+                // If coming from continuous, fade out curve first
+                if (gsap.getProperty("#main-curve", "opacity") > 0) {
+                    tl.to(["#main-curve", "#curve-fill"], { opacity: 0, duration: 0.4 })
+                      .to("#math-continuous", { y: -25, opacity: 0, duration: 0.3 }, "<");
+                } else {
+                    tl.to("#math-initial", { opacity: 0, y: -10, scale: 0.95, duration: 0.3 });
+                }
+
+                // Animate Math Formula in
+                tl.to("#math-discrete", { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, "-=0.2");
+
+                // Animate chunky bars springing up (staggered)
+                tl.to(".bar", { 
+                    scaleY: 1, 
+                    opacity: 1, 
+                    duration: 0.7, 
+                    stagger: 0.04, 
+                    ease: "elastic.out(1, 0.75)" 
+                }, "-=0.3");
+            });
+
+            // 4. Animation: Show Continuous State
+            btnContinuous.addEventListener('click', () => {
+                if(currentState === 'continuous') return;
+                currentState = 'continuous';
+
+                const tl = gsap.timeline();
+
+                // 1. Swap the math formulas
+                tl.to("#math-discrete", { y: 25, opacity: 0, duration: 0.4, ease: "power2.in" })
+                  .to("#math-continuous", { y: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" });
+
+                // 2. Morph visually: Fade down the bars
+                tl.to(".bar", { opacity: 0.15, duration: 0.5 }, "-=0.5");
+
+                // 3. Draw the smooth curve! (Using stroke-dashoffset trick)
+                tl.to("#main-curve", { opacity: 1, duration: 0.1 }, "-=0.3")
+                  .to("#main-curve", { strokeDashoffset: 0, duration: 1.8, ease: "power2.inOut" })
+                  
+                // 4. Fade in the Area under the curve (the integral representation)
+                  .to("#curve-fill", { opacity: 1, duration: 1, ease: "sine.inOut" }, "-=1.2");
+            });
+
+        });
+    </script>
+</body>
+</html>

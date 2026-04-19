@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Animator Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* slate-900 */
+            color: #f8fafc; /* slate-50 */
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Canvas Grid Styling */
+        #anim-canvas {
+            background-color: #1e293b; /* slate-800 */
+            background-image: 
+                linear-gradient(#334155 1px, transparent 1px),
+                linear-gradient(90deg, #334155 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: center center;
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: grab;
+        }
+        #anim-canvas:active {
+            cursor: grabbing;
+        }
+
+        /* Custom Scrollbar for Timeline */
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        
+        /* Interactive Buttons */
+        .btn-active {
+            background-color: #f97316 !important; /* orange-500 */
+            border-color: #ea580c !important; /* orange-600 */
+            color: white !important;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        }
+        
+        /* Custom Toggles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #f97316; 
+        }
+        .toggle-checkbox:not(:checked) {
+            right: 16px;
+            border-color: #64748b;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #f97316;
+        }
+        .toggle-checkbox:not(:checked) + .toggle-label {
+            background-color: #334155;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased">
+
+    <!-- Top Toolbar -->
+    <header class="h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-6 shrink-0 shadow-lg z-20 relative">
+        
+        <div class="flex items-center space-x-4">
+            <div class="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <i data-lucide="person-standing" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-white leading-none">Stick Animator</h1>
+                <p class="text-[10px] text-orange-400 font-bold mt-1 tracking-widest uppercase">Pro Rigging Studio</p>
+            </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="flex items-center space-x-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+            <button onclick="prevFrame()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Previous Frame">
+                <i data-lucide="step-back" class="w-5 h-5"></i>
+            </button>
+            <button onclick="togglePlay()" id="btn-play" class="p-2 text-orange-500 hover:text-orange-400 hover:bg-slate-800 rounded-lg transition mx-1" title="Play/Pause (Space)">
+                <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+            </button>
+            <button onclick="nextFrame()" class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Next Frame">
+                <i data-lucide="step-forward" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="w-px h-6 bg-slate-700 mx-2"></div>
+            
+            <div class="flex items-center px-2 space-x-3">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Speed</span>
+                <input type="range" id="fps-slider" min="1" max="24" value="8" class="w-24 accent-orange-500" oninput="updateFPS(this.value)">
+                <span id="fps-display" class="mono text-orange-400 text-xs font-bold w-12 text-right">8 FPS</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <button onclick="clearAnimation()" class="p-2 bg-slate-900 hover:bg-red-500/20 hover:text-red-400 border border-slate-800 rounded-xl text-slate-400 transition" title="Clear All">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-900">
+        
+        <!-- Left: Canvas Area -->
+        <main class="flex-1 relative flex flex-col">
+            <div class="flex-1 relative overflow-hidden bg-slate-800 border-r border-slate-800">
+                <canvas id="anim-canvas"></canvas>
+                
+                <!-- Overlay Tips -->
+                <div class="absolute top-6 left-6 pointer-events-none">
+                    <div class="bg-slate-900/80 backdrop-blur border border-slate-700 p-4 rounded-xl shadow-xl">
+                        <h3 class="text-xs font-black text-white uppercase tracking-widest mb-2 flex items-center">
+                            <i data-lucide="mouse-pointer-click" class="w-4 h-4 mr-2 text-orange-500"></i> How to Animate
+                        </h3>
+                        <ul class="text-[11px] text-slate-300 space-y-1.5 font-medium">
+                            <li>1. <strong>Drag</strong> any glowing joint to pose.</li>
+                            <li>2. Click <strong>Add Frame</strong> in timeline.</li>
+                            <li>3. Move joints again to create next pose.</li>
+                            <li>4. Press <strong>Play</strong> to see it move!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right: Control Panel -->
+        <aside class="w-full md:w-[320px] bg-slate-950 flex flex-col shrink-0 overflow-y-auto z-10 shadow-2xl">
+            
+            <div class="p-6 border-b border-slate-800">
+                <h2 class="text-xs font-black tracking-widest text-slate-400 uppercase mb-4">Animation Engine</h2>
+                
+                <div class="space-y-5">
+                    <!-- Onion Skin Toggle -->
+                    <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-sm font-bold text-white block">Onion Skin</span>
+                            <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">Show previous frame ghost</span>
+                        </div>
+                        <div class="relative inline-block w-8 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="toggle-onion" checked onchange="toggleOnion()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer border-orange-500 z-10" style="right: 0;"/>
+                            <label for="toggle-onion" class="toggle-label block overflow-hidden h-4 rounded-full bg-orange-500 cursor-pointer"></label>
+                        </div>
+                    </div>
+
+                    <!-- Bone Lock Toggle -->
+                    <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-sm font-bold text-white block">Lock Bone Lengths</span>
+                            <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">Limbs pull each other (IK)</span>
+                        </div>
+                        <div class="relative inline-block w-8 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="toggle-bones" checked onchange="toggleBones()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer border-orange-500 z-10" style="right: 0;"/>
+                            <label for="toggle-bones" class="toggle-label block overflow-hidden h-4 rounded-full bg-orange-500 cursor-pointer"></label>
+                        </div>
+                    </div>
+
+                    <!-- Interpolation -->
+                    <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-sm font-bold text-white block">Smooth Tweens</span>
+                            <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">Auto-animate between frames</span>
+                        </div>
+                        <div class="relative inline-block w-8 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="toggle-lerp" checked onchange="toggleLerp()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer border-orange-500 z-10" style="right: 0;"/>
+                            <label for="toggle-lerp" class="toggle-label block overflow-hidden h-4 rounded-full bg-orange-500 cursor-pointer"></label>
+                        </div>
+                    </div>
+
+                    <!-- Show Joints Toggle -->
+                    <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-sm font-bold text-white block">Show Joints</span>
+                            <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">Display white dots at joints</span>
+                        </div>
+                        <div class="relative inline-block w-8 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" id="toggle-joints" checked onchange="toggleJoints()" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 appearance-none cursor-pointer border-orange-500 z-10" style="right: 0;"/>
+                            <label for="toggle-joints" class="toggle-label block overflow-hidden h-4 rounded-full bg-orange-500 cursor-pointer"></label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <button onclick="resetPose()" class="w-full bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-3 rounded-xl text-sm transition border border-slate-800 flex items-center justify-center">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4 mr-2"></i> Reset Figure Pose
+                </button>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Bottom Timeline -->
+    <footer class="h-36 bg-slate-950 border-t border-slate-800 flex flex-col shrink-0 z-30">
+        <div class="px-6 py-2.5 flex justify-between items-center bg-slate-900 border-b border-slate-800 text-[10px] text-slate-400 font-bold uppercase tracking-widest shadow-inner">
+            <span class="flex items-center"><i data-lucide="film" class="w-3.5 h-3.5 mr-2"></i> Keyframe Timeline</span>
+            <span id="frame-counter" class="text-orange-400 bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">Frame 1 / 1</span>
+        </div>
+        
+        <div class="flex-1 flex items-center px-4 overflow-x-auto py-3 relative">
+            <div id="timeline" class="flex items-center space-x-2 h-full">
+                <!-- Frame boxes injected here -->
+            </div>
+            
+            <div class="sticky right-0 ml-4 h-full flex items-center bg-slate-950 pl-2 shadow-[-10px_0_15px_#020617]">
+                <button onclick="addKeyframe()" class="h-full px-6 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-sm font-black transition flex flex-col items-center justify-center shadow-lg shadow-orange-600/20 active:scale-95 border border-orange-400">
+                    <i data-lucide="plus-circle" class="w-6 h-6 mb-1"></i>
+                    Add Frame
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Core Engine Variables ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        const timelineEl = document.getElementById('timeline');
+        
+        let cw, ch, cx, cy;
+        let isPlaying = false;
+        let fps = 8;
+        let showOnionSkin = true;
+        let enforceBones = true;
+        let useLerp = true;
+        let showJoints = true;
+
+        // Animation State
+        let keyframes = []; 
+        let currentFrameIdx = 0;
+        let playbackTime = 0; // Float representation of timeline during playback
+        let animReq = null;
+
+        // Dragging State
+        let draggedNode = null;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
+
+        // Stickman Base Structure Definition
+        // We define the nodes, and the rigid bones that connect them
+        const BASE_SCALE = 1.2;
+        const BONE_DEF = [
+            { a: 'head', b: 'neck', len: 40 * BASE_SCALE },
+            { a: 'neck', b: 'pelvis', len: 70 * BASE_SCALE },
+            
+            { a: 'neck', b: 'shoulderL', len: 30 * BASE_SCALE },
+            { a: 'shoulderL', b: 'elbowL', len: 50 * BASE_SCALE },
+            { a: 'elbowL', b: 'handL', len: 50 * BASE_SCALE },
+            
+            { a: 'neck', b: 'shoulderR', len: 30 * BASE_SCALE },
+            { a: 'shoulderR', b: 'elbowR', len: 50 * BASE_SCALE },
+            { a: 'elbowR', b: 'handR', len: 50 * BASE_SCALE },
+            
+            { a: 'pelvis', b: 'hipL', len: 25 * BASE_SCALE },
+            { a: 'hipL', b: 'kneeL', len: 65 * BASE_SCALE },
+            { a: 'kneeL', b: 'footL', len: 65 * BASE_SCALE },
+            
+            { a: 'pelvis', b: 'hipR', len: 25 * BASE_SCALE },
+            { a: 'hipR', b: 'kneeR', len: 65 * BASE_SCALE },
+            { a: 'kneeR', b: 'footR', len: 65 * BASE_SCALE },
+        ];
+
+        // Create default pose
+        function createDefaultNodes() {
+            // Need a valid cx and cy for initial setup. 
+            // Fallback values if resize hasn't run yet.
+            const w = window.innerWidth || 800;
+            const h = window.innerHeight || 600;
+            const centerX = cx || w / 2;
+            const centerY = cy || h / 2;
+
+            return {
+                head:      { x: centerX, y: centerY - 140*BASE_SCALE, r: 25*BASE_SCALE },
+                neck:      { x: centerX, y: centerY - 100*BASE_SCALE, r: 8 },
+                pelvis:    { x: centerX, y: centerY - 30*BASE_SCALE, r: 12 },
+                
+                shoulderL: { x: centerX - 30*BASE_SCALE, y: centerY - 100*BASE_SCALE, r: 8 },
+                elbowL:    { x: centerX - 50*BASE_SCALE, y: centerY - 55*BASE_SCALE, r: 8 },
+                handL:     { x: centerX - 60*BASE_SCALE, y: centerY - 10*BASE_SCALE, r: 10 },
+                
+                shoulderR: { x: centerX + 30*BASE_SCALE, y: centerY - 100*BASE_SCALE, r: 8 },
+                elbowR:    { x: centerX + 50*BASE_SCALE, y: centerY - 55*BASE_SCALE, r: 8 },
+                handR:     { x: centerX + 60*BASE_SCALE, y: centerY - 10*BASE_SCALE, r: 10 },
+                
+                hipL:      { x: centerX - 15*BASE_SCALE, y: centerY - 10*BASE_SCALE, r: 8 },
+                kneeL:     { x: centerX - 20*BASE_SCALE, y: centerY + 50*BASE_SCALE, r: 8 },
+                footL:     { x: centerX - 25*BASE_SCALE, y: centerY + 110*BASE_SCALE, r: 10 },
+                
+                hipR:      { x: centerX + 15*BASE_SCALE, y: centerY - 10*BASE_SCALE, r: 8 },
+                kneeR:     { x: centerX + 20*BASE_SCALE, y: centerY + 50*BASE_SCALE, r: 8 },
+                footR:     { x: centerX + 25*BASE_SCALE, y: centerY + 110*BASE_SCALE, r: 10 }
+            };
+        }
+
+        function resize() {
+            if(!canvas || !canvas.parentElement) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch / 2);
+            
+            // If this is the very first resize and we have no frames, init them.
+            if(keyframes.length === 0) {
+               keyframes.push(createDefaultNodes());
+               currentFrameIdx = 0;
+               updateUI();
+            }
+            if(!isPlaying) draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Core Engine & Initialization ---
+        function init() {
+            // Delay resize slightly to ensure layout is ready
+            setTimeout(() => {
+                resize();
+            }, 50);
+        }
+
+        function resetPose() {
+            if(isPlaying) togglePlay();
+            if (keyframes.length > 0) {
+                keyframes[currentFrameIdx] = createDefaultNodes();
+                draw();
+            }
+        }
+
+        // --- Constraint Solver (Verlet / Distance Constraints) ---
+        // This ensures the limbs don't stretch like rubber bands unless turned off
+        function resolveConstraints(nodesObj, ignoreId = null) {
+            if(!enforceBones || !nodesObj) return;
+            
+            // Run multiple iterations for stability (Inverse Kinematics relaxation)
+            for(let iter = 0; iter < 10; iter++) {
+                BONE_DEF.forEach(bone => {
+                    let n1 = nodesObj[bone.a];
+                    let n2 = nodesObj[bone.b];
+                    
+                    if(!n1 || !n2) return; // Safeguard against missing nodes
+                    
+                    let dx = n2.x - n1.x;
+                    let dy = n2.y - n1.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist === 0) dist = 0.01; // prevent div zero
+                    
+                    let diff = dist - bone.len;
+                    let percent = diff / dist / 2;
+                    let offsetX = dx * percent;
+                    let offsetY = dy * percent;
+
+                    // If a node is being dragged, it is infinitely heavy (doesn't move)
+                    // We also make the Pelvis semi-pinned if something else is dragged, to anchor the body
+                    let w1 = (bone.a === ignoreId) ? 0 : 1;
+                    let w2 = (bone.b === ignoreId) ? 0 : 1;
+                    
+                    // If both are free, move them equally
+                    if (w1 && w2) {
+                        n1.x += offsetX; n1.y += offsetY;
+                        n2.x -= offsetX; n2.y -= offsetY;
+                    } else if (w1) { // Only node 1 is free
+                        n1.x += offsetX * 2; n1.y += offsetY * 2;
+                    } else if (w2) { // Only node 2 is free
+                        n2.x -= offsetX * 2; n2.y -= offsetY * 2;
+                    }
+                });
+            }
+        }
+
+        // --- Interaction Handlers ---
+        function getDistance(x1, y1, x2, y2) {
+            return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if(isPlaying || keyframes.length === 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            let nodes = keyframes[currentFrameIdx];
+            if(!nodes) return;
+            
+            // Find closest node to grab
+            let closestNode = null;
+            let minDist = 30; // Grab radius threshold
+
+            for (let id in nodes) {
+                let n = nodes[id];
+                if(!n) continue;
+                let d = getDistance(mouseX, mouseY, n.x, n.y);
+                if (d < minDist) {
+                    minDist = d;
+                    closestNode = id;
+                }
+            }
+
+            if(closestNode) {
+                draggedNode = closestNode;
+                dragOffsetX = nodes[closestNode].x - mouseX;
+                dragOffsetY = nodes[closestNode].y - mouseY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if(!draggedNode || isPlaying || keyframes.length === 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            let nodes = keyframes[currentFrameIdx];
+            if(!nodes || !nodes[draggedNode]) return;
+            
+            nodes[draggedNode].x = mouseX + dragOffsetX;
+            nodes[draggedNode].y = mouseY + dragOffsetY;
+
+            resolveConstraints(nodes, draggedNode);
+            draw();
+        });
+
+        window.addEventListener('mouseup', () => {
+            draggedNode = null;
+        });
+
+        // --- Rendering Engine ---
+        function lerp(start, end, amt) {
+            return (1 - amt) * start + amt * end;
+        }
+
+        function getInterpolatedNodes(time) {
+            if(!useLerp || keyframes.length <= 1) {
+                return keyframes[Math.floor(time) % keyframes.length];
+            }
+
+            let frame1 = Math.floor(time) % keyframes.length;
+            let frame2 = (frame1 + 1) % keyframes.length;
+            let blend = time - Math.floor(time);
+            
+            // Smooth step easing
+            let easeBlend = blend * blend * (3 - 2 * blend);
+
+            let n1 = keyframes[frame1];
+            let n2 = keyframes[frame2];
+            
+            if(!n1 || !n2) return n1 || n2 || createDefaultNodes();
+
+            let res = {};
+
+            for (let id in n1) {
+                if(!n1[id] || !n2[id]) continue;
+                res[id] = {
+                    x: lerp(n1[id].x, n2[id].x, easeBlend),
+                    y: lerp(n1[id].y, n2[id].y, easeBlend),
+                    r: n1[id].r
+                };
+            }
+            return res;
+        }
+
+        function drawStickman(nodes, isGhost = false) {
+            if(!nodes || !ctx) return;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const limbColor = isGhost ? 'rgba(249, 115, 22, 0.3)' : '#f97316'; // orange-500
+            
+            // Draw Bones
+            ctx.lineWidth = 18 * BASE_SCALE;
+            ctx.strokeStyle = limbColor;
+            
+            ctx.beginPath();
+            BONE_DEF.forEach(bone => {
+                if(bone.a === 'head') return; // Handled separately
+                let n1 = nodes[bone.a];
+                let n2 = nodes[bone.b];
+                if(!n1 || !n2) return;
+                ctx.moveTo(n1.x, n1.y);
+                ctx.lineTo(n2.x, n2.y);
+            });
+            ctx.stroke();
+
+            // Draw Head
+            if(nodes.head) {
+                ctx.beginPath();
+                ctx.arc(nodes.head.x, nodes.head.y, nodes.head.r, 0, Math.PI*2);
+                ctx.fillStyle = isGhost ? 'rgba(15, 23, 42, 0.5)' : '#0f172a'; // match background
+                ctx.fill();
+                ctx.lineWidth = 14 * BASE_SCALE;
+                ctx.stroke();
+            }
+
+            // Draw interactive joint points (only for active frame)
+            if(showJoints && !isGhost && !isPlaying) {
+                ctx.fillStyle = '#ffffff';
+                for (let id in nodes) {
+                    if(id === 'head') continue;
+                    let n = nodes[id];
+                    if(!n) continue;
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function draw() {
+            if (!ctx) return;
+            ctx.clearRect(0, 0, cw, ch);
+            if(keyframes.length === 0) return;
+
+            // Draw Onion Skin (Previous frame)
+            if (showOnionSkin && !isPlaying && currentFrameIdx > 0 && keyframes[currentFrameIdx - 1]) {
+                drawStickman(keyframes[currentFrameIdx - 1], true);
+            } else if (showOnionSkin && !isPlaying && currentFrameIdx === 0 && keyframes.length > 1 && keyframes[keyframes.length - 1]) {
+                // Wrap around to last frame
+                drawStickman(keyframes[keyframes.length - 1], true);
+            }
+
+            // Draw Current or Playing Frame
+            let activeNodes = isPlaying ? getInterpolatedNodes(playbackTime) : keyframes[currentFrameIdx];
+            drawStickman(activeNodes, false);
+        }
+
+        function loop() {
+            if (isPlaying && keyframes.length > 0) {
+                playbackTime += (fps / 60); // Assuming 60fps monitor refresh
+                if (playbackTime >= keyframes.length) {
+                    playbackTime = 0;
+                }
+                
+                // Update UI counter during playback
+                let intFrame = Math.floor(playbackTime);
+                if(intFrame !== currentFrameIdx && intFrame < keyframes.length) {
+                    currentFrameIdx = intFrame;
+                    updateTimelineUI();
+                }
+                
+                draw();
+            }
+            animReq = requestAnimationFrame(loop);
+        }
+
+        // --- UI & Controls ---
+
+        function togglePlay() {
+            if(keyframes.length <= 1) return; // Need at least 2 frames to play
+            
+            isPlaying = !isPlaying;
+            const playBtn = document.getElementById('btn-play');
+            if(!playBtn) return;
+            
+            if (isPlaying) {
+                playBtn.innerHTML = '<i data-lucide="square" class="w-6 h-6 fill-current"></i>';
+                playBtn.classList.replace('text-orange-500', 'text-red-500');
+                playBtn.classList.replace('hover:text-orange-400', 'hover:text-red-400');
+                playbackTime = currentFrameIdx; // Start from current selection
+                if(!animReq) animReq = requestAnimationFrame(loop);
+            } else {
+                playBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6 fill-current"></i>';
+                playBtn.classList.replace('text-red-500', 'text-orange-500');
+                playBtn.classList.replace('hover:text-red-400', 'hover:text-orange-400');
+                
+                // Snap to integer frame
+                currentFrameIdx = Math.floor(playbackTime) % keyframes.length;
+                updateUI();
+                draw();
+            }
+            lucide.createIcons();
+        }
+
+        function updateFPS(val) {
+            fps = parseInt(val);
+            const display = document.getElementById('fps-display');
+            if(display) display.innerText = val + ' FPS';
+        }
+
+        function toggleOnion() {
+            const toggle = document.getElementById('toggle-onion');
+            if(toggle) {
+                showOnionSkin = toggle.checked;
+                if(!isPlaying) draw();
+            }
+        }
+
+        function toggleBones() {
+            const toggle = document.getElementById('toggle-bones');
+            if(toggle) {
+                enforceBones = toggle.checked;
+                // Force constraint resolution on current pose in case it got wildly out of shape
+                if(enforceBones && !isPlaying && keyframes.length > 0 && keyframes[currentFrameIdx]) {
+                    resolveConstraints(keyframes[currentFrameIdx]);
+                    draw();
+                }
+            }
+        }
+
+        function toggleLerp() {
+            const toggle = document.getElementById('toggle-lerp');
+            if(toggle) {
+                useLerp = toggle.checked;
+            }
+        }
+
+        function toggleJoints() {
+            const toggle = document.getElementById('toggle-joints');
+            if(toggle) {
+                showJoints = toggle.checked;
+                if(!isPlaying) draw();
+            }
+        }
+
+        function addKeyframe() {
+            if(isPlaying) togglePlay();
+            
+            if(keyframes.length === 0) {
+               keyframes.push(createDefaultNodes());
+               currentFrameIdx = 0;
+            } else {
+                // Deep copy current frame into a new frame
+                const currentNodes = keyframes[currentFrameIdx];
+                if(!currentNodes) return;
+                const newNodes = JSON.parse(JSON.stringify(currentNodes));
+                
+                // Insert after current
+                keyframes.splice(currentFrameIdx + 1, 0, newNodes);
+                currentFrameIdx++;
+            }
+            
+            updateUI();
+            draw();
+        }
+
+        function deleteKeyframe(idx, e) {
+            if(e) e.stopPropagation(); // prevent selecting
+            if(isPlaying || keyframes.length <= 1) return;
+            
+            keyframes.splice(idx, 1);
+            if(currentFrameIdx >= keyframes.length) currentFrameIdx = keyframes.length - 1;
+            
+            updateUI();
+            draw();
+        }
+
+        function clearAnimation() {
+            if(isPlaying) togglePlay();
+            if(confirm("Erase all frames and start over?")) {
+                keyframes = [createDefaultNodes()];
+                currentFrameIdx = 0;
+                updateUI();
+                draw();
+            }
+        }
+
+        function gotoFrame(idx) {
+            if(isPlaying) return;
+            if(idx >= 0 && idx < keyframes.length) {
+                currentFrameIdx = idx;
+                updateUI();
+                draw();
+            }
+        }
+
+        function updateUI() {
+            const counter = document.getElementById('frame-counter');
+            if(counter) {
+                counter.innerText = `Frame ${currentFrameIdx + 1} / ${keyframes.length}`;
+            }
+            updateTimelineUI();
+        }
+
+        function updateTimelineUI() {
+            if(!timelineEl) return;
+            timelineEl.innerHTML = '';
+            
+            keyframes.forEach((frame, idx) => {
+                const box = document.createElement('div');
+                const isActive = idx === currentFrameIdx;
+                
+                box.className = `h-20 w-16 shrink-0 rounded-xl border-2 cursor-pointer flex flex-col items-center justify-center font-mono transition-all duration-200 relative group overflow-hidden ${isActive ? 'border-orange-500 bg-orange-500/20 shadow-md transform scale-105' : 'border-slate-700 bg-slate-800 hover:bg-slate-700'}`;
+                
+                box.innerHTML = `
+                    <span class="text-[10px] uppercase font-bold ${isActive ? 'text-orange-300' : 'text-slate-500'} mb-1">Key</span>
+                    <span class="text-xl font-black ${isActive ? 'text-white' : 'text-slate-400'}">${idx + 1}</span>
+                    
+                    ${keyframes.length > 1 ? `
+                    <button onclick="deleteKeyframe(${idx}, event)" class="absolute top-0 right-0 p-1.5 bg-red-600/90 text-white rounded-bl-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>` : ''}
+                `;
+                
+                box.onclick = () => gotoFrame(idx);
+                timelineEl.appendChild(box);
+
+                if (isActive && !isPlaying && timelineEl) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            });
+        }
+
+        function prevFrame() {
+            if (isPlaying || keyframes.length === 0) return;
+            currentFrameIdx = (currentFrameIdx - 1 + keyframes.length) % keyframes.length;
+            updateUI();
+            draw();
+        }
+
+        function nextFrame() {
+            if (isPlaying || keyframes.length === 0) return;
+            currentFrameIdx = (currentFrameIdx + 1) % keyframes.length;
+            updateUI();
+            draw();
+        }
+
+        // Global Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight' && !isPlaying) {
+                nextFrame();
+            } else if (e.code === 'ArrowLeft' && !isPlaying) {
+                prevFrame();
+            } else if ((e.key === '+' || e.key === '=') && !isPlaying) {
+                addKeyframe();
+            }
+        });
+
+        // Start App
+        // Ensure DOM is ready before trying to find canvas
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+
+    </script>
+</body>
+</html>

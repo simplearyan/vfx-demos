@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rough.js Stats 2 Graph Generator</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Rough.js for hand-drawn graphics -->
+    <script src="https://unpkg.com/roughjs@latest/bundled/rough.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        .canvas-container {
+            /* Checkerboard pattern to show transparency behind the canvas */
+            background-image: 
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%), 
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex flex-col items-center">
+
+    <div class="max-w-6xl w-full">
+        <!-- Header -->
+        <header class="mb-8 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="pen-tool" class="text-indigo-600"></i>
+                    Stats 2 Visualizer
+                </h1>
+                <p class="text-slate-500 mt-1">Generate hand-drawn statistical graphs for your YouTube videos.</p>
+            </div>
+            <button onclick="exportPNG()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-sm">
+                <i data-lucide="download"></i>
+                Export PNG (1280x720)
+            </button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Controls Sidebar -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-6 h-fit">
+                
+                <div>
+                    <h3 class="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">Graph Type</h3>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="drawNormalDistribution()" class="w-full text-left px-4 py-2 rounded-md bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 transition-colors">
+                            Normal Distribution (p-value)
+                        </button>
+                        <button onclick="drawScatterPlot()" class="w-full text-left px-4 py-2 rounded-md bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 transition-colors">
+                            Scatter Plot (Regression)
+                        </button>
+                        <button onclick="drawHistogram()" class="w-full text-left px-4 py-2 rounded-md bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 transition-colors">
+                            Histogram (Frequencies)
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <div>
+                    <h3 class="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wider">Style Options</h3>
+                    
+                    <label class="block mb-4">
+                        <span class="text-slate-600 text-sm mb-1 block">Roughness: <span id="roughness-val">1.5</span></span>
+                        <input type="range" id="roughness" min="0" max="5" step="0.5" value="1.5" class="w-full accent-indigo-600" onchange="updateStyle()">
+                    </label>
+
+                    <label class="block mb-4">
+                        <span class="text-slate-600 text-sm mb-1 block">Bowing (Curve bend): <span id="bowing-val">1</span></span>
+                        <input type="range" id="bowing" min="0" max="5" step="0.5" value="1" class="w-full accent-indigo-600" onchange="updateStyle()">
+                    </label>
+                    
+                    <label class="flex items-center gap-2 mt-4 cursor-pointer">
+                        <input type="checkbox" id="transparent-bg" class="w-4 h-4 accent-indigo-600" onchange="redrawCurrent()">
+                        <span class="text-slate-700 text-sm">Transparent Background</span>
+                    </label>
+                    <p class="text-xs text-slate-400 mt-1 ml-6">Check this to easily overlay the exported PNG in CapCut without a white box.</p>
+                </div>
+                
+                <hr class="border-slate-100">
+                
+                <button onclick="clearCanvas()" class="text-slate-500 hover:text-red-600 text-sm font-medium flex items-center gap-1 justify-center py-2">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i> Clear Canvas
+                </button>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="lg:col-span-3 flex justify-center items-start canvas-container rounded-xl overflow-hidden border border-slate-200 bg-white">
+                <!-- 1280x720 is exactly 720p HD ratio, great for video inserts -->
+                <canvas id="graphCanvas" width="1280" height="720" class="bg-white transition-colors duration-300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Canvas Setup
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+        const rc = rough.canvas(canvas);
+        
+        let currentGraphType = 'normal'; // default
+        
+        // Dimensions and padding
+        const W = canvas.width;
+        const H = canvas.height;
+        const PADDING_X = 150;
+        const PADDING_Y = 100;
+
+        // Current rough.js settings
+        let styleOptions = {
+            roughness: 1.5,
+            bowing: 1,
+            strokeWidth: 2.5,
+            fontFamily: 'Comic Sans MS, cursive, sans-serif' // Best fallback for hand-drawn look
+        };
+
+        function updateStyle() {
+            styleOptions.roughness = parseFloat(document.getElementById('roughness').value);
+            styleOptions.bowing = parseFloat(document.getElementById('bowing').value);
+            
+            document.getElementById('roughness-val').innerText = styleOptions.roughness;
+            document.getElementById('bowing-val').innerText = styleOptions.bowing;
+            
+            redrawCurrent();
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, W, H);
+            const isTransparent = document.getElementById('transparent-bg').checked;
+            
+            if (!isTransparent) {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, W, H);
+                canvas.classList.remove('bg-transparent');
+                canvas.classList.add('bg-white');
+            } else {
+                canvas.classList.remove('bg-white');
+                canvas.classList.add('bg-transparent');
+            }
+        }
+
+        function drawAxes() {
+            // Y Axis
+            rc.line(PADDING_X, H - PADDING_Y, PADDING_X, PADDING_Y, { 
+                ...styleOptions, stroke: '#334155', strokeWidth: 3 
+            });
+            // X Axis
+            rc.line(PADDING_X, H - PADDING_Y, W - PADDING_X + 50, H - PADDING_Y, { 
+                ...styleOptions, stroke: '#334155', strokeWidth: 3 
+            });
+            
+            // Arrows
+            rc.line(PADDING_X, PADDING_Y, PADDING_X - 10, PADDING_Y + 15, styleOptions);
+            rc.line(PADDING_X, PADDING_Y, PADDING_X + 10, PADDING_Y + 15, styleOptions);
+            
+            rc.line(W - PADDING_X + 50, H - PADDING_Y, W - PADDING_X + 35, H - PADDING_Y - 10, styleOptions);
+            rc.line(W - PADDING_X + 50, H - PADDING_Y, W - PADDING_X + 35, H - PADDING_Y + 10, styleOptions);
+        }
+
+        function drawText(text, x, y, size = '24px', color = '#334155') {
+            ctx.font = `${size} ${styleOptions.fontFamily}`;
+            ctx.fillStyle = color;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawNormalDistribution() {
+            currentGraphType = 'normal';
+            clearCanvas();
+            drawAxes();
+
+            // Labels
+            drawText("Frequency", PADDING_X - 130, H / 2, '28px');
+            drawText("Z-Score / Data Points", W / 2 - 100, H - PADDING_Y + 60, '28px');
+            drawText("Normal Distribution & p-value", W / 2 - 200, PADDING_Y - 30, '36px');
+
+            const mean = W / 2;
+            const stdDev = 180;
+            const scaleY = 400; // Height of curve
+            const baseY = H - PADDING_Y;
+            
+            let points = [];
+            
+            // Calculate bell curve points
+            for (let x = PADDING_X; x <= W - PADDING_X; x += 10) {
+                const z = (x - mean) / stdDev;
+                const y = baseY - (Math.exp(-0.5 * z * z) * scaleY);
+                points.push([x, y]);
+            }
+
+            // Draw the main curve
+            rc.curve(points, { 
+                ...styleOptions, 
+                stroke: '#4f46e5', // Indigo 600
+                strokeWidth: 4 
+            });
+
+            // Highlight the tail (Right-tail test example for p-value)
+            const criticalZ = 1.645; // Approx 95% confidence right tail
+            const criticalX = mean + (criticalZ * stdDev);
+            
+            let tailPath = `M ${criticalX} ${baseY} `;
+            for (let x = criticalX; x <= W - PADDING_X; x += 10) {
+                const z = (x - mean) / stdDev;
+                const y = baseY - (Math.exp(-0.5 * z * z) * scaleY);
+                tailPath += `L ${x} ${y} `;
+            }
+            tailPath += `L ${W - PADDING_X} ${baseY} Z`;
+
+            // Draw hachure fill for the tail
+            rc.path(tailPath, {
+                ...styleOptions,
+                fill: '#ef4444', // Red 500
+                fillStyle: 'hachure',
+                hachureAngle: 60,
+                hachureGap: 8,
+                stroke: '#ef4444',
+                strokeWidth: 2
+            });
+
+            // Annotations
+            drawText("Mean (μ)", mean - 40, baseY + 35, '24px');
+            rc.line(mean, baseY, mean, baseY - scaleY, { ...styleOptions, stroke: '#94a3b8', strokeLineDash: [10, 10] }); // Center dashed line
+            
+            drawText("p-value area (α)", criticalX + 20, baseY - 50, '22px', '#ef4444');
+            // Arrow to tail
+            rc.line(criticalX + 80, baseY - 40, criticalX + 30, baseY - 15, { ...styleOptions, stroke: '#ef4444' });
+        }
+
+        function drawScatterPlot() {
+            currentGraphType = 'scatter';
+            clearCanvas();
+            drawAxes();
+
+            drawText("Variable Y (e.g., Exam Score)", PADDING_X - 140, H / 2, '28px');
+            drawText("Variable X (e.g., Hours Studied)", W / 2 - 150, H - PADDING_Y + 60, '28px');
+            drawText("Linear Regression", W / 2 - 130, PADDING_Y - 30, '36px');
+
+            // Generate somewhat correlated random points
+            const pointsCount = 35;
+            const startX = PADDING_X + 50;
+            const endX = W - PADDING_X - 50;
+            const startY = H - PADDING_Y - 50;
+            const endY = PADDING_Y + 50;
+            
+            // y = mx + c approximation for the points
+            const m = -0.5; // negative visually because Y goes down in canvas
+            const c = startY + 100;
+
+            for(let i=0; i < pointsCount; i++) {
+                const x = startX + Math.random() * (endX - startX);
+                // add random noise/variance
+                const noise = (Math.random() - 0.5) * 200; 
+                let y = m * (x - startX) + c + noise;
+                
+                // Keep within bounds
+                y = Math.max(endY, Math.min(startY, y));
+
+                // Draw point
+                rc.circle(x, y, 16, {
+                    ...styleOptions,
+                    fill: '#3b82f6', // blue 500
+                    fillStyle: 'solid',
+                    stroke: '#1e3a8a',
+                    strokeWidth: 1.5
+                });
+            }
+
+            // Draw line of best fit (Regression Line)
+            const regStartY = m * 0 + c;
+            const regEndY = m * (endX - startX) + c;
+            
+            rc.line(startX, regStartY, endX, regEndY, {
+                ...styleOptions,
+                stroke: '#ef4444', // red 500
+                strokeWidth: 5,
+                roughness: styleOptions.roughness * 1.5 // make the line a bit more sketchy
+            });
+
+            // Equation annotation
+            drawText("ŷ = β₀ + β₁x", endX - 250, regEndY - 30, '28px', '#ef4444');
+        }
+
+        function drawHistogram() {
+            currentGraphType = 'histogram';
+            clearCanvas();
+            drawAxes();
+
+            drawText("Frequency", PADDING_X - 130, H / 2, '28px');
+            drawText("Bins (Data Ranges)", W / 2 - 100, H - PADDING_Y + 60, '28px');
+            drawText("Histogram", W / 2 - 80, PADDING_Y - 30, '36px');
+
+            const barCount = 7;
+            const availableWidth = W - (PADDING_X * 2) - 50;
+            const barWidth = availableWidth / barCount;
+            const baseY = H - PADDING_Y;
+
+            // Heights roughly resembling a normal distribution
+            const heights = [80, 180, 320, 450, 290, 150, 60];
+            const fillStyles = ['hachure', 'zigzag', 'cross-hatch', 'dots', 'dashed', 'hachure', 'zigzag'];
+            const colors = ['#fde047', '#facc15', '#eab308', '#ca8a04', '#a16207', '#eab308', '#facc15'];
+
+            for(let i=0; i < barCount; i++) {
+                const x = PADDING_X + 10 + (i * barWidth);
+                const h = heights[i];
+                
+                rc.rectangle(x, baseY - h, barWidth, h, {
+                    ...styleOptions,
+                    fill: colors[i],
+                    fillStyle: fillStyles[i],
+                    hachureGap: 6,
+                    stroke: '#334155',
+                    strokeWidth: 2
+                });
+                
+                // Bin labels
+                drawText(`Bin ${i+1}`, x + (barWidth/2) - 30, baseY + 30, '20px');
+            }
+        }
+
+        function redrawCurrent() {
+            if (currentGraphType === 'normal') drawNormalDistribution();
+            else if (currentGraphType === 'scatter') drawScatterPlot();
+            else if (currentGraphType === 'histogram') drawHistogram();
+        }
+
+        function exportPNG() {
+            // Re-render to ensure clean state before export
+            redrawCurrent();
+            
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `roughjs-${currentGraphType}-graph.png`;
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Draw default graph on load
+        window.onload = () => {
+            drawNormalDistribution();
+        };
+
+    </script>
+</body>
+</html>

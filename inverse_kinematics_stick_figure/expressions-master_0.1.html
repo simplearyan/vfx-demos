@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lip Sync & Expression Master</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #0f172a; /* slate-900 */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Canvas Styling */
+        #anim-canvas {
+            background-color: #ffffff;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 24px 24px;
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 12px;
+        }
+        
+        /* Active Buttons */
+        .active-btn {
+            background-color: #3b82f6 !important; /* blue-500 */
+            border-color: #2563eb !important; /* blue-600 */
+            color: #ffffff !important;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+            transform: scale(1.02);
+        }
+
+        .face-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .face-btn:hover:not(.active-btn) {
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Toolbar -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-20 relative">
+        
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i data-lucide="mic" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-slate-800 leading-none">Expression Master</h1>
+                <p class="text-[10px] text-blue-600 font-bold mt-1 tracking-widest uppercase">Lip Sync Studio</p>
+            </div>
+        </div>
+
+        <!-- Playback Controls -->
+        <div class="flex items-center space-x-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
+            <button onclick="prevFrame()" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition" title="Previous Frame">
+                <i data-lucide="step-back" class="w-5 h-5"></i>
+            </button>
+            <button onclick="togglePlay()" id="btn-play" class="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition mx-1" title="Play/Pause (Space)">
+                <i data-lucide="play" class="w-6 h-6 fill-current"></i>
+            </button>
+            <button onclick="nextFrame()" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition" title="Next Frame">
+                <i data-lucide="step-forward" class="w-5 h-5"></i>
+            </button>
+            
+            <div class="w-px h-6 bg-slate-300 mx-2"></div>
+            
+            <div class="flex items-center px-2 space-x-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase">FPS:</span>
+                <input type="range" id="fps-slider" min="6" max="24" value="12" class="w-20 accent-blue-600" oninput="updateFPS(this.value)">
+                <span id="fps-display" class="font-mono text-blue-600 text-xs font-bold w-6 text-right">12</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button onclick="addFrame()" class="flex items-center space-x-2 bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 transition shadow-sm" title="Add Frame (+)">
+                <i data-lucide="plus" class="w-4 h-4 text-green-500"></i>
+                <span class="hidden sm:inline">Add Frame</span>
+            </button>
+            <button onclick="clearTimeline()" class="p-2 bg-white hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-slate-200 rounded-xl text-slate-400 transition flex items-center shadow-sm" title="Clear Timeline">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden bg-slate-100">
+        
+        <!-- Left: Canvas Area -->
+        <main class="flex-1 relative flex items-center justify-center p-6">
+            <div class="w-full h-full max-w-3xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                <canvas id="anim-canvas"></canvas>
+                <div class="absolute top-4 left-4 bg-white/90 backdrop-blur text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 py-1.5 rounded-lg pointer-events-none border border-slate-100 shadow-sm">
+                    Phonetic Engine Active
+                </div>
+            </div>
+        </main>
+
+        <!-- Right: Control Panel -->
+        <aside class="w-full md:w-[380px] bg-white border-l border-slate-200 flex flex-col shrink-0 overflow-y-auto shadow-xl z-10">
+            
+            <!-- Auto Lip-Sync Section -->
+            <div class="p-6 border-b border-slate-100 bg-blue-50/50">
+                <h2 class="text-xs font-black tracking-widest text-slate-800 uppercase flex items-center mb-3">
+                    <i data-lucide="text-cursor-input" class="w-4 h-4 mr-2 text-blue-600"></i> Auto Script Generator
+                </h2>
+                <textarea id="lip-sync-text" class="w-full bg-white border border-slate-300 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition resize-none h-24 shadow-inner" placeholder="Type a script here... e.g. Hello world!"></textarea>
+                <button onclick="generateLipSync()" class="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-sm transition shadow-md shadow-blue-600/20 flex items-center justify-center active:scale-[0.98]">
+                    <i data-lucide="wand-2" class="w-4 h-4 mr-2"></i> Generate Lip Sync
+                </button>
+            </div>
+
+            <!-- Face Expressions (Eyes/Brows) -->
+            <div class="p-6 border-b border-slate-100">
+                <h2 class="text-xs font-black tracking-widest text-slate-800 uppercase flex items-center mb-4">
+                    <i data-lucide="smile" class="w-4 h-4 mr-2 text-blue-600"></i> Expressions (Eyes & Brows)
+                </h2>
+                <div class="grid grid-cols-3 gap-2" id="eye-controls">
+                    <button onclick="setFace('eyes', 'normal')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Normal</button>
+                    <button onclick="setFace('eyes', 'happy')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Happy</button>
+                    <button onclick="setFace('eyes', 'sad')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Sad</button>
+                    <button onclick="setFace('eyes', 'angry')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Angry</button>
+                    <button onclick="setFace('eyes', 'shocked')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Shocked</button>
+                    <button onclick="setFace('eyes', 'sus')" class="face-btn eye-btn py-2 bg-white border-2 border-slate-200 rounded-lg text-xs font-bold text-slate-600">Sus / Think</button>
+                </div>
+            </div>
+
+            <!-- Phoneme Library (Mouths) -->
+            <div class="p-6">
+                <h2 class="text-xs font-black tracking-widest text-slate-800 uppercase flex items-center mb-4">
+                    <i data-lucide="message-square" class="w-4 h-4 mr-2 text-blue-600"></i> Phoneme Library (Mouth)
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-3" id="mouth-controls">
+                    <button onclick="setFace('mouth', 'M_P_B')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Rest / Closed</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">M, P, B</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'A_I')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Wide Open</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">A, I, Y</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'E_C_S')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Teeth</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">E, C, S, N, K, Z</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'L_TH')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Tongue</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">L, Th</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'O')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Round</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">O, R, W, Q</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'U')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center">
+                        <span class="text-sm font-black text-slate-800">Pucker</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">U</span>
+                    </button>
+                    <button onclick="setFace('mouth', 'F_V')" class="face-btn mouth-btn p-2 bg-white border-2 border-slate-200 rounded-xl flex flex-col items-center col-span-2">
+                        <span class="text-sm font-black text-slate-800">Bite Lip</span>
+                        <span class="text-[10px] text-slate-400 font-bold mt-1">F, V</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Bottom Timeline -->
+    <footer class="h-32 bg-white border-t border-slate-200 flex flex-col shrink-0 shadow-[0_-4px_10px_rgba(0,0,0,0.02)] z-30">
+        <div class="px-6 py-2 flex justify-between items-center bg-slate-50 border-b border-slate-200 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            <span>Timeline Frames</span>
+            <span id="frame-counter" class="text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Frame 1 / 1</span>
+        </div>
+        <div id="timeline" class="flex-1 flex items-center px-4 space-x-2 overflow-x-auto py-2">
+            <!-- Frame boxes injected here -->
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Core Engine Variables ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        const timelineEl = document.getElementById('timeline');
+        
+        let frames = [];
+        let currentFrameIdx = 0;
+        let isPlaying = false;
+        let fps = 12;
+        let playInterval = null;
+
+        // Head Positioning
+        let cw, ch, cx, cy;
+        const headRadius = 140;
+        const strokeThickness = 8;
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch / 2) - 20; // Offset slightly up
+            if(!isPlaying) draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Init ---
+        function init() {
+            frames.push({ eyes: 'normal', mouth: 'M_P_B', label: 'Rest' });
+            resize();
+            updateUI();
+        }
+
+        // --- Drawing Engine ---
+        function drawEyes(style) {
+            ctx.lineWidth = strokeThickness;
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#000000';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Eye positions relative to center
+            const lx = cx - 45;
+            const rx = cx + 45;
+            const ey = cy - 20;
+
+            if (style === 'normal') {
+                // Standard ovals
+                ctx.beginPath(); ctx.ellipse(lx, ey, 10, 25, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rx, ey, 10, 25, 0, 0, Math.PI*2); ctx.fill();
+                // Relaxed Brows
+                ctx.beginPath(); ctx.moveTo(lx - 25, ey - 50); ctx.quadraticCurveTo(lx, ey - 60, lx + 25, ey - 45); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx + 25, ey - 50); ctx.quadraticCurveTo(rx, ey - 60, rx - 25, ey - 45); ctx.stroke();
+            } 
+            else if (style === 'happy') {
+                // Inverted U
+                ctx.beginPath(); ctx.arc(lx, ey, 20, Math.PI, 0); ctx.stroke();
+                ctx.beginPath(); ctx.arc(rx, ey, 20, Math.PI, 0); ctx.stroke();
+                // High Brows
+                ctx.beginPath(); ctx.moveTo(lx - 20, ey - 40); ctx.quadraticCurveTo(lx, ey - 60, lx + 20, ey - 35); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx + 20, ey - 40); ctx.quadraticCurveTo(rx, ey - 60, rx - 20, ey - 35); ctx.stroke();
+            }
+            else if (style === 'sad') {
+                // Small ovals
+                ctx.beginPath(); ctx.ellipse(lx, ey + 10, 8, 15, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rx, ey + 10, 8, 15, 0, 0, Math.PI*2); ctx.fill();
+                // Sad Brows (Angled up in middle)
+                ctx.beginPath(); ctx.moveTo(lx - 25, ey - 30); ctx.quadraticCurveTo(lx, ey - 45, lx + 35, ey - 40); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx + 25, ey - 30); ctx.quadraticCurveTo(rx, ey - 45, rx - 35, ey - 40); ctx.stroke();
+            }
+            else if (style === 'angry') {
+                // Angled semi-circles
+                ctx.beginPath(); ctx.arc(lx, ey+5, 18, 0, Math.PI, true); ctx.fill();
+                ctx.beginPath(); ctx.arc(rx, ey+5, 18, 0, Math.PI, true); ctx.fill();
+                // Sharp V Brows
+                ctx.lineWidth = strokeThickness + 4; // Thicker for anger
+                ctx.beginPath(); ctx.moveTo(lx - 30, ey - 45); ctx.lineTo(lx + 25, ey - 15); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx + 30, ey - 45); ctx.lineTo(rx - 25, ey - 15); ctx.stroke();
+                ctx.lineWidth = strokeThickness; // reset
+            }
+            else if (style === 'shocked') {
+                // Tiny dots
+                ctx.beginPath(); ctx.arc(lx, ey, 6, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(rx, ey, 6, 0, Math.PI*2); ctx.fill();
+                // High floating arcs
+                ctx.beginPath(); ctx.moveTo(lx - 20, ey - 70); ctx.quadraticCurveTo(lx, ey - 85, lx + 20, ey - 70); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rx + 20, ey - 70); ctx.quadraticCurveTo(rx, ey - 85, rx - 20, ey - 70); ctx.stroke();
+            }
+            else if (style === 'sus') {
+                // Squint / Thinking
+                ctx.beginPath(); ctx.moveTo(lx - 15, ey); ctx.lineTo(lx + 15, ey); ctx.stroke(); // Closed left eye
+                ctx.beginPath(); ctx.ellipse(rx, ey, 8, 15, 0, 0, Math.PI*2); ctx.fill(); // Open right eye
+                
+                ctx.beginPath(); ctx.moveTo(lx - 20, ey - 20); ctx.lineTo(lx + 20, ey - 20); ctx.stroke(); // Flat brow
+                ctx.beginPath(); ctx.moveTo(rx + 25, ey - 30); ctx.quadraticCurveTo(rx, ey - 60, rx - 20, ey - 40); ctx.stroke(); // Raised brow
+            }
+        }
+
+        function drawMouth(style) {
+            ctx.lineWidth = strokeThickness;
+            ctx.strokeStyle = '#000000';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const my = cy + 70; // Mouth Y center
+
+            if (style === 'M_P_B') {
+                // Simple rest line
+                ctx.beginPath(); ctx.moveTo(cx - 30, my); ctx.quadraticCurveTo(cx, my + 10, cx + 30, my); ctx.stroke();
+            }
+            else if (style === 'A_I') {
+                // Wide Open
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo(cx - 45, my - 10);
+                ctx.quadraticCurveTo(cx, my + 60, cx + 45, my - 10);
+                ctx.quadraticCurveTo(cx, my - 25, cx - 45, my - 10);
+                ctx.fill(); ctx.stroke();
+                
+                // Tongue
+                ctx.fillStyle = '#ef4444'; // Red
+                ctx.beginPath();
+                ctx.moveTo(cx - 20, my + 25);
+                ctx.quadraticCurveTo(cx, my + 5, cx + 20, my + 25);
+                ctx.quadraticCurveTo(cx, my + 45, cx - 20, my + 25);
+                ctx.fill();
+            }
+            else if (style === 'E_C_S') {
+                // Teeth showing
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.roundRect(cx - 40, my - 15, 80, 25, 8); ctx.fill(); ctx.stroke();
+                // Teeth line
+                ctx.lineWidth = strokeThickness / 2;
+                ctx.beginPath(); ctx.moveTo(cx - 40, my - 2); ctx.lineTo(cx + 40, my - 2); ctx.stroke();
+            }
+            else if (style === 'L_TH') {
+                // Tongue touching top teeth
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo(cx - 40, my - 10);
+                ctx.quadraticCurveTo(cx, my + 40, cx + 40, my - 10);
+                ctx.quadraticCurveTo(cx, my - 20, cx - 40, my - 10);
+                ctx.fill(); ctx.stroke();
+                
+                // Tongue
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath();
+                ctx.moveTo(cx - 25, my - 12);
+                ctx.quadraticCurveTo(cx, my + 10, cx + 25, my - 12);
+                ctx.fill(); ctx.stroke();
+            }
+            else if (style === 'O') {
+                // Tall oval
+                ctx.fillStyle = '#000000';
+                ctx.beginPath(); ctx.ellipse(cx, my, 25, 35, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            }
+            else if (style === 'U') {
+                // Small pucker
+                ctx.fillStyle = '#000000';
+                ctx.beginPath(); ctx.ellipse(cx, my, 12, 18, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            }
+            else if (style === 'F_V') {
+                // Upper teeth biting lower lip
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.moveTo(cx - 40, my);
+                ctx.quadraticCurveTo(cx, my + 30, cx + 40, my);
+                ctx.lineTo(cx - 40, my);
+                ctx.fill(); ctx.stroke();
+
+                // Top Teeth overlapping
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.roundRect(cx - 25, my - 5, 50, 15, 5); ctx.fill(); ctx.stroke();
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            
+            const frame = frames[currentFrameIdx];
+            if (!frame) return;
+
+            // Draw Head (Perfect Circle)
+            ctx.lineWidth = strokeThickness;
+            ctx.strokeStyle = '#000000';
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx, cy, headRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw Features
+            drawEyes(frame.eyes);
+            drawMouth(frame.mouth);
+        }
+
+        // --- Logic & Lip Sync ---
+        
+        function generateLipSync() {
+            const text = document.getElementById('lip-sync-text').value.toLowerCase();
+            if(!text.trim()) return;
+            
+            // Map characters to phonemes
+            const mapping = {
+                'a':'A_I', 'e':'A_I', 'i':'A_I', 'y':'A_I',
+                'c':'E_C_S', 's':'E_C_S', 't':'E_C_S', 'z':'E_C_S', 'n':'E_C_S', 'k':'E_C_S', 'g':'E_C_S', 'h':'E_C_S', 'd':'E_C_S', 'j':'E_C_S', 'x':'E_C_S',
+                'l':'L_TH', 
+                'u':'U',
+                'o':'O', 'r':'O', 'w':'O', 'q':'O',
+                'm':'M_P_B', 'p':'M_P_B', 'b':'M_P_B',
+                'f':'F_V', 'v':'F_V',
+                ' ':'M_P_B', '.':'M_P_B', ',':'M_P_B', '?':'M_P_B', '!':'M_P_B'
+            };
+
+            const digraphs = {
+                'ch': 'E_C_S', 'sh': 'E_C_S', 'th': 'L_TH', 'ee': 'E_C_S'
+            };
+
+            // Keep the current eye expression for the newly generated frames
+            const currentEyes = frames[currentFrameIdx] ? frames[currentFrameIdx].eyes : 'normal';
+            
+            // Generate sequence
+            let newSequence = [];
+            let i = 0;
+
+            while (i < text.length) {
+                let mouthStyle = null;
+                let step = 1;
+                let label = text[i].toUpperCase();
+
+                // Check Digraphs
+                if (i < text.length - 1) {
+                    const duo = text.substr(i, 2);
+                    if (digraphs[duo]) {
+                        mouthStyle = digraphs[duo];
+                        label = duo.toUpperCase();
+                        step = 2;
+                    }
+                }
+
+                // Fallback to single char
+                if (!mouthStyle) {
+                    mouthStyle = mapping[text[i]];
+                }
+                
+                i += step;
+                
+                if(!mouthStyle) continue;
+                
+                // Hold each phoneme for 2 frames
+                newSequence.push({ eyes: currentEyes, mouth: mouthStyle, label: label });
+                newSequence.push({ eyes: currentEyes, mouth: mouthStyle, label: label });
+            }
+            
+            // Add a resting frame
+            newSequence.push({ eyes: currentEyes, mouth: 'M_P_B', label: 'REST' });
+
+            // Splice into timeline after current frame
+            frames.splice(currentFrameIdx + 1, 0, ...newSequence);
+            
+            // Jump to the start of the newly generated text
+            currentFrameIdx++;
+            
+            updateUI();
+            draw();
+            
+            // Visual feedback on button
+            const btn = document.querySelector('button[onclick="generateLipSync()"]');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="check" class="w-4 h-4 mr-2"></i> Generated!';
+            btn.classList.replace('bg-blue-600', 'bg-green-500');
+            btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-600');
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.replace('bg-green-500', 'bg-blue-600');
+                btn.classList.replace('hover:bg-green-600', 'hover:bg-blue-700');
+                lucide.createIcons();
+            }, 1500);
+        }
+
+        // --- Controls & UI ---
+
+        function setFace(type, style) {
+            if(isPlaying) return;
+            if(frames.length === 0) return;
+            
+            if(type === 'eyes') frames[currentFrameIdx].eyes = style;
+            if(type === 'mouth') frames[currentFrameIdx].mouth = style;
+            
+            // If they manually picked a mouth, update the label
+            if(type === 'mouth') frames[currentFrameIdx].label = style.substring(0, 4);
+
+            updateFacePanelUI();
+            updateTimelineUI();
+            draw();
+        }
+
+        function updateFacePanelUI() {
+            const frame = frames[currentFrameIdx];
+            if (!frame) return;
+            
+            document.querySelectorAll('.eye-btn, .mouth-btn').forEach(b => b.classList.remove('active-btn'));
+            
+            let eBtn = document.querySelector(`.eye-btn[onclick*="${frame.eyes}"]`);
+            if(eBtn) eBtn.classList.add('active-btn');
+            
+            let mBtn = document.querySelector(`.mouth-btn[onclick*="${frame.mouth}"]`);
+            if(mBtn) mBtn.classList.add('active-btn');
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const playBtn = document.getElementById('btn-play');
+            
+            if (isPlaying) {
+                playBtn.innerHTML = '<i data-lucide="square" class="w-6 h-6 fill-current"></i>';
+                playBtn.classList.replace('text-blue-600', 'text-red-500');
+                playBtn.classList.replace('hover:text-blue-700', 'hover:text-red-600');
+                lucide.createIcons();
+                
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    draw();
+                    updateTimelineUI();
+                    updateFacePanelUI();
+                }, 1000 / fps);
+            } else {
+                clearInterval(playInterval);
+                playBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6 fill-current"></i>';
+                playBtn.classList.replace('text-red-500', 'text-blue-600');
+                playBtn.classList.replace('hover:text-red-600', 'hover:text-blue-700');
+                lucide.createIcons();
+            }
+        }
+
+        function updateFPS(val) {
+            fps = val;
+            document.getElementById('fps-display').innerText = val;
+            if (isPlaying) {
+                clearInterval(playInterval);
+                playInterval = setInterval(() => {
+                    currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+                    draw();
+                    updateTimelineUI();
+                    updateFacePanelUI();
+                }, 1000 / fps);
+            }
+        }
+
+        function addFrame() {
+            if(frames.length === 0) {
+                frames.push({ eyes: 'normal', mouth: 'M_P_B', label: 'Rest' });
+                currentFrameIdx = 0;
+            } else {
+                const newFrame = JSON.parse(JSON.stringify(frames[currentFrameIdx]));
+                frames.splice(currentFrameIdx + 1, 0, newFrame);
+                currentFrameIdx++;
+            }
+            updateUI();
+            draw();
+        }
+
+        function clearTimeline() {
+            if(isPlaying) togglePlay();
+            frames = [{ eyes: 'normal', mouth: 'M_P_B', label: 'Rest' }];
+            currentFrameIdx = 0;
+            updateUI();
+            draw();
+        }
+
+        function prevFrame() {
+            if (isPlaying) return;
+            if (frames.length === 0) return;
+            currentFrameIdx = (currentFrameIdx - 1 + frames.length) % frames.length;
+            updateUI();
+            draw();
+        }
+
+        function nextFrame() {
+            if (isPlaying) return;
+            if (frames.length === 0) return;
+            currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+            updateUI();
+            draw();
+        }
+
+        function gotoFrame(idx) {
+            if (isPlaying) return;
+            currentFrameIdx = idx;
+            updateUI();
+            draw();
+        }
+
+        function updateUI() {
+            updateTimelineUI();
+            updateFacePanelUI();
+        }
+
+        function updateTimelineUI() {
+            if(frames.length === 0) return;
+            document.getElementById('frame-counter').innerText = `Frame ${currentFrameIdx + 1} / ${frames.length}`;
+            
+            timelineEl.innerHTML = '';
+            
+            frames.forEach((frame, idx) => {
+                const box = document.createElement('div');
+                const isActive = idx === currentFrameIdx;
+                
+                box.className = `h-16 w-14 shrink-0 rounded-lg border-2 cursor-pointer flex flex-col items-center justify-center font-mono transition-all duration-200 ${isActive ? 'border-blue-500 bg-blue-50 shadow-md transform scale-105' : 'border-slate-200 bg-white hover:bg-slate-50'}`;
+                box.id = `frame-box-${idx}`;
+                
+                box.innerHTML = `
+                    <span class="text-[10px] uppercase font-bold ${isActive ? 'text-blue-400' : 'text-slate-400'}">${frame.label}</span>
+                    <span class="text-sm font-black ${isActive ? 'text-blue-600' : 'text-slate-700'}">${idx + 1}</span>
+                `;
+                
+                box.onclick = () => gotoFrame(idx);
+                timelineEl.appendChild(box);
+
+                if (isActive) {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            });
+        }
+
+        // Global Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement === document.getElementById('lip-sync-text')) return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight' && !isPlaying) {
+                nextFrame();
+            } else if (e.code === 'ArrowLeft' && !isPlaying) {
+                prevFrame();
+            } else if ((e.key === '+' || e.key === '=') && !isPlaying) {
+                addFrame();
+            }
+        });
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Henry Stickmin Animation Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* gray-100 */
+            color: #111827; /* gray-900 */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            height: 6px;
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e5e7eb;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #9ca3af;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        /* Clean Flash-style Canvas */
+        #anim-canvas {
+            background-color: #ffffff;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .char-btn.active {
+            outline: 3px solid #ef4444; /* red-500 */
+            outline-offset: 2px;
+            transform: scale(1.05);
+            background-color: #fef2f2;
+        }
+
+        .anim-btn.active {
+            background-color: #ef4444;
+            color: #ffffff;
+            border-color: #ef4444;
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row antialiased select-none bg-gray-100">
+
+    <!-- Left Sidebar Control Panel -->
+    <aside class="w-full md:w-[350px] h-auto md:h-full bg-white border-b md:border-b-0 md:border-r border-gray-200 flex flex-col shrink-0 z-20 shadow-lg">
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-white shrink-0">
+            <div class="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center shadow-md shadow-red-500/20 text-white">
+                <i data-lucide="film" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-gray-900 leading-none uppercase">Stickmin Studio</h1>
+                <p class="text-xs text-gray-500 font-bold mt-1 tracking-widest">ANIMATOR ENGINE</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            <!-- Character Selection -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Character</h2>
+                    <span id="char-name" class="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-100">Henry Stickmin</span>
+                </div>
+                
+                <div id="char-grid" class="grid grid-cols-2 gap-3">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Size / Scale Slider -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Size / Scale</h2>
+                    <span id="scale-display" class="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">1.0x</span>
+                </div>
+                <input type="range" id="scale-slider" min="0.5" max="3" step="0.1" value="1" class="w-full accent-red-500" oninput="updateScale(this.value)">
+            </div>
+
+            <!-- Animation Selection -->
+            <div>
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Animations</h2>
+                <div id="anim-list" class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                    <!-- Buttons Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Playback Toggle -->
+            <div>
+                <button id="btn-play" onclick="togglePlay()" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold py-3 rounded-xl text-sm transition flex items-center justify-center shadow-md active:scale-95">
+                    <i data-lucide="pause" class="w-4 h-4 mr-2"></i>
+                    <span>Pause Animation</span>
+                </button>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Workspace (Canvas) -->
+    <main class="flex-1 flex flex-col items-center justify-center bg-gray-100 p-4 md:p-8 relative">
+        <div class="w-full h-full max-w-5xl bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative flex items-center justify-center">
+            
+            <canvas id="anim-canvas" class="touch-none"></canvas>
+            
+            <!-- Ground Line Overlay (Flash Style) -->
+            <div class="absolute bottom-[25%] left-0 w-full h-[3px] bg-black pointer-events-none opacity-10"></div>
+
+            <!-- Hint Overlay -->
+            <div class="absolute top-4 left-4 bg-white/90 backdrop-blur text-[10px] font-bold text-gray-400 uppercase tracking-widest px-3 py-1.5 rounded-lg pointer-events-none border border-gray-100 shadow-sm">
+                FPS: 60 | Stickmin IK Engine
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Data & State ---
+        const characters = [
+            { id: 'henry', name: 'Henry Stickmin', accessories: [] },
+            { id: 'charles', name: 'Charles Calvin', accessories: ['headphones'] },
+            { id: 'ellie', name: 'Ellie Rose', accessories: ['hair'] },
+            { id: 'rhm', name: 'Right Hand Man', accessories: ['mustache', 'tophat'] }
+        ];
+
+        const animations = [
+            { id: 'Idle', icon: 'user' },
+            { id: 'Walk', icon: 'footprints' },
+            { id: 'Walk 2', icon: 'move' },
+            { id: 'Run', icon: 'zap' },
+            { id: 'Run 2', icon: 'fast-forward' },
+            { id: 'Punch', icon: 'swords' },
+            { id: 'Punch 2', icon: 'hammer' },
+            { id: 'Thinking', icon: 'lightbulb' },
+            { id: 'Confuse', icon: 'help-circle' },
+            { id: 'Hello', icon: 'hand' },
+            { id: 'Dance', icon: 'music' },
+            { id: 'Fly', icon: 'rocket' },
+            { id: 'Hit', icon: 'flame' },
+            { id: 'Dead', icon: 'skull' }
+        ];
+
+        let currentChar = characters[0];
+        let currentAnim = 'Idle';
+        let isPlaying = true;
+        let stickScale = 1.0;
+
+        // Engine State
+        let timer = 0;
+        let cycle = 0;
+        let particles = [];
+
+        // --- UI Initialization ---
+        function initUI() {
+            const charGrid = document.getElementById('char-grid');
+            characters.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = `char-btn p-3 rounded-xl border border-gray-200 shadow-sm transition flex items-center space-x-3 ${c.id === currentChar.id ? 'active' : ''}`;
+                
+                // Render mini stick figure head in button
+                let iconHtml = `<div class="w-6 h-6 rounded-full border-2 border-black bg-white relative flex-shrink-0">`;
+                if (c.accessories.includes('headphones')) {
+                    iconHtml += `<div class="absolute -left-1 top-1 w-2 h-3 bg-red-500 rounded-full"></div>
+                                 <div class="absolute -right-1 top-1 w-2 h-3 bg-red-500 rounded-full"></div>
+                                 <div class="absolute -top-1 left-0 w-full h-3 border-t-2 border-red-500 rounded-t-full"></div>`;
+                }
+                if (c.accessories.includes('hair')) {
+                    iconHtml += `<div class="absolute -top-1 -left-1 w-5 h-4 border-t-4 border-l-4 border-red-500 rounded-tl-full"></div>`;
+                }
+                if (c.accessories.includes('mustache')) {
+                    iconHtml += `<div class="absolute bottom-1 left-1 w-4 h-1.5 bg-[#8b4513] rounded-full"></div>`;
+                }
+                if (c.accessories.includes('tophat')) {
+                    iconHtml += `<div class="absolute -top-2 left-0 w-6 h-1 bg-black rounded-sm"></div>
+                                 <div class="absolute -top-5 left-1 w-4 h-4 bg-black rounded-t-sm"></div>`;
+                }
+                iconHtml += `</div>`;
+
+                btn.innerHTML = `${iconHtml} <span class="text-xs font-bold text-gray-700 truncate">${c.name}</span>`;
+                btn.onclick = () => selectCharacter(c);
+                charGrid.appendChild(btn);
+            });
+
+            const animList = document.getElementById('anim-list');
+            animations.forEach(a => {
+                const btn = document.createElement('button');
+                btn.id = `anim-btn-${a.id}`;
+                btn.className = `anim-btn flex flex-col items-center justify-center py-2.5 rounded-xl border border-gray-200 text-gray-600 font-bold text-[10px] transition hover:bg-gray-50 ${a.id === currentAnim ? 'active' : ''}`;
+                btn.innerHTML = `<i data-lucide="${a.icon}" class="w-4 h-4 mb-1"></i> ${a.id}`;
+                btn.onclick = () => selectAnimation(a.id);
+                animList.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        function updateScale(val) {
+            stickScale = parseFloat(val);
+            document.getElementById('scale-display').innerText = stickScale.toFixed(1) + 'x';
+            if (!isPlaying) draw(); 
+        }
+
+        function selectCharacter(c) {
+            currentChar = c;
+            document.getElementById('char-name').innerText = c.name;
+            
+            document.querySelectorAll('.char-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', characters[idx].id === c.id);
+            });
+            if (!isPlaying) draw();
+        }
+
+        function selectAnimation(animId) {
+            currentAnim = animId;
+            timer = 0; 
+            cycle = 0;
+            particles = []; 
+            
+            document.querySelectorAll('.anim-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.add('text-gray-600', 'bg-white');
+            });
+            const activeBtn = document.getElementById(`anim-btn-${animId}`);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-gray-600', 'bg-white');
+            if (!isPlaying) draw();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('btn-play');
+            if (isPlaying) {
+                btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4 mr-2"></i><span>Pause Animation</span>';
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-4 h-4 mr-2"></i><span>Play Animation</span>';
+            }
+            lucide.createIcons();
+        }
+
+        // --- Canvas Engine ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        let cw, ch;
+        let cx, cy; 
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch * 0.75); 
+        }
+        window.addEventListener('resize', resize);
+
+        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+        function spawnImpact(px, py, color, speedMultiplier = 1) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: px, y: py,
+                    vx: (Math.random() - 0.5) * 15 * speedMultiplier,
+                    vy: (Math.random() - 0.5) * 15 * speedMultiplier,
+                    life: 1, 
+                    size: (Math.random() * 3 + 1) * stickScale,
+                    color: color
+                });
+            }
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                if (p.life <= 0) { particles.splice(i, 1); return; }
+                
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                // Star/Flash shape for Henry Stickmin impacts
+                ctx.moveTo(p.x, p.y - p.size);
+                ctx.lineTo(p.x + p.size/3, p.y - p.size/3);
+                ctx.lineTo(p.x + p.size, p.y);
+                ctx.lineTo(p.x + p.size/3, p.y + p.size/3);
+                ctx.lineTo(p.x, p.y + p.size);
+                ctx.lineTo(p.x - p.size/3, p.y + p.size/3);
+                ctx.lineTo(p.x - p.size, p.y);
+                ctx.lineTo(p.x - p.size/3, p.y - p.size/3);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        // --- Facial Expression Engine ---
+        function drawFace(anim) {
+            ctx.fillStyle = '#000000';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+
+            let leftEye = {x: -5, y: -42};
+            let rightEye = {x: 6, y: -42};
+            
+            if (anim === 'Idle' || anim === 'Walk' || anim === 'Walk 2') {
+                // Normal
+                ctx.beginPath(); ctx.ellipse(leftEye.x, leftEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rightEye.x, rightEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+                // Brows
+                ctx.beginPath(); ctx.moveTo(-10, -49); ctx.quadraticCurveTo(-5, -51, -2, -49); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(3, -49); ctx.quadraticCurveTo(8, -51, 11, -49); ctx.stroke();
+                // Mouth
+                ctx.beginPath(); ctx.moveTo(-2, -32); ctx.quadraticCurveTo(0, -30, 4, -32); ctx.stroke();
+            } 
+            else if (anim === 'Run' || anim === 'Run 2') {
+                // Determined / Focused
+                ctx.beginPath(); ctx.ellipse(leftEye.x+2, leftEye.y, 1.5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rightEye.x+2, rightEye.y, 1.5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                // Angry Brows
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-10, -50); ctx.lineTo(-2, -46); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(12, -50); ctx.lineTo(4, -46); ctx.stroke();
+                // Flat Mouth
+                ctx.beginPath(); ctx.moveTo(-1, -33); ctx.lineTo(5, -33); ctx.stroke();
+            }
+            else if (anim === 'Punch' || anim === 'Punch 2') {
+                // Aggressive Yell
+                ctx.beginPath(); ctx.arc(leftEye.x, leftEye.y, 2, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(rightEye.x, rightEye.y, 2, 0, Math.PI*2); ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(-12, -52); ctx.lineTo(-2, -45); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(13, -52); ctx.lineTo(3, -45); ctx.stroke();
+                // Open Mouth
+                ctx.beginPath(); ctx.ellipse(0.5, -31, 3, 4, 0, 0, Math.PI*2); ctx.stroke();
+            }
+            else if (anim === 'Thinking') {
+                // One raised brow
+                ctx.beginPath(); ctx.ellipse(leftEye.x, leftEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rightEye.x, rightEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+                
+                ctx.beginPath(); ctx.moveTo(-10, -48); ctx.lineTo(-2, -48); ctx.stroke(); // Flat
+                ctx.beginPath(); ctx.moveTo(3, -50); ctx.quadraticCurveTo(8, -55, 12, -49); ctx.stroke(); // Raised high
+                
+                ctx.beginPath(); ctx.moveTo(-3, -32); ctx.lineTo(4, -32); ctx.stroke();
+            }
+            else if (anim === 'Confuse') {
+                // Derp / Confused
+                ctx.beginPath(); ctx.arc(leftEye.x, leftEye.y, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(rightEye.x, rightEye.y-2, 1.5, 0, Math.PI*2); ctx.fill();
+                
+                ctx.beginPath(); ctx.moveTo(-10, -50); ctx.lineTo(-2, -46); ctx.stroke(); 
+                ctx.beginPath(); ctx.moveTo(3, -52); ctx.quadraticCurveTo(8, -48, 12, -50); ctx.stroke(); 
+                
+                // Squiggly mouth
+                ctx.beginPath(); ctx.moveTo(-3, -32); ctx.lineTo(-1, -30); ctx.lineTo(1, -33); ctx.lineTo(3, -31); ctx.stroke();
+            }
+            else if (anim === 'Hello') {
+                // Happy Arches
+                ctx.beginPath(); ctx.arc(leftEye.x, leftEye.y, 3, Math.PI, 0); ctx.stroke();
+                ctx.beginPath(); ctx.arc(rightEye.x, rightEye.y, 3, Math.PI, 0); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(-10, -52); ctx.quadraticCurveTo(-5, -55, -2, -52); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(3, -52); ctx.quadraticCurveTo(8, -55, 11, -52); ctx.stroke();
+                
+                // Big open smile
+                ctx.beginPath(); ctx.moveTo(-6, -34); ctx.quadraticCurveTo(0.5, -24, 7, -34); ctx.stroke();
+            }
+            else if (anim === 'Hit') {
+                // Squinting pain
+                ctx.beginPath(); ctx.moveTo(leftEye.x-3, leftEye.y-2); ctx.lineTo(leftEye.x+3, leftEye.y+2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(leftEye.x-3, leftEye.y+2); ctx.lineTo(leftEye.x+3, leftEye.y-2); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(rightEye.x-3, rightEye.y-2); ctx.lineTo(rightEye.x+3, rightEye.y+2); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rightEye.x-3, rightEye.y+2); ctx.lineTo(rightEye.x+3, rightEye.y-2); ctx.stroke();
+                
+                // Zig zag mouth
+                ctx.beginPath(); ctx.moveTo(-4, -30); ctx.lineTo(-1, -33); ctx.lineTo(2, -30); ctx.lineTo(5, -33); ctx.stroke();
+            }
+            else if (anim === 'Dead') {
+                // Xs
+                ctx.beginPath(); ctx.moveTo(leftEye.x-3, leftEye.y-3); ctx.lineTo(leftEye.x+3, leftEye.y+3); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(leftEye.x-3, leftEye.y+3); ctx.lineTo(leftEye.x+3, leftEye.y-3); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(rightEye.x-3, rightEye.y-3); ctx.lineTo(rightEye.x+3, rightEye.y+3); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(rightEye.x-3, rightEye.y+3); ctx.lineTo(rightEye.x+3, rightEye.y-3); ctx.stroke();
+                
+                ctx.beginPath(); ctx.moveTo(-4, -30); ctx.lineTo(5, -30); ctx.stroke();
+            }
+            else {
+                // Default fallback
+                ctx.beginPath(); ctx.ellipse(leftEye.x, leftEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(rightEye.x, rightEye.y, 1.5, 3, 0, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        function drawAccessories() {
+            const acc = currentChar.accessories;
+            
+            if (acc.includes('headphones')) {
+                // Charles Red Headphones
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(0.5, -38, 17, Math.PI, 0); ctx.stroke(); // Band
+                
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.roundRect(-21, -43, 6, 10, 3); ctx.fill(); // L ear
+                ctx.beginPath(); ctx.roundRect(16, -43, 6, 10, 3); ctx.fill(); // R ear
+                
+                // Mic
+                ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(18, -35); ctx.lineTo(22, -28); ctx.lineTo(12, -25); ctx.stroke();
+            }
+            
+            if (acc.includes('hair')) {
+                // Ellie Hair
+                ctx.strokeStyle = '#dc2626'; // Dark red
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(0, -56); ctx.quadraticCurveTo(-20, -50, -22, -30); ctx.stroke(); // Swoop
+                ctx.beginPath(); ctx.moveTo(-2, -55); ctx.quadraticCurveTo(15, -50, 18, -35); ctx.stroke(); // Right part
+            }
+            
+            if (acc.includes('mustache')) {
+                // Right Hand Man Mustache
+                ctx.fillStyle = '#8b4513';
+                ctx.beginPath();
+                ctx.moveTo(-10, -32);
+                ctx.quadraticCurveTo(0, -36, 12, -32);
+                ctx.quadraticCurveTo(0, -26, -10, -32);
+                ctx.fill();
+            }
+            
+            if (acc.includes('tophat')) {
+                // Right Hand Man Hat
+                ctx.fillStyle = '#000000';
+                // Brim
+                ctx.beginPath(); ctx.ellipse(0.5, -54, 22, 4, 0, 0, Math.PI*2); ctx.fill();
+                // Top
+                ctx.beginPath(); ctx.moveTo(-14, -54); ctx.lineTo(-12, -75); ctx.lineTo(13, -75); ctx.lineTo(15, -54); ctx.fill();
+                // Red Band
+                ctx.fillStyle = '#ef4444';
+                ctx.beginPath(); ctx.ellipse(0.5, -57, 15, 3, 0, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        function drawStickman() {
+            ctx.save();
+            
+            // Base positioning
+            let baseOffsetX = 0;
+            let baseOffsetY = 0;
+            let lean = 0;
+            let bob = 0;
+            
+            // Joints
+            let l1x=0, l1y=35, k1x=0, k1y=20;
+            let l2x=0, l2y=35, k2x=0, k2y=20;
+            let a1x=-10, a1y=5, a2x=10, a2y=5;
+
+            // --- ANIMATION MATHEMATICS ---
+            if (currentAnim === 'Idle') {
+                cycle += 0.05;
+                bob = Math.sin(cycle) * 2;
+                l1x = -8; l2x = 8; k1x = -4; k2x = 4;
+                a1x = -12; a2x = 12; a1y = 12; a2y = 12;
+            } 
+            else if (currentAnim === 'Walk') {
+                cycle += 0.15;
+                bob = Math.abs(Math.sin(cycle * 2)) * 3;
+                lean = 0.05;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                l1x = s * 20; l1y = 35 - Math.max(0, c) * 10;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 6; k1y = 10 + (l1y-10)/2;
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                l2x = s2 * 20; l2y = 35 - Math.max(0, c2) * 10;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 6; k2y = 10 + (l2y-10)/2;
+                a1x = s2 * 15; a1y = 5 + Math.abs(s2)*2;
+                a2x = s * 15;  a2y = 5 + Math.abs(s)*2;
+            }
+            else if (currentAnim === 'Walk 2') {
+                // Sneak
+                cycle += 0.12;
+                bob = Math.abs(Math.sin(cycle * 2)) * 4;
+                lean = 0.25;
+                baseOffsetY = 10; 
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                
+                l1x = s * 25; l1y = 25 - Math.max(0, c) * 12;
+                k1x = l1x/2 + 8; k1y = 15 + (l1y-15)/2;
+                l2x = s2 * 25; l2y = 25 - Math.max(0, c2) * 12;
+                k2x = l2x/2 + 8; k2y = 15 + (l2y-15)/2;
+                
+                a1x = 15 + s2*8; a1y = 5;
+                a2x = 20 + s*8; a2y = -2; 
+            }
+            else if (currentAnim === 'Run') {
+                cycle += 0.3;
+                bob = Math.abs(Math.sin(cycle * 2)) * 6;
+                lean = 0.25;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                l1x = s * 30; l1y = 35 - Math.max(0, c) * 15;
+                k1x = l1x/2 + Math.sin(cycle - Math.PI/4) * 12; k1y = 10 + (l1y-10)/2;
+                l2x = s2 * 30; l2y = 35 - Math.max(0, c2) * 15;
+                k2x = l2x/2 + Math.sin(cycle+Math.PI - Math.PI/4) * 12; k2y = 10 + (l2y-10)/2;
+                a1x = s2 * 25; a1y = -5 + Math.abs(s2)*10;
+                a2x = s * 25;  a2y = -5 + Math.abs(s)*10;
+            }
+            else if (currentAnim === 'Run 2') {
+                // Action Sprint
+                cycle += 0.4;
+                bob = Math.abs(Math.sin(cycle * 2)) * 4;
+                lean = 0.5; 
+                baseOffsetY = 5;
+                let s = Math.sin(cycle); let c = Math.cos(cycle);
+                let s2 = Math.sin(cycle + Math.PI); let c2 = Math.cos(cycle + Math.PI);
+                
+                l1x = s * 35; l1y = 30 - Math.max(0, c) * 20;
+                k1x = l1x/2; k1y = 15;
+                l2x = s2 * 35; l2y = 30 - Math.max(0, c2) * 20;
+                k2x = l2x/2; k2y = 15;
+                
+                a1x = -30; a1y = -5 + Math.random()*3;
+                a2x = -35; a2y = 0 + Math.random()*3; 
+                
+                if(Math.random() > 0.5) spawnImpact(cx - 20*stickScale, cy + 30*stickScale, '#cbd5e1', 0.5);
+            }
+            else if (currentAnim === 'Punch') {
+                let pCycle = timer % 60;
+                l1x = -15; l2x = 20; k1x = -10; k2x = 10;
+                l1y = 35; l2y = 35; k1y = 22; k2y = 22;
+                a1x = -15; a1y = -5;
+                if (pCycle < 15) {
+                    let p = pCycle / 15;
+                    a2x = lerp(10, -25, p); a2y = lerp(10, -15, p);
+                    lean = lerp(0, -0.15, p);
+                } else if (pCycle < 22) {
+                    let p = (pCycle - 15) / 7;
+                    a2x = lerp(-25, 40, p); a2y = lerp(-15, -15, p);
+                    lean = lerp(-0.15, 0.25, p);
+                    if (pCycle === 21) spawnImpact(cx + 40*stickScale, cy - 15*stickScale, '#000000');
+                } else if (pCycle < 40) {
+                    a2x = 40; a2y = -15; lean = 0.25;
+                } else {
+                    let p = (pCycle - 40) / 20;
+                    a2x = lerp(40, 10, p); a2y = lerp(-15, 10, p);
+                    lean = lerp(0.25, 0, p);
+                }
+            }
+            else if (currentAnim === 'Punch 2') {
+                let pCycle = timer % 60;
+                l1x = -10; l2x = 20; k1x = -8; k2x = 12;
+                l1y = 35; l2y = 35; k1y = 22; k2y = 22;
+                a1x = -15; a1y = -5;
+                if (pCycle < 20) {
+                    let p = pCycle / 20;
+                    baseOffsetY = lerp(0, 15, p); 
+                    a2x = lerp(10, 0, p); a2y = lerp(10, 15, p);
+                    lean = lerp(0, 0.15, p);
+                } else if (pCycle < 26) {
+                    let p = (pCycle - 20) / 6;
+                    baseOffsetY = lerp(15, -25, p); 
+                    a2x = lerp(0, 15, p); a2y = lerp(15, -50, p); 
+                    lean = lerp(0.15, -0.1, p);
+                    if (pCycle === 25) spawnImpact(cx + 15*stickScale, cy - 50*stickScale, '#000000', 1.5);
+                } else if (pCycle < 40) {
+                    baseOffsetY = -25;
+                    a2x = 15; a2y = -50;
+                    lean = -0.1;
+                } else {
+                    let p = (pCycle - 40) / 20;
+                    baseOffsetY = lerp(-25, 0, p);
+                    a2x = lerp(15, 10, p); a2y = lerp(-50, 10, p);
+                    lean = lerp(-0.1, 0, p);
+                }
+            }
+            else if (currentAnim === 'Thinking') {
+                cycle += 0.05;
+                bob = Math.sin(cycle) * 1.5;
+                l1x = -6; l2x = 6; k1x = -3; k2x = 3;
+                a1x = -12; a1y = 15; 
+                a2x = 10; a2y = -22; 
+            }
+            else if (currentAnim === 'Confuse') {
+                cycle += 0.08;
+                bob = Math.sin(cycle) * 1;
+                lean = Math.sin(cycle*0.5) * 0.15; 
+                l1x = -10; l2x = 10; k1x = -5; k2x = 5;
+                a1x = -12; a1y = 15;
+                a2x = 0; a2y = -45; 
+            }
+            else if (currentAnim === 'Hello') {
+                cycle += 0.2;
+                bob = Math.sin(cycle*0.5) * 1.5;
+                l1x = -8; l2x = 8; k1x = -4; k2x = 4;
+                a1x = -12; a1y = 15;
+                a2x = 22 + Math.sin(cycle)*8; a2y = -35 + Math.cos(cycle)*4; 
+            }
+            else if (currentAnim === 'Dance') {
+                cycle += 0.2;
+                bob = Math.abs(Math.sin(cycle*2)) * 10; 
+                let s = Math.sin(cycle);
+                lean = s * 0.15; 
+                l1x = -12; l1y = 35 - bob; k1x = -16 - s*4; k1y = 20;
+                l2x = 12; l2y = 35 - bob; k2x = 16 - s*4; k2y = 20;
+                a1x = 20; a1y = -20 + Math.sin(cycle*4)*12;
+                a2x = -20; a2y = -20 + Math.cos(cycle*4)*12;
+            }
+            else if (currentAnim === 'Hit') {
+                let hCycle = timer % 40;
+                if(hCycle === 1) spawnImpact(cx, cy - 20*stickScale, '#ef4444'); 
+                
+                if(hCycle < 5) {
+                    baseOffsetY = -10; lean = -0.4;
+                    l1x = 12; l2x = 20; k1x = 8; k2x = 16;
+                    a1x = 15; a1y = -10; a2x = 25; a2y = -20;
+                } else if(hCycle < 15) {
+                    let p = (hCycle-5)/10;
+                    baseOffsetY = lerp(-10, 0, p); lean = lerp(-0.4, -0.15, p);
+                    l1x = 12; l2x = 20; k1x = 8; k2x = 16;
+                    a1x = lerp(15, 8, p); a1y = lerp(-10, 5, p);
+                    a2x = lerp(25, 12, p); a2y = lerp(-20, 5, p);
+                } else {
+                    baseOffsetY = 0; lean = -0.15;
+                    l1x = 12; l2x = 20; k1x = 8; k2x = 16;
+                    a1x = 8; a1y = 5; a2x = 12; a2y = 5;
+                }
+            }
+            else if (currentAnim === 'Dead') {
+                lean = Math.PI / 2; 
+                baseOffsetY = 38; 
+                l1x = -12; l2x = 12; k1x = -6; k2x = 6;
+                l1y = 35; l2y = 35; k1y = 35; k2y = 35;
+                a1x = 12; a1y = -12; a2x = -12; a2y = -12;
+            }
+            else if (currentAnim === 'Fly') {
+                cycle += 0.1;
+                bob = Math.sin(cycle) * 6;
+                baseOffsetY = -60; 
+                lean = 0.6; 
+                l1x = -20; l1y = 10; k1x = -8; k1y = 5;
+                l2x = -28; l2y = 15; k2x = -12; k2y = 10;
+                a2x = 35; a2y = -20; 
+                a1x = -20; a1y = 5; 
+                if (Math.random() > 0.4) {
+                    particles.push({
+                        x: cx - 35*stickScale, y: cy + (baseOffsetY + bob)*stickScale,
+                        vx: -5 - Math.random()*2, vy: (Math.random() - 0.5)*2,
+                        life: 1, size: (Math.random()*3+2)*stickScale,
+                        color: '#9ca3af'
+                    });
+                }
+            }
+
+            // Apply Global Positioning & SCALING
+            ctx.translate(cx + baseOffsetX * stickScale, cy + baseOffsetY * stickScale - bob * stickScale);
+            ctx.rotate(lean);
+            ctx.scale(stickScale, stickScale); 
+
+            // Draw Henry Stickmin Style 
+            ctx.lineWidth = 4; // Thin clean lines
+            ctx.strokeStyle = '#000000';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Head (White filled, black stroke)
+            ctx.beginPath();
+            ctx.arc(0.5, -38, 16, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fill();
+            ctx.stroke();
+
+            // Face
+            drawFace(currentAnim);
+
+            // Accessories
+            drawAccessories();
+
+            // Torso
+            ctx.beginPath(); ctx.moveTo(0.5, -22); ctx.lineTo(0.5, 10); ctx.stroke();
+
+            // Legs
+            ctx.beginPath(); ctx.moveTo(0.5, 10); ctx.lineTo(k1x, k1y); ctx.lineTo(l1x, l1y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0.5, 10); ctx.lineTo(k2x, k2y); ctx.lineTo(l2x, l2y); ctx.stroke();
+
+            // Hands/Feet Caps
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.arc(l1x, l1y, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(l2x, l2y, 2, 0, Math.PI*2); ctx.fill();
+
+            // Arms
+            ctx.beginPath(); ctx.moveTo(0.5, -15); ctx.lineTo(a1x, a1y); ctx.stroke(); 
+            ctx.beginPath(); ctx.arc(a1x, a1y, 2, 0, Math.PI*2); ctx.fill(); // Hand cap
+            
+            ctx.beginPath(); ctx.moveTo(0.5, -15); ctx.lineTo(a2x, a2y); ctx.stroke(); 
+            ctx.beginPath(); ctx.arc(a2x, a2y, 2, 0, Math.PI*2); ctx.fill(); // Hand cap
+
+            ctx.restore(); 
+
+            // Draw Ground Shadow
+            if (currentAnim !== 'Fly' && currentAnim !== 'Dead') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                ctx.beginPath();
+                let shadowW = (20 + Math.abs(l2x - l1x)) * stickScale;
+                ctx.ellipse(cx, cy + 35 * stickScale, shadowW/2, 3 * stickScale, 0, 0, Math.PI*2);
+                ctx.fill();
+            } else if (currentAnim === 'Fly') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+                ctx.beginPath();
+                ctx.ellipse(cx, cy + 35 * stickScale, 15 * stickScale, 2 * stickScale, 0, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            if (isPlaying) timer++;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Run
+        initUI();
+        resize();
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

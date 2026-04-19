@@ -1,0 +1,445 @@
+<div id='app'></div>
+
+<!-- Courtesy to RickandMortyAPI API -->
+
+
+<style>
+    @import url("https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300;400;700&display=swap");
+
+* {
+  box-sizing: border-box;
+  font-family: "Roboto Condensed", sans-serif;
+}
+
+body {
+  background-color: #EEF2F7;
+  // background-color: #000;
+  color: #fff;
+  background-image: linear-gradient(to right, #EEF2F7, #EEF2F7);
+  margin: 0;
+  padding: 0;
+}
+
+img{
+  max-width: 100%;
+}
+
+.main{
+  max-width: 1024px;
+  margin: 0 auto;
+}
+
+.head{
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 10px;
+  padding-top: 0;
+}
+
+.search{
+  height: 100px;
+  display: grid;
+  place-content: center;
+  &-box{
+    display: flex;
+    transition: all .2s ease;
+    &:focus-within{
+      box-shadow: 0 3px 5px -2px rgba(0, 0, 0, 0.3);
+    }
+    input {
+      appearance: none;
+      border: 0;
+      outline: 0;
+      height: 40px;
+      background-color: white;
+      padding: 0 10px;
+      min-width: 350px;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      outline: 0;
+      height: 40px;
+      background-color: white;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+  }
+}
+
+@for $i from 1 through 25 {
+  .cards > div:nth-child(#{$i}) { animation-delay: $i * 0.1s; }
+}
+
+.card{
+  // opacity: 0;
+  animation: poof .5s;
+  overflow: hidden;
+  transition: all .3s ease;
+  &:hover{
+    box-shadow: 0 3px 5px -2px rgba(0, 0, 0, 0.3);
+  }
+  img{
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: all .3s ease;
+    &:hover{
+      transform: scale(1.04);
+    }
+  }
+}
+
+.popup{
+  animation: poof .5s;
+  background-color: rgba(0, 0, 0, 0.7);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  place-content: center;
+  padding: 5px;
+  z-index: 10;
+}
+
+.popup-content{
+  position: relative;
+  background-color: rgb(60, 62, 68);
+  display: flex;
+  width: 100%;
+  max-width: 600px;
+  min-height: 220px;
+  box-shadow: rgb(0 0 0 / 10%) 0px 4px 6px -1px, rgb(0 0 0 / 6%) 0px 2px 4px -1px;
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
+  .popup-close{
+    cursor: pointer;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    z-index: 1;
+    &:hover{
+      color: red;
+    }
+  }
+  .popup-a{
+    flex: 2 1 0%;
+    width: 100%;
+    img{
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+      // opacity: 1;
+      // transition: opacity 0.5s ease 0s;
+      object-position: center center;
+      object-fit: cover;
+    }
+  }
+  .popup-b{
+    flex: 3 1 0%;
+    position: relative;
+    padding: 0.75rem;
+    color: rgb(255, 255, 255);
+    display: flex;
+    flex-direction: column;
+    h2{
+      margin: 19px 0;
+    }
+    .popup-details{
+
+      span:first-child{
+        font-weight: bold;
+      }
+      span:last-child{
+        color: #C9DB62;
+      }
+    }
+  }
+}
+
+
+
+.cards{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-auto-rows: minmax(min-content, max-content);
+  padding: 10px;
+  gap: 10px;
+  min-height: 75vh;
+  
+}
+
+.loader, .error{
+  grid-column: 1/-1;
+  text-align: center;
+  font-size: 24px;
+  animation: poof .5s;
+  color: #16ACC9;
+}
+
+.btns{
+  display: flex;
+}
+
+.btn{
+  flex: 1;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  appearance: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  font-size: 22px;
+  text-decoration: none;
+  margin: 20px;
+  color: #fff;
+  position: relative;
+  display: inline-block;
+  &:active {
+    transform: translate(0px, 5px);
+    -webkit-transform: translate(0px, 5px);
+    box-shadow: 0px 1px 0px 0px;
+  }
+}
+
+.next {
+  background-color: #2ecc71;
+  box-shadow: 0px 5px 0px 0px #15B358;
+  &:hover {
+    background-color: #48E68B;
+  }
+}
+
+.back {
+  background-color: #e74c3c;
+  box-shadow: 0px 5px 0px 0px #CE3323;
+  &:hover {
+    background-color: #FF6656;
+  }
+}
+
+
+
+/* Keyframes  */
+
+@keyframes poof {
+  0%   { 
+    opacity: 0;
+    transform: translateY(-5px)
+  }
+  100% { 
+    opacity: 1;
+    transform: translateY(0px)
+  }
+}
+</style>
+
+
+<script>
+    import axios, * as others from "https://esm.sh/axios@0.21.1";
+
+const { useState, useEffect } = React;
+
+const ThemeContext = React.createContext()
+
+// Main component -------------------------------
+const Main = (props) => {
+  
+  const getData = (page = 1, name = 'a') => {
+    setLoading(true);
+    
+    axios.get(`https://rickandmortyapi.com/api/character/?page=${page}&name=${encodeURIComponent(name)}`)
+    .then(response => {
+      console.clear()
+      console.log(response.data);
+      
+      setChar(response.data.results);
+      setTotalPage(response.data.info.pages)
+      setCurrentPage(page);
+      setLoading(false);
+    }, error => {
+      setChar([]);
+      setLoading(false);
+    })
+    
+  }
+  
+  const [char, setChar] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPage, setTotalPage] = useState(1);
+  const [word, setWord] = useState('a')
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getData()
+  }, []);
+  
+  const storeInputValue = (value) => {
+    console.log(value);
+    setWord(value);
+  }
+  
+  const handleNext = () => {
+    
+    setCurrentPage(prevPage => prevPage + 1);
+    getData(currentPage+1, word);
+    console.log(currentPage);
+    
+    // Scroll to top after clicking next/back
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+  
+  const handleBack = () => {
+    
+    setCurrentPage(prevPage => prevPage - 1);
+    getData(currentPage-1, word);
+    console.log(currentPage);
+    
+    // Scroll to top after clicking next/back
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+  
+  const genCards = () => {
+    let allCards = [];
+    char.map((card, index) => {
+      allCards.push(<Card {...card} key={index} />);
+    });
+    
+    return allCards;
+  }
+  
+  let allCards = genCards();
+  
+  return (
+    <div className='main'>
+      <div className='head'>
+        <img src='https://occ-0-1190-2774.1.nflxso.net/dnm/api/v6/LmEnxtiAuzezXBjYXPuDgfZ4zZQ/AAAABVK-867iNzC3GeSiDQJ7jasFpdN4ySy2Of17S2KxaxbOOtsqax_k_ldd_f5TiDeulU3_lyJmIjtBgPVKLnE1cUK-kRk9yZsO4MXA.png?r=47e' />
+      </div>
+      <Search 
+          getInputValue={storeInputValue} 
+          getSubmit={() => getData(1, word)}
+          sendEnter={() => getData(1, word)}
+          />
+      
+      <div className='cards'>
+        
+        {loading ? <Loader /> : 
+        (allCards.length === 0 ? <div className='error'>No one found...<i class="far fa-grin-beam-sweat"></i></div> : allCards)}
+      </div>
+      
+      <div className='btns'>
+        {currentPage === 1 ? null : <button className='btn back'onClick={handleBack}>Back</button>}
+        {currentPage === totalPage ? null : <button className='btn next' onClick={handleNext}>Next </button>}
+      </div>
+    </div>
+  )
+}
+
+
+// Loader component -------------------------------
+const Loader = props => {
+  
+  return (
+     <div className='loader'>
+      Loading...
+      <i class="fas fa-sync-alt fa-spin"></i>
+    </div>
+  )
+}
+
+// Search component -------------------------
+const Search = (props) => {
+
+  let sendValue = (e) => {
+    props.getInputValue(e.target.value)
+  }
+  
+  const handleSubmit = () => {
+    props.getSubmit();
+  }
+  
+  const handleKeyDown = (e) => {
+    if(e.key === 'Enter'){
+      props.sendEnter();
+      console.log('Enter');
+    }
+  }
+  
+  return(
+    <div className='search'>
+      <div className='search-box'>
+        <input type='text' onChange={sendValue} onKeyDown={handleKeyDown} placeholder='Enter word...' />
+        <button onClick={handleSubmit} ><i class="fas fa-search"></i></button>
+      </div>
+    </div>
+  )
+}
+
+// Card component -------------------------------
+
+const Card = props => {
+  
+  const [showPop, setShowPop] = useState(false)
+  
+  const handleClick = () => {
+    if(showPop){
+      setShowPop(false);
+    }else{
+      setShowPop(true);
+    }
+    
+  }
+  
+  return (
+    <div className='card' data-id={props.id}>
+      <img src={props.image || 'https://via.placeholder.com/300x300/111217/FFFFFF/?text=Loading...'} 
+        onClick={handleClick}
+        alt={props.name} 
+        data-id={props.id} />
+      
+      { showPop &&
+        <div className='popup'>
+        <article className='popup-content'>
+          <i className="popup-close fas fa-times" onClick={handleClick}></i>
+          <div className='popup-a'>
+            <img src={props.image || 'https://via.placeholder.com/300x300/111217/FFFFFF/?text=Loading...'} 
+              alt={props.name} />
+          </div>
+          <div className='popup-b'>
+            <h2>{props.name}</h2>
+            
+            <div className='popup-details'>
+              <span>Gender: </span><span>{props.gender}</span>
+            </div>
+            <div className='popup-details'>
+              <span>Species: </span><span>{props.species}</span>
+            </div>
+            <div className='popup-details'>
+              <span>Status: </span><span>{props.status}</span>
+            </div>
+            <div className='popup-details'>
+              <span>Origin: </span><span>{props.origin ? props.origin.name : '-'}</span>
+            </div>
+            <div className='popup-details'>
+              <span>Location: </span><span>{props.location ? props.location.name : '-'}</span>
+            </div>
+            
+          </div>
+        </article>
+      </div>
+      }
+    </div>
+  )
+}
+
+ReactDOM.render(<Main />, document.getElementById('app'));
+</script>

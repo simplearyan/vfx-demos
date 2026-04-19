@@ -1,0 +1,15 @@
+{
+    "name": "vfx-lab",
+    "version": "1.0.0",
+    "description": "Hierarchical portfolio of vfx and canvas animations",
+    "main": "generate-index.js",
+    "scripts": {
+        "index": "node generate-index.js",
+        "preview": "node generate-preview.js",
+        "preview:force": "node generate-preview.js --force",
+        "build": "node generate-index.js && node generate-preview.js"
+    },
+    "dependencies": {
+        "puppeteer": "^24.2.1"
+    }
+}

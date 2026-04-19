@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rick & Morty Animation Studio</title>
+    <style>
+        /* --- Studio & Layout Setup --- */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #canvas-wrapper {
+            width: 1200px;
+            height: 680px;
+            position: relative;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+            transform-origin: center center;
+        }
+
+        /* --- Translated CSS (From Provided SCSS) --- */
+        /* Keyframes */
+        @-webkit-keyframes eyes {
+            from { right: 20px; }
+            to { right: 10px; }
+        }
+        @keyframes eyes {
+            from { right: 20px; }
+            to { right: 10px; }
+        }
+        @-webkit-keyframes drib {
+            from { height: 5px; }
+            to { height: 15px; }
+        }
+        @keyframes drib {
+            from { height: 5px; }
+            to { height: 15px; }
+        }
+
+        .ricknmorty {
+            position: relative;
+            height: 680px;
+            width: 1200px;
+            background: #FF4E50;
+            background: -webkit-linear-gradient(to right, #F9D423, #FF4E50);
+            background: linear-gradient(to right, #F9D423, #FF4E50);
+            overflow: hidden;
+            z-index: 1;
+            top: 0;
+            left: 0;
+        }
+        
+        .container {
+            margin: auto;
+            z-index: 2;
+        }
+        
+        .abs, *:before, *:after {
+            position: absolute;
+            content: '';
+        }
+        
+        .rel {
+            position: relative;
+        }
+        
+        .bord {
+            border: solid 2px #333f42;
+        }
+
+        /* Face (Rick) */
+        .face {
+            left: 390px;
+            width: 150px;
+            height: 270px;
+            background: #ddd8d0;
+            border-radius: 200px;
+            position: relative;
+            top: 100px;
+            z-index: 97;
+            border: solid 2px #333f42;
+        }
+        .face:before {
+            content: '';
+            position: absolute;
+            height: 50px;
+            width: 27.5px;
+            background: #ddd8d0;
+            border: solid 2px #333f42;
+            border-right: none;
+            border-bottom-left-radius: 50px;
+            border-top-left-radius: 50px;
+            left: -20px;
+            top: 150px;
+        }
+
+        .brow {
+            background: #bae0f0;
+            height: 10px;
+            width: 100px;
+            top: 57.5px;
+            left: 50px;
+            border: solid 2px #333f42;
+            border-radius: 100px;
+        }
+
+        .eye {
+            border: solid 2px #333f42;
+            height: 60px;
+            width: 60px;
+            border-radius: 50%;
+            display: inline-block;
+            background: #fcfafa;
+            top: 75px;
+            right: -40px;
+        }
+        .eye.left:after, .eye.right:after {
+            border: solid 3px #333f42;
+            border-bottom-left-radius: 100%;
+            width: 20px;
+            height: 30px;
+            border-right: 0;
+            border-top: 0;
+            border-bottom: 0;
+            transform: rotate(-50deg);
+            top: 50px;
+            left: 10px;
+        }
+        .eye.right:after {
+            left: 22.5px;
+            width: 10px;
+            height: 25px;
+            transform: rotate(-80deg);
+            top: 55px;
+        }
+        .eye .flap {
+            width: 100%;
+            height: 50%;
+            top: 1px;
+            background: #ddd8d0;
+            border-top-left-radius: 50px;
+            border-top-right-radius: 50px;
+            border-bottom: solid 2px #333f42;
+        }
+        .pupil {
+            background: #333f42;
+            height: 5px;
+            width: 5px;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            transition: transform 0.1s ease-out; /* Added for JS tracking */
+        }
+        .pupil.animated {
+            -webkit-animation: eyes 1.5s 1;
+            animation: eyes 1.5s 1;
+            -webkit-animation-delay: 1s;
+        }
+        .pupil:after {
+            top: 0;
+            left: 0;
+            background: #333f42;
+            height: 5px;
+            width: 5px;
+            transform: rotate(45deg);
+        }
+
+        .nose {
+            height: 15px;
+            width: 35px;
+            border-right: none;
+            border-bottom-right-radius: 100px;
+            border-top-right-radius: 50px;
+            border-left: 0;
+            transform: rotate(70deg);
+            top: 140px;
+            left: 100px;
+        }
+
+        .lips {
+            height: 25px;
+            width: 80px;
+            overflow: hidden;
+            top: 125px;
+            left: 70px;
+        }
+        .lips .mouth {
+            left: -60px;
+            width: 200px;
+            height: 100px;
+            border-top-left-radius: 50%;
+            border-top-right-radius: 50%;
+            border-bottom: 0;
+            z-index: 99;
+            transform-origin: top center;
+        }
+
+        .dimpleleft {
+            border: solid 2px #333f42;
+            border-top-left-radius: 100%;
+            border-bottom-left-radius: 100%;
+            width: 17.5px;
+            height: 17.5px;
+            border-right: 0;
+            transform: rotate(-10deg);
+            right: 70px;
+            top: 187.5px;
+        }
+        .dimpleright {
+            border: solid 2px #333f42;
+            border-top-right-radius: 100px;
+            border-bottom-right-radius: 100px;
+            width: 15px;
+            height: 17.5px;
+            border-left: 0;
+            /*transform: rotate(10deg);*/
+            right: -15px;
+            top: 187.5px;
+            background: #ddd8d0;
+            z-index: 9;
+        }
+
+        .neck {
+            left: 445px;
+            background: #ddd8d0;
+            width: 45px;
+            height: 50px;
+            border: solid 2px #333f42;
+            top: 360px;
+            z-index: 90;
+            border-bottom-left-radius: 40%;
+            border-bottom-right-radius: 40%;
+        }
+
+        /* Rick Hair */
+        .hairline {
+            background: #bae0f0;
+            width: 170px;
+            height: 280px;
+            top: 80px;
+            left: 370px;
+            border-radius: 50%;
+            z-index: 9;
+        }
+        .hair {
+            position: absolute;
+            height: 50px;
+            width: 50px;
+            background: #bae0f0;
+            z-index: 1;
+        }
+        .hair:nth-child(1) { transform: rotate(45deg); top: 220px; left: 520px; border-right: solid 2px #333f42; border-top: solid 2px #333f42; }
+        .hair:nth-child(2) { top: 140px; left: 490px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-left: 100px solid #bae0f0; border-bottom: 50px solid transparent; transform: rotate(-10deg); }
+        .hair:nth-child(3) { top: 100px; left: 490px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-left: 100px solid #bae0f0; border-bottom: 50px solid transparent; transform: rotate(-40deg); }
+        .hair:nth-child(4) { top: 40px; left: 470px; width: 0; height: 0; background: transparent; border-left: 50px solid transparent; border-right: 50px solid transparent; border-bottom: 120px solid #bae0f0; transform: rotate(15deg); }
+        .hair:nth-child(5) { top: 10px; left: 400px; width: 0; height: 0; background: transparent; border-bottom: 100px solid #bae0f0; border-right: 120px solid transparent; }
+        .hair:nth-child(6) { top: 110px; left: 310px; width: 0; height: 0; background: transparent; border-top: 100px solid #bae0f0; border-left: 100px solid transparent; }
+        .hair:nth-child(7) { top: 160px; left: 290px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-right: 100px solid #bae0f0; }
+        .hair:nth-child(8) { top: 200px; left: 320px; width: 0; height: 0; background: transparent; border-top: 70px solid transparent; border-bottom: 70px solid transparent; border-right: 100px solid #bae0f0; }
+        .hair:nth-child(9) { top: 280px; left: 345px; width: 0; height: 0; background: transparent; border-top: 35px solid transparent; border-bottom: 35px solid transparent; border-right: 70px solid #bae0f0; transform: rotate(-30deg); }
+        .hair:nth-child(10) { top: 300px; left: 370px; width: 0; height: 0; background: transparent; border-top: 35px solid transparent; border-bottom: 35px solid transparent; border-right: 70px solid #bae0f0; transform: rotate(-30deg); }
+
+        .backhair { height: 50px; width: 50px; background: #bae0f0; z-index: -1; position: absolute; }
+        .backhair:nth-child(1) { display: none; }
+        div.backhair:nth-child(2) { top: 139px; left: 495px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-left: 100px solid #333f42; border-bottom: 50px solid transparent; transform: rotate(-10deg); }
+        .backhair:nth-child(3) { top: 97px; left: 493.5px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-left: 100px solid #333f42; border-bottom: 50px solid transparent; transform: rotate(-40deg); }
+        .backhair:nth-child(4) { top: 35.5px; left: 471px; width: 0; height: 0; background: transparent; border-left: 50px solid transparent; border-right: 50px solid transparent; border-bottom: 120px solid #333f42; transform: rotate(15deg); }
+        .backhair:nth-child(5) { top: 6px; left: 398px; width: 0; height: 0; background: transparent; border-bottom: 100px solid #333f42; border-right: 120px solid transparent; }
+        .backhair:nth-child(6) { top: 108px; left: 306px; width: 0; height: 0; background: transparent; border-top: 100px solid #333f42; border-left: 100px solid transparent; }
+        .backhair:nth-child(7) { top: 160px; left: 286px; width: 0; height: 0; background: transparent; border-top: 50px solid transparent; border-bottom: 50px solid transparent; border-right: 100px solid #333f42; }
+        .backhair:nth-child(8) { top: 200px; left: 318px; width: 0; height: 0; background: transparent; border-top: 70px solid transparent; border-bottom: 70px solid transparent; border-right: 100px solid #333f42; }
+        .backhair:nth-child(9) { top: 282px; left: 342px; width: 0; height: 0; background: transparent; border-top: 35px solid transparent; border-bottom: 35px solid transparent; border-right: 70px solid #333f42; transform: rotate(-30deg); }
+        .backhair:nth-child(10) { top: 302px; left: 366px; width: 0; height: 0; background: transparent; border-top: 35px solid transparent; border-bottom: 35px solid transparent; border-right: 70px solid #333f42; transform: rotate(-30deg); }
+
+        .dribble {
+            background: #d2edc9;
+            width: 25px;
+            height: 10px;
+            border: solid 2px #333f42;
+            top: 194px;
+            left: 100px;
+            border-top-left-radius: 1px;
+            border-top-right-radius: 1px;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 10px;
+            transform: rotate(-10deg);
+        }
+        .dribbletwo {
+            background: #d2edc9;
+            width: 7.5px;
+            height: 15px;
+            border: solid 2px #333f42;
+            top: 205px;
+            left: 103px;
+            border-bottom-left-radius: 5px;
+            border-bottom-right-radius: 10px;
+            border-top: 0;
+            -webkit-animation: drib 5s infinite alternate; 
+            animation: drib 5s infinite alternate;
+        }
+        .dribbletwo:after, .dribbletwo:before {
+            border: solid 2px #333f42;
+            height: 4px;
+            width: 2.5px;
+            background: #d2edc9;
+            top: 10px;
+            border-radius: 50%;
+        }
+        .dribbletwo:after { left: -20px; }
+        .dribbletwo:before { left: 20px; top: 7.5px; }
+
+        .shirt {
+            background: #97d6d8;
+            width: 55px;
+            height: 315px;
+            left: 438px;
+            top: 100px;
+            border-left: solid 2px #333f42;
+            border-right: solid 2px #333f42;
+            border-radius: 30%;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            z-index: 15;
+            border-bottom: solid 2px #333f42;
+        }
+
+        .left-arm, .right-arm {
+            background: #fff;
+            border: solid 2px #333f42;
+            width: 100px;
+            height: 300px;
+            z-index: 8;
+        }
+        .left-arm {
+            top: 110px;
+            left: 360px;
+            border-top-left-radius: 70%;
+            transform: rotate(5deg);
+        }
+        .left-arm:after {
+            height: 195px;
+            width: 2px;
+            background: #333f42;
+            bottom: 0;
+            transform: rotate(5deg);
+            left: 35px;
+            z-index: 9;
+        }
+        .right-arm {
+            top: 110px;
+            left: 480px;
+            border-top-right-radius: 70%;
+            transform: rotate(-5deg);
+            z-index: 10;
+        }
+        .right-arm:after {
+            height: 240px;
+            width: 2px;
+            background: #333f42;
+            bottom: 0;
+            transform: rotate(-5deg);
+            right: 35px;
+        }
+
+        .right-lapel, .left-lapel {
+            z-index: 9;
+            height: 100px;
+            border: solid 2px #333f42;
+            background: transparent;
+            transform: rotate(20deg);
+        }
+        .left-lapel {
+            left: 420px;
+            top: 120px;
+            border-right: 0;
+            border-top: 0;
+            width: 30px;
+        }
+        .left-lapel:after {
+            border-left: solid 2px #333f42;
+            border-bottom: solid 2px #333f42;
+            bottom: -72px;
+            left: 25px;
+            height: 70px;
+            width: 40px;
+            transform: rotate(5deg);
+        }
+        .right-lapel {
+            left: 485px;
+            top: 125px;
+            z-index: 12;
+            border-left: 0;
+            border-top: 0;
+            transform: rotate(-25deg);
+            width: 30px;
+        }
+        .right-lapel:after {
+            border-right: solid 2px #333f42;
+            border-bottom: solid 2px #333f42;
+            bottom: -72px;
+            left: -40px;
+            height: 70px;
+            width: 40px;
+        }
+
+        /* Morty */
+        .morty {
+            left: 440px;
+            z-index: 2;
+        }
+        .morty .face {
+            background: #ffc9a5;
+            width: 200px;
+            height: 200px;
+            z-index: 100;
+            border-radius: 50%;
+            border: solid 2px #333f42;
+            top: 130px;
+        }
+        .morty .face:before {
+            content: '';
+            position: absolute;
+            right: -7.5px;
+            left: auto;
+            top: 100px;
+            transform: rotate(195deg);
+            background: #ffc9a5;
+            border-radius: 50%;
+            width: 20px;
+            height: 30px;
+            border-left: solid 2px #333f42;
+        }
+        .morty .face .leftbrow, .morty .face .rightbrow {
+            height: 15px;
+            width: 40px;
+            border-radius: 50%;
+            border-bottom: solid 2px #333f42;
+        }
+        .morty .face .rightbrow { left: 105px; top: 15px; transform: rotate(5deg); }
+        .morty .face .leftbrow { left: 25px; top: 15px; transform: rotate(-5deg); }
+
+        .morty .face .mortyeye {
+            height: 70px;
+            width: 70px;
+            border-radius: 50%;
+            border: solid 2px #333f42;
+            background: #fff;
+            display: inline-block;
+            top: 40px;
+            overflow: hidden;
+            position: absolute;
+        }
+        .morty .face .mortyeye.left { left: 15px; }
+        .morty .face .mortyeye.right { right: 25px; }
+
+        .morty .face .mortyeye .pupil { left: 20px; top: 20px; transition: transform 0.1s ease-out; }
+        
+        .morty .face .nose {
+            height: 15px;
+            width: 17.5px;
+            border: solid 2px #333f42;
+            border-top-right-radius: 100px;
+            border-left: 0;
+            transform: rotate(-210deg);
+            left: 55px;
+            top: 115px;
+        }
+        .morty .face .mouth {
+            width: 50px;
+            height: 25px;
+            border-top: solid 2px #333f42;
+            border-radius: 50%;
+            top: 150px;
+            left: 45px;
+        }
+
+        .mortyhair {
+            height: 210px;
+            width: 210px;
+            border-radius: 50%;
+            border: solid 2px #333f42;
+            background: #986433;
+            z-index: -9;
+            top: 115px;
+            left: -5px;
+        }
+        .leftear {
+            border-left: solid 2px #333f42;
+            border-radius: 50%;
+            height: 40px;
+            width: 40px;
+            left: -20px;
+            top: 260px;
+            background: #ffc9a5;
+            z-index: -99;
+        }
+        .mortybody {
+            background: #f3ed79;
+            height: 150px;
+            width: 140px;
+            top: 320px;
+            left: 20px;
+            border: solid 2px #333f42;
+            border-top-left-radius: 100%;
+            border-top-right-radius: 100%;
+        }
+        .mortybody:before, .mortybody:after {
+            height: 80px;
+            width: 2px;
+            bottom: 0;
+            background: #333f42;
+        }
+        .mortybody:before { left: 30px; }
+        .mortybody:after { right: 30px; }
+
+
+        /* --- NEW ANIMATION CSS FOR YOUTUBE VIDEOS --- */
+        
+        /* Floating Animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .anim-float .container { animation: float 4s ease-in-out infinite; }
+        .anim-float .morty { animation: float 3.5s ease-in-out infinite 0.5s; }
+
+        /* Talking Animations */
+        @keyframes rickTalk {
+            0%, 100% { border-top-left-radius: 50%; border-top-right-radius: 50%; height: 100px; transform: scaleY(1); }
+            50% { border-top-left-radius: 40%; border-top-right-radius: 40%; height: 130px; transform: scaleY(0.6) translateY(20px); }
+        }
+        @keyframes mortyTalk {
+            0%, 100% { height: 25px; border-radius: 50%; border-bottom: none; transform: translateY(0); }
+            50% { height: 40px; border-radius: 40%; border-bottom: solid 2px #333f42; background: #750d11; transform: translateY(-5px); }
+        }
+
+        .anim-talk-rick .lips .mouth { animation: rickTalk 0.25s infinite alternate; }
+        .anim-talk-morty .morty .face .mouth { animation: mortyTalk 0.3s infinite alternate; }
+
+
+        /* --- Studio Control Panel --- */
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: flex;
+            gap: 15px;
+            z-index: 9999;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: opacity 0.3s, transform 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .controls.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(50px);
+            pointer-events: none;
+        }
+        .control-btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #555;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+        .control-btn:hover {
+            background: #555;
+            border-color: #888;
+        }
+        .control-btn.active {
+            background: #F9D423;
+            color: #111;
+            border-color: #FF4E50;
+        }
+        .hide-hint {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Scalable Wrapper for the Animation -->
+    <div id="canvas-wrapper">
+        <div class="ricknmorty" id="scene">
+            <div class="container">
+                <div class="face">
+                    <div class="brow abs"></div>
+                    <div class="eye left rel">
+                        <div class="flap abs"></div>
+                        <div class="pupil abs"></div>
+                    </div>
+                    <div class="eye right rel">
+                        <div class="flap abs"></div>
+                        <div class="pupil abs"></div>
+                    </div>
+                    <div class="nose abs bord"></div>
+                    <div class="lips rel">
+                        <div class="mouth abs bord"></div>
+                    </div>
+                    <div class="dribble abs"></div>
+                    <div class="dribbletwo abs"></div>
+                    <div class="dimpleleft abs"></div>
+                    <div class="dimpleright abs"></div>
+                </div>
+                <div class="neck abs"></div>
+                <div class="hairline abs"></div>
+                <div class="hairs">
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                    <div class="hair"></div>
+                </div>
+                <div class="back">
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                    <div class="backhair"></div>
+                </div>
+                <div class="body rel">
+                    <div class="left-arm abs"></div>
+                    <div class="left-lapel abs"></div>
+                    <div class="shirt abs"></div>
+                    <div class="right-lapel abs"></div>
+                    <div class="right-arm abs"></div>
+                </div>
+            </div>
+
+            <div class="morty rel">
+                <div class="face rel">
+                    <div class="leftbrow abs"></div>
+                    <div class="rightbrow abs"></div>
+                    <div class="mortyeye left rel">
+                        <div class="flap abs"></div>
+                        <div class="pupil abs"></div>
+                    </div>
+                    <div class="mortyeye right rel">
+                        <div class="flap abs"></div>
+                        <div class="pupil abs"></div>
+                    </div>
+                    <div class="nose abs"></div>
+                    <div class="mouth abs"></div>
+                </div>
+                <div class="leftear abs"></div>
+                <div class="mortyhair abs"></div>
+                <div class="mortybody abs"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YouTube Creator Controls -->
+    <div class="controls" id="controls">
+        <button class="control-btn" id="btn-float">Idle Floating</button>
+        <button class="control-btn" id="btn-track">Mouse Eye-Track</button>
+        <button class="control-btn" id="btn-rick-talk">Rick Talk</button>
+        <button class="control-btn" id="btn-morty-talk">Morty Talk</button>
+    </div>
+    <div class="hide-hint">Press 'H' to hide/show the control panel for recording</div>
+
+    <script>
+        // Auto-Scale Canvas to Fit Screen Perfectly for Recording
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            const scaleX = window.innerWidth / 1200;
+            const scaleY = window.innerHeight / 680;
+            const scale = Math.min(scaleX, scaleY) * 0.95; // 95% of screen size to leave a small border
+            wrapper.style.transform = `scale(${scale})`;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initial scale
+
+        // App State
+        const scene = document.getElementById('scene');
+        let eyeTrackingActive = false;
+
+        // --- Controls Logic ---
+
+        // Idle Floating Toggle
+        const btnFloat = document.getElementById('btn-float');
+        btnFloat.addEventListener('click', () => {
+            scene.classList.toggle('anim-float');
+            btnFloat.classList.toggle('active');
+        });
+
+        // Rick Talking Toggle
+        const btnRickTalk = document.getElementById('btn-rick-talk');
+        btnRickTalk.addEventListener('click', () => {
+            scene.classList.toggle('anim-talk-rick');
+            btnRickTalk.classList.toggle('active');
+        });
+
+        // Morty Talking Toggle
+        const btnMortyTalk = document.getElementById('btn-morty-talk');
+        btnMortyTalk.addEventListener('click', () => {
+            scene.classList.toggle('anim-talk-morty');
+            btnMortyTalk.classList.toggle('active');
+        });
+
+        // Eye Tracking Toggle
+        const btnTrack = document.getElementById('btn-track');
+        btnTrack.addEventListener('click', () => {
+            eyeTrackingActive = !eyeTrackingActive;
+            btnTrack.classList.toggle('active');
+            
+            // Reset eyes if turned off
+            if (!eyeTrackingActive) {
+                const pupils = document.querySelectorAll('.pupil');
+                pupils.forEach(pupil => {
+                    pupil.style.transform = `translate(0px, 0px)`;
+                });
+            }
+        });
+
+        // Eye Tracking Math
+        document.addEventListener('mousemove', (e) => {
+            if (!eyeTrackingActive) return;
+
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            const pupils = document.querySelectorAll('.pupil');
+
+            pupils.forEach(pupil => {
+                const rect = pupil.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const deltaX = mouseX - centerX;
+                const deltaY = mouseY - centerY;
+                
+                // Limit the distance the pupil can travel inside the eye
+                const angle = Math.atan2(deltaY, deltaX);
+                const maxDistance = 12; // Adjust for pupil movement radius
+                const distance = Math.min(maxDistance, Math.hypot(deltaX, deltaY) / 15); 
+                
+                pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
+            });
+        });
+
+        // Hide Controls for Recording Output
+        document.addEventListener('keydown', (e) => {
+            if (e.key.toLowerCase() === 'h') {
+                document.getElementById('controls').classList.toggle('hidden');
+                document.querySelector('.hide-hint').style.display = 
+                    document.getElementById('controls').classList.contains('hidden') ? 'none' : 'block';
+            }
+        });
+    </script>
+</body>
+</html>

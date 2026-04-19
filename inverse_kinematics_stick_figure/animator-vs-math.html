@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animator vs Math Plotter</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #e5e5e5;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Scrollbar for Timeline */
+        .timeline-scroll::-webkit-scrollbar {
+            height: 8px;
+        }
+        .timeline-scroll::-webkit-scrollbar-track {
+            background: #111111;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 4px;
+        }
+        .timeline-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+
+        /* Pure Black Canvas for Animator vs Math look */
+        #anim-canvas {
+            background-color: #000000;
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .glass-panel {
+            background: rgba(15, 15, 15, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col antialiased select-none">
+
+    <!-- Top Toolbar -->
+    <header class="h-16 bg-[#0f0f0f] border-b border-[#222] flex items-center justify-between px-4 shrink-0 z-10">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-[#FF8800] rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(255,136,0,0.4)]">
+                <i data-lucide="swords" class="text-black w-6 h-6"></i>
+            </div>
+            <h1 class="text-lg font-black tracking-wide text-white hidden md:block">ANIMATOR <span class="text-[#FF8800]">VS</span> MATH</h1>
+        </div>
+
+        <!-- Coordinates Input Form -->
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <form id="plot-form" class="flex items-center space-x-2 bg-[#1a1a1a] p-1.5 rounded-lg border border-[#333]">
+                <div class="flex items-center space-x-1 px-1">
+                    <span class="text-xs font-bold text-gray-500 mono">X:</span>
+                    <input type="number" id="input-x" required step="any" placeholder="0" class="w-14 sm:w-20 bg-[#0a0a0a] border border-[#333] rounded p-1.5 text-sm text-white focus:outline-none focus:border-[#FF8800] font-mono text-center transition">
+                </div>
+                <div class="flex items-center space-x-1 px-1">
+                    <span class="text-xs font-bold text-gray-500 mono">Y:</span>
+                    <input type="number" id="input-y" required step="any" placeholder="0" class="w-14 sm:w-20 bg-[#0a0a0a] border border-[#333] rounded p-1.5 text-sm text-white focus:outline-none focus:border-[#FF8800] font-mono text-center transition">
+                </div>
+                <button type="submit" class="bg-[#FF8800] hover:bg-[#ff9900] text-black px-4 py-1.5 rounded-md text-sm font-black transition flex items-center shadow-[0_0_10px_rgba(255,136,0,0.3)]">
+                    <i data-lucide="target" class="w-4 h-4 sm:mr-2"></i>
+                    <span class="hidden sm:inline">STRIKE</span>
+                </button>
+            </form>
+
+            <button type="button" onclick="plotRandom()" class="flex items-center space-x-1 bg-[#1a1a1a] hover:bg-[#222] border border-[#333] px-3 py-2 rounded-lg text-sm font-bold transition text-white" title="Random Point">
+                <i data-lucide="dices" class="w-4 h-4 text-[#FF8800]"></i>
+                <span class="hidden sm:inline">Random</span>
+            </button>
+        </div>
+
+        <div class="flex items-center">
+            <button onclick="clearGraph()" class="p-2 bg-[#1a1a1a] hover:bg-red-900/50 hover:text-red-400 border border-[#333] hover:border-red-900 rounded-lg text-gray-400 transition flex items-center" title="Clear Canvas">
+                <i data-lucide="trash-2" class="w-4 h-4 sm:mr-1"></i>
+                <span class="hidden sm:inline text-xs font-bold">CLEAR</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col items-center justify-center bg-black relative">
+        <!-- Canvas Container -->
+        <div class="relative w-full h-full flex items-center justify-center">
+            <canvas id="anim-canvas" class="touch-none"></canvas>
+            
+            <!-- Instructions Overlay -->
+            <div id="instruction-overlay" class="absolute bottom-6 left-6 bg-[#0f0f0f]/90 backdrop-blur text-xs font-bold text-gray-300 px-4 py-3 rounded-lg pointer-events-none transition-opacity duration-500 border border-[#333]">
+                <p class="mb-1"><strong class="text-[#FF8800]">Click anywhere</strong> on the grid to attack a point.</p>
+                <p>Or use the <strong class="text-[#FF8800]">top toolbar</strong> for exact coordinates.</p>
+            </div>
+
+            <!-- Axis Labels -->
+            <div class="absolute top-4 left-4 text-[10px] font-bold text-gray-500 tracking-widest mono bg-black/80 px-2 py-1 rounded border border-[#333] pointer-events-none">Y-AXIS</div>
+            <div class="absolute bottom-4 right-4 text-[10px] font-bold text-gray-500 tracking-widest mono bg-black/80 px-2 py-1 rounded border border-[#333] pointer-events-none">X-AXIS</div>
+        </div>
+    </main>
+
+    <!-- Bottom Timeline -->
+    <footer class="h-28 bg-[#0f0f0f] border-t border-[#222] flex flex-col shrink-0">
+        <div class="px-4 py-1.5 flex justify-between items-center bg-[#0a0a0a] border-b border-[#222] text-xs text-gray-500 font-bold tracking-wider uppercase">
+            <span>Coordinate Targets</span>
+            <span id="point-counter" class="text-[#FF8800] bg-[#FF8800]/10 px-2 py-0.5 rounded">0 Points</span>
+        </div>
+        <div id="timeline" class="flex-1 flex items-center px-4 space-x-3 overflow-x-auto timeline-scroll py-2">
+            <!-- Point cards injected here by JS -->
+            <div class="text-gray-600 text-xs italic font-bold w-full text-center" id="empty-timeline">Awaiting targets...</div>
+        </div>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // --- Core Variables & Setup ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        const instructionOverlay = document.getElementById('instruction-overlay');
+        const timelineEl = document.getElementById('timeline');
+
+        let cw, ch;
+        let originX, originY;
+        const scale = 40; // Pixels per logical unit
+        
+        let allPoints = []; // Array of { id, lx, ly, px, py, status: 'QUEUED' | 'ACTIVE' | 'DONE' }
+        let pointIdCounter = 0;
+        let particles = [];
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            originX = Math.floor(cw / 2);
+            originY = Math.floor(ch / 2);
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const toPx = (lx, ly) => ({ x: originX + lx * scale, y: originY - ly * scale });
+        const toLogical = (px, py) => ({ lx: (px - originX) / scale, ly: (originY - py) / scale });
+
+        // --- Alan Becker Stickman Character ---
+        const charColor = '#FF8800'; // Iconic Orange
+
+        const char = {
+            x: originX,
+            y: originY,
+            targetX: originX,
+            targetY: originY,
+            facing: 1, // 1 for right, -1 for left
+            state: 'IDLE', // IDLE, WALKING, PLOTTING
+            walkCycle: 0,
+            activePoint: null, 
+            timer: 0
+        };
+
+        // --- Math / Drawing Helpers ---
+        function drawGrid() {
+            ctx.lineWidth = 1;
+            
+            // Very faint grid lines (like a blackboard)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; 
+            ctx.beginPath();
+            for (let x = originX % scale; x < cw; x += scale) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, ch);
+            }
+            for (let y = originY % scale; y < ch; y += scale) {
+                ctx.moveTo(0, y); ctx.lineTo(cw, y);
+            }
+            ctx.stroke();
+
+            // Thick White Axes
+            ctx.strokeStyle = '#ffffff'; 
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, originY); ctx.lineTo(cw, originY); // X Axis
+            ctx.moveTo(originX, 0); ctx.lineTo(originX, ch); // Y Axis
+            ctx.stroke();
+
+            // Tick Marks and Numbers
+            ctx.fillStyle = '#666666'; 
+            ctx.font = '11px "JetBrains Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = -50; i <= 50; i++) {
+                if (i === 0) continue;
+                let px = originX + i * scale;
+                if (px > 0 && px < cw) {
+                    ctx.beginPath(); ctx.moveTo(px, originY - 5); ctx.lineTo(px, originY + 5); ctx.stroke();
+                    if(i % 2 === 0) ctx.fillText(i, px, originY + 16);
+                }
+                let py = originY - i * scale;
+                if (py > 0 && py < ch) {
+                    ctx.beginPath(); ctx.moveTo(originX - 5, py); ctx.lineTo(originX + 5, py); ctx.stroke();
+                    if(i % 2 === 0) {
+                        ctx.textAlign = 'right';
+                        ctx.fillText(i, originX - 10, py);
+                        ctx.textAlign = 'center';
+                    }
+                }
+            }
+        }
+
+        const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+        function drawStickman() {
+            ctx.save();
+            ctx.translate(char.x, char.y);
+            ctx.scale(char.facing, 1);
+
+            // Dynamic Walking Lean
+            if (char.state === 'WALKING') {
+                ctx.rotate(0.15); // Lean into the walk
+            }
+
+            // Alan Becker Style: Thick, rounded lines, solid color
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = charColor;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Bobbing effect during walk
+            let bob = 0;
+            if (char.state === 'WALKING') {
+                bob = Math.abs(Math.sin(char.walkCycle * 2)) * 4;
+            }
+            ctx.translate(0, -bob);
+
+            // Head (Hollow circle)
+            ctx.beginPath();
+            ctx.arc(0, -35, 14, 0, Math.PI * 2);
+            ctx.fillStyle = '#000000'; // Matches background
+            ctx.fill(); 
+            ctx.stroke();
+
+            // Torso
+            ctx.beginPath();
+            ctx.moveTo(0, -21); // Base of head
+            ctx.lineTo(0, 10);  // Pelvis
+            ctx.stroke();
+
+            // Legs Animation Logic
+            let leg1X = 0, leg1Y = 35, knee1X = 0, knee1Y = 20;
+            let leg2X = 0, leg2Y = 35, knee2X = 0, knee2Y = 20;
+
+            if (char.state === 'WALKING') {
+                const stride = 20;
+                const lift = 15;
+                
+                leg1X = Math.sin(char.walkCycle) * stride;
+                leg1Y = 35 - Math.max(0, Math.cos(char.walkCycle)) * lift;
+                knee1X = leg1X / 2 + Math.sin(char.walkCycle - Math.PI/4) * 8;
+                knee1Y = 10 + (leg1Y - 10) / 2;
+
+                leg2X = Math.sin(char.walkCycle + Math.PI) * stride;
+                leg2Y = 35 - Math.max(0, Math.cos(char.walkCycle + Math.PI)) * lift;
+                knee2X = leg2X / 2 + Math.sin(char.walkCycle + Math.PI - Math.PI/4) * 8;
+                knee2Y = 10 + (leg2Y - 10) / 2;
+            } else if (char.state === 'PLOTTING') {
+                // Wide stance for the punch
+                leg1X = -15; leg1Y = 35; knee1X = -10; knee1Y = 22;
+                leg2X = 20; leg2Y = 35; knee2X = 15; knee2Y = 22;
+            } else {
+                // Idle Legs
+                leg1X = -8; leg2X = 8;
+                knee1X = -4; knee2X = 4;
+            }
+
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(knee1X, knee1Y); ctx.lineTo(leg1X, leg1Y); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(knee2X, knee2Y); ctx.lineTo(leg2X, leg2Y); ctx.stroke();
+
+            // Arms Animation Logic
+            let arm1X = -10, arm1Y = 5; 
+            let arm2X = 10, arm2Y = 5;  
+
+            if (char.state === 'WALKING') {
+                arm1X = Math.sin(char.walkCycle + Math.PI) * 15;
+                arm2X = Math.sin(char.walkCycle) * 15;
+            } else if (char.state === 'PLOTTING') {
+                arm1X = -20; arm1Y = -5; // Pull back arm for balance
+            }
+
+            // Back Arm
+            ctx.beginPath(); ctx.moveTo(0, -15); ctx.lineTo(arm1X, arm1Y); ctx.stroke();
+
+            // Front Arm (The Striking Arm)
+            ctx.beginPath(); ctx.moveTo(0, -15);
+            
+            if (char.state === 'PLOTTING' && char.activePoint) {
+                // Calculate Target Point Relative to Shoulder
+                let localTx = (char.activePoint.px - char.x) * char.facing;
+                let localTy = (char.activePoint.py - char.y) + bob + 15; 
+                
+                let handX = arm2X, handY = arm2Y;
+                
+                // Punch Animation
+                if (char.timer < 10) {
+                    // Wind up
+                    let p = char.timer / 10;
+                    handX = lerp(arm2X, -25, p);
+                    handY = lerp(arm2Y, -25, p);
+                } else if (char.timer < 15) {
+                    // Strike Forward
+                    let p = (char.timer - 10) / 5;
+                    handX = lerp(-25, localTx, p);
+                    handY = lerp(-25, localTy, p);
+                } else {
+                    // Hold impact position
+                    handX = localTx;
+                    handY = localTy;
+                }
+                
+                ctx.lineTo(handX, handY);
+                ctx.stroke();
+                
+            } else {
+                ctx.lineTo(arm2X, arm2Y);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        function drawParticles() {
+            particles.forEach((p, i) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                    return;
+                }
+                
+                ctx.fillStyle = `rgba(${p.color}, ${p.life})`; 
+                ctx.beginPath();
+                // Draw square particles for aggressive impact look
+                ctx.rect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+                ctx.fill();
+            });
+        }
+
+        function drawPlottedPoints() {
+            allPoints.filter(p => p.status === 'DONE').forEach(p => {
+                const px = p.px;
+                const py = p.py;
+                
+                // Solid white dot with glow (Looks like Math symbols in the animation)
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ffffff';
+                
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(px, py, 4, 0, Math.PI * 2); ctx.fill();
+                
+                ctx.shadowBlur = 0; 
+
+                // Coordinate Label
+                ctx.fillStyle = '#888888'; 
+                ctx.font = 'bold 12px "JetBrains Mono", monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(`(${p.lx.toFixed(1)}, ${p.ly.toFixed(1)})`, px + 12, py - 12);
+            });
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            if (char.state === 'IDLE') {
+                const nextPoint = allPoints.find(p => p.status === 'QUEUED');
+                if (nextPoint) {
+                    char.activePoint = nextPoint;
+                    char.activePoint.status = 'ACTIVE';
+                    char.state = 'WALKING';
+                    updateTimelineUI();
+                    
+                    let offsetX = -40; // Stand further back for the punch
+                    if (char.activePoint.px < 60) offsetX = 40; 
+                    
+                    char.targetX = char.activePoint.px + offsetX;
+                    char.targetY = char.activePoint.py + 20; // Aim shoulder roughly at point
+                    char.facing = offsetX < 0 ? 1 : -1;
+                }
+            }
+
+            if (char.state === 'WALKING') {
+                let dx = char.targetX - char.x;
+                let dy = char.targetY - char.y;
+                let dist = Math.hypot(dx, dy);
+
+                if (dist > 3) {
+                    char.x += (dx / dist) * 5.5; // Fast aggressive walk
+                    char.y += (dy / dist) * 5.5;
+                    char.walkCycle += 0.35; 
+                    
+                    if (dist > 10) {
+                        char.facing = dx > 0 ? 1 : -1;
+                    }
+                } else {
+                    char.x = char.targetX;
+                    char.y = char.targetY;
+                    char.state = 'PLOTTING';
+                    char.timer = 0;
+                    char.walkCycle = 0; 
+                    char.facing = (char.activePoint.px > char.x) ? 1 : -1; 
+                }
+            }
+
+            if (char.state === 'PLOTTING') {
+                char.timer++;
+                
+                // Impact Frame!
+                if (char.timer === 15) {
+                    char.activePoint.status = 'DONE';
+                    updateTimelineUI();
+
+                    // Generate Impact Particles
+                    for(let i=0; i<15; i++) {
+                        particles.push({
+                            x: char.activePoint.px, 
+                            y: char.activePoint.py, 
+                            vx: (Math.random()-0.5)*12, 
+                            vy: (Math.random()-0.5)*12, 
+                            life: 1, 
+                            size: Math.random()*4 + 2,
+                            color: Math.random() > 0.5 ? '255, 136, 0' : '255, 255, 255' // Orange or White
+                        });
+                    }
+                }
+
+                if (char.timer > 35) { // Quick recovery
+                    char.state = 'IDLE';
+                    char.activePoint = null;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            drawGrid();
+            drawPlottedPoints();
+            drawParticles();
+            drawStickman();
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // --- Interactivity & UI ---
+        function queuePoint(lx, ly) {
+            instructionOverlay.style.opacity = '0'; // Hide instructions
+            
+            const pxCoords = toPx(lx, ly);
+            const newPoint = { 
+                id: pointIdCounter++, 
+                lx: lx, 
+                ly: ly, 
+                px: pxCoords.x, 
+                py: pxCoords.y,
+                status: 'QUEUED'
+            };
+            allPoints.push(newPoint);
+            updateTimelineUI();
+        }
+
+        document.getElementById('plot-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const x = parseFloat(document.getElementById('input-x').value);
+            const y = parseFloat(document.getElementById('input-y').value);
+            if(!isNaN(x) && !isNaN(y)) {
+                queuePoint(x, y);
+                document.getElementById('input-x').value = '';
+                document.getElementById('input-y').value = '';
+                document.getElementById('input-x').focus();
+            }
+        });
+
+        function plotRandom() {
+            const x = parseFloat((Math.random() * 20 - 10).toFixed(1));
+            const y = parseFloat((Math.random() * 14 - 7).toFixed(1));
+            queuePoint(x, y);
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = e.clientX - rect.left;
+            const py = e.clientY - rect.top;
+            const logical = toLogical(px, py);
+            
+            const lx = Math.round(logical.lx * 10) / 10;
+            const ly = Math.round(logical.ly * 10) / 10;
+            queuePoint(lx, ly);
+        });
+
+        function updateTimelineUI() {
+            const emptyState = document.getElementById('empty-timeline');
+            if (allPoints.length > 0 && emptyState) {
+                emptyState.remove();
+            }
+
+            // Update Counter
+            const doneCount = allPoints.filter(p => p.status === 'DONE').length;
+            document.getElementById('point-counter').innerText = `${doneCount} / ${allPoints.length} Targets`;
+
+            timelineEl.innerHTML = '';
+            
+            allPoints.forEach((p, idx) => {
+                const box = document.createElement('div');
+                let bgClass, borderClass, textClass, iconHtml;
+
+                if (p.status === 'DONE') {
+                    bgClass = 'bg-[#111]';
+                    borderClass = 'border-[#333]';
+                    textClass = 'text-white';
+                    iconHtml = '<i data-lucide="check-circle-2" class="w-3 h-3 text-[#FF8800] mb-1"></i>';
+                } else if (p.status === 'ACTIVE') {
+                    bgClass = 'bg-[#FF8800]/20';
+                    borderClass = 'border-[#FF8800]';
+                    textClass = 'text-[#FF8800]';
+                    iconHtml = '<i data-lucide="target" class="w-3 h-3 text-[#FF8800] mb-1 animate-pulse"></i>';
+                } else {
+                    bgClass = 'bg-[#0a0a0a]';
+                    borderClass = 'border-[#222] border-dashed';
+                    textClass = 'text-gray-500';
+                    iconHtml = '<i data-lucide="clock" class="w-3 h-3 text-gray-600 mb-1"></i>';
+                }
+
+                box.className = `h-16 w-20 shrink-0 rounded-lg border flex flex-col items-center justify-center font-mono transition-colors duration-300 ${bgClass} ${borderClass}`;
+                box.id = `point-card-${p.id}`;
+                
+                box.innerHTML = `
+                    ${iconHtml}
+                    <span class="text-xs font-bold ${textClass}">(${p.lx}, ${p.ly})</span>
+                `;
+                
+                timelineEl.appendChild(box);
+
+                // Auto-scroll to active point
+                if (p.status === 'ACTIVE') {
+                    box.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            });
+            
+            lucide.createIcons();
+        }
+
+        function clearGraph() {
+            allPoints = [];
+            pointIdCounter = 0;
+            char.state = 'IDLE';
+            char.activePoint = null;
+            
+            // Return character to origin
+            char.targetX = originX;
+            char.targetY = originY;
+            if(Math.hypot(char.targetX - char.x, char.targetY - char.y) > 5) {
+                char.state = 'WALKING';
+            }
+            
+            timelineEl.innerHTML = '<div class="text-gray-600 text-xs italic font-bold w-full text-center" id="empty-timeline">Awaiting targets...</div>';
+            document.getElementById('point-counter').innerText = '0 Points';
+        }
+
+        // Start engine
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

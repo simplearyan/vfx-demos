@@ -1,0 +1,276 @@
+<div class="container">
+	<div class="ear"></div>
+	<div class="head">
+		<div class="eye">
+		</div>
+		<div class="eye">
+		</div>
+		<div class="lower-eye-mask">
+		</div>
+		<div class="lower-eye-mask">
+		</div>
+		<div class="nose-group">
+			<div class="nose"></div>
+			<div class="nose-mask"></div>
+		</div>
+		<div class="mouth-left"></div>
+		<div class="mouth-mask1"></div>
+		<div class="mouth-right"></div>
+		<div class="mouth-mask2"></div>
+		<div class="pupil"></div>
+		<div class="pupil"></div>
+		<div class="under-eye"></div>
+		<div class="under-eye"></div>
+	</div>
+	<div class="ear2"></div>
+	<div class="left-ear-mask"></div>
+	<div class="hair-in-shadow"></div>
+	<div class="hair"></div>
+	<div class="shirt"></div>
+	<div class="shirt-shadow"></div>
+	<div class="sleeves"></div>
+</div>
+
+
+<style>
+    body{
+  height: 100vh;
+  width: 100vw;
+  background-color: #000;
+}
+.container{
+  display: block;
+  position: relative;
+  width: 100vw;
+  height: 100vw;
+  top: -30%;
+}
+.head{
+  display: block;
+  position: absolute;
+  border: 0.05em solid black;
+  /* background-color: #f7dfcf; */
+  background: rgb(247,223,207);
+background: radial-gradient(at 52% 48%, rgba(247,223,207,1) 0%, rgba(247,223,207,1) 69%, rgba(123,89,80,1) 69%, rgba(123,89,80,1) 100%);
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+}
+.eye{
+  position: absolute;
+  width: 34%;
+  height: 34%;
+  border: 0.05em solid black;
+  background: rgb(255,255,255);
+background: linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 62%, rgba(247,223,207,1) 62%, rgba(0,0,0,1) 62%, rgba(0,0,0,1) 64%, rgba(247,223,207,1) 64%, rgba(247,223,207,1) 100%);  border-radius: 50%;
+  top: 20%;
+  left: 18%;
+}
+.eye ~ .eye{
+  left: 60%;
+}
+
+.nose{
+  /* nose is too big */
+  position: absolute;
+  width: 6%;
+  height: 16%;
+  border: 0.05em solid black;
+  background-color: #f7dfcf;
+  border-radius: 31% 48% 42% 44% / 0% 0% 40% 41%;
+  transform: rotate(-45deg);
+  top: 47%;
+  left: 53%;
+  z-index: 100;
+}
+.nose-mask{
+  position: absolute;
+  width: 14%;
+  height: 10%;
+  top: 47%;
+  left: 47%;
+  background-color: #f7dfcf;
+  transform: rotate(-45deg);
+  z-index: 100;
+}
+.lower-eye-mask{
+  position: absolute;
+  width: 25%;
+  height: 12%;
+  background-color: #f7dfcf;
+  /* background-color: #f00; */
+  top: 52%;
+  left: 23%;
+}
+.lower-eye-mask ~ .lower-eye-mask{
+  /* position: absolute; */
+  /* width: 25%; */
+  /* height: 12%; */
+  background-color: #f7dfcf;
+  /* background-color: #f00; */
+  top: 52%;
+  left: 65%;
+}
+.mouth-left{
+    position: absolute;
+  width: 6%;
+  height: 20%;
+  border: 0.05em solid black;
+  border-top-color: #f7dfcf;
+  background-color: #f7dfcf;
+  border-radius: 31% 41% 43% 51% / 44% 44% 57% 53%;
+  /* transform: rotate(-45deg); */
+  top: 65%;
+  left: 52%;
+}
+.mouth-mask1{
+  position: absolute;
+  width: 15%;
+  height: 13%;
+  background-color: #f7dfcf;
+  top: 64%;
+  left: 46%
+}
+.mouth-right{
+    position: absolute;
+  width: 5%;
+  height: 20%;
+  border: 0.05em solid black;
+  border-top-color: #f7dfcf;
+  background-color: #f7dfcf;
+  border-radius: 31% 41% 43% 51% / 44% 44% 57% 53%;
+  /* transform: rotate(-45deg); */
+  top: 62%;
+  left: 57.5%;
+}
+.mouth-mask2{
+  position: absolute;
+  width: 15%;
+  height: 13%;
+  background-color: #f00;
+  background-color: #f7dfcf;
+  top: 62%;
+  left: 52%;
+  transform: rotate(-45deg);
+}
+.pupil{
+  position: absolute;
+  width: 3%;
+  height: 3%;
+  border-radius: 50%;
+  background-color: #000;
+  top: 36%;
+  left: 36%;
+}
+.pupil ~ .pupil{
+  top: 36%;
+  left: 80%;
+}
+.under-eye{
+  position: absolute;
+    width: 23%;
+  height: 28%;
+  border-radius: 50%;
+  border: .014em solid #0000;
+  border-left: 1vmin solid #0000;
+  border-bottom: .014em solid;
+  top: 32%;
+  left: 25%;
+  z-index: 100;
+  transform: rotate(14deg)
+}
+.under-eye ~ .under-eye{
+  left: 66%;
+  transform: rotate(8deg)
+}
+.ear{
+  position: absolute;
+  width: 6%;
+  height: 6%;
+  border-radius: 50%;
+  background-color: #7b5950;
+  border: 0.014em solid black;
+  top: 51%;
+  left: 33%;
+  z-index: 1;
+}
+.ear2{
+  position: absolute;
+  width: 6%;
+  height: 6%;
+  border-radius: 50%;
+  /* background-color: #7b5950; */
+  border: 0.014em solid black;
+  top: 51%;
+  left: 33%;
+  z-index: 150;
+}
+.left-ear-mask{
+  position: absolute;
+  height: 4%;
+  width: 7%;
+  background-color: #f7dfcf;
+  top: 51%;
+  left: 35%;
+  transform: rotate(77deg);
+  z-index: 155;
+}
+.hair-in-shadow{
+  position: absolute;
+  height: 30%;
+  width: 32%;
+  border-radius: 50%;
+  top: 46%;
+  left: 48%;
+  transform: translate(-50%, -50%);
+  background-color: #412611;
+}
+.hair{
+  position: absolute;
+  height: 28%;
+  width: 32%;
+  /* border-radius: 50%; */
+  border: 0.14em solid black;
+  border-radius: 45% 54% 66% 28% / 38% 50% 50% 55%;
+  border-left-color: #784b21;
+  top: 44%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #784b21;
+}
+.shirt{
+  position: absolute;
+  height: 32%;
+  width: 28.3%;
+  background-color: #e6d959;
+  border-radius: 50% 50% 0% 0% / 50% 50% 50% 50%;
+  top: 61%;
+  left: 37%;
+  z-index: 99;
+}
+.shirt-shadow{
+  position: absolute;
+  height: 32%;
+  width: 28.3%;
+  background-color: #7f7035;
+  border-radius: 50% 50% 0% 0% / 50% 50% 50% 50%;
+  top: 61%;
+  left: 34%;
+  z-index: 90;
+}
+.sleeves{
+  position: absolute;
+  width: 23%;
+  height: 18%;
+  border-left: 0.14em solid black;
+  border-right: 0.14em solid black;
+  top: 75%;
+  left: 38%;
+  z-index: 160;
+}
+
+</style>

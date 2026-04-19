@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kinetic Typography: Stats Question</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP for Animation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <!-- Google Fonts for High-Impact Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,900;1,900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #09090b; /* Zinc 950 */
+            color: #f4f4f5;
+            font-family: 'Montserrat', sans-serif;
+            overflow: hidden; /* Prevent scrollbars during wild animations */
+        }
+
+        /* Utility for masking text animations */
+        .clip-text {
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .clip-text span {
+            display: inline-block;
+            transform: translateY(100%);
+        }
+
+        /* Absolute positioning for scenes */
+        .scene {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* Continuous Text Glow */
+        .glow-pink {
+            text-shadow: 0 0 20px rgba(236, 72, 153, 0.6), 0 0 40px rgba(236, 72, 153, 0.4);
+        }
+        
+        .glow-indigo {
+            text-shadow: 0 0 20px rgba(99, 102, 241, 0.6), 0 0 40px rgba(99, 102, 241, 0.4);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900 to-zinc-950">
+
+    <!-- Scene 1: The Setup -->
+    <div id="scene1" class="scene">
+        <h2 class="text-4xl md:text-6xl font-black tracking-tighter uppercase flex gap-4">
+            <div class="clip-text"><span class="s1-word text-zinc-400">How</span></div>
+            <div class="clip-text"><span class="s1-word text-zinc-400">do</span></div>
+            <div class="clip-text"><span class="s1-word text-zinc-400">we</span></div>
+            <div class="clip-text"><span class="s1-word text-white">measure</span></div>
+        </h2>
+    </div>
+
+    <!-- Scene 2: The Impact -->
+    <div id="scene2" class="scene">
+        <h1 id="s2-word" class="text-7xl md:text-9xl font-black italic tracking-tighter text-indigo-400 glow-indigo uppercase">
+            Discrete
+        </h1>
+        <h3 id="s2-sub" class="text-2xl md:text-4xl font-bold tracking-widest text-zinc-500 mt-2 uppercase opacity-0">
+            Probabilities?
+        </h3>
+    </div>
+
+    <!-- Scene 3: The Transition -->
+    <div id="scene3" class="scene">
+        <h2 class="text-5xl md:text-7xl font-black uppercase text-center leading-none">
+            <div class="clip-text"><span class="s3-word text-white">But</span></div>
+            <br>
+            <div class="clip-text"><span class="s3-word text-zinc-500">What</span></div>
+            <div class="clip-text"><span class="s3-word text-zinc-500">If</span></div>
+            <br>
+            <div class="clip-text"><span class="s3-word text-zinc-500">The</span></div>
+            <div class="clip-text"><span class="s3-word text-zinc-500">Data</span></div>
+            <div class="clip-text"><span class="s3-word text-white">Is...</span></div>
+        </h2>
+    </div>
+
+    <!-- Scene 4: The Finale -->
+    <div id="scene4" class="scene flex-col w-full px-4 text-center">
+        <!-- We will split this word into individual spans via JS for letter tracking animation -->
+        <h1 id="s4-huge" class="text-5xl md:text-8xl lg:text-9xl font-black uppercase text-pink-500 glow-pink tracking-[0.5em] ml-[0.5em]">
+            Continuous?
+        </h1>
+        
+        <div id="s4-math" class="mt-8 opacity-0">
+            <p class="text-xl md:text-3xl text-zinc-400 font-bold border-t border-b border-zinc-700 py-4 px-8 inline-block bg-zinc-900/50 backdrop-blur-sm rounded-xl">
+                How do we find the <span class="text-white">Expected Value?</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Replay Button -->
+    <button id="btn-replay" class="absolute bottom-10 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full backdrop-blur-md border border-white/10 transition-colors opacity-0 pointer-events-none z-50 flex items-center gap-2">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Replay Animation
+    </button>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            
+            // --- Preparation ---
+            
+            // Split the "CONTINUOUS" word into individual letters for the tracking effect
+            const continuousEl = document.getElementById('s4-huge');
+            const continuousText = continuousEl.innerText;
+            continuousEl.innerHTML = '';
+            continuousText.split('').forEach(char => {
+                const span = document.createElement('span');
+                span.innerText = char;
+                span.className = 'inline-block s4-char';
+                continuousEl.appendChild(span);
+            });
+
+            // Make scenes visible to GSAP (removes visibility: hidden)
+            gsap.set(".scene", { autoAlpha: 1, opacity: 0 });
+            gsap.set("#scene1", { opacity: 1 });
+
+            // --- The Master Timeline ---
+            const masterTl = gsap.timeline({ paused: true });
+
+            // Scene 1: "How do we measure"
+            masterTl.to(".s1-word", {
+                y: "0%",
+                duration: 0.6,
+                stagger: 0.1,
+                ease: "back.out(1.2)"
+            })
+            .to("#scene1", {
+                scale: 1.5,
+                opacity: 0,
+                duration: 0.4,
+                ease: "power2.in",
+                delay: 0.5
+            });
+
+            // Scene 2: "DISCRETE Probabilities"
+            masterTl.set("#scene2", { opacity: 1 })
+            .fromTo("#s2-word", 
+                { scale: 0, rotation: -10 }, 
+                { scale: 1, rotation: 0, duration: 0.8, ease: "elastic.out(1, 0.5)" }
+            )
+            .to("#s2-sub", {
+                opacity: 1,
+                y: -10,
+                duration: 0.4,
+                ease: "power2.out"
+            }, "-=0.4")
+            .to("#scene2", {
+                x: "-100%", // Swipe off to the left
+                opacity: 0,
+                duration: 0.5,
+                ease: "power2.in",
+                delay: 0.8
+            });
+
+            // Scene 3: "But what if the data is..."
+            masterTl.set("#scene3", { opacity: 1 })
+            .to(".s3-word", {
+                y: "0%",
+                duration: 0.4,
+                stagger: 0.08,
+                ease: "power3.out"
+            })
+            .to("#scene3", {
+                filter: "blur(10px)",
+                opacity: 0,
+                scale: 0.8,
+                duration: 0.5,
+                ease: "power2.in",
+                delay: 0.5
+            });
+
+            // Scene 4: "CONTINUOUS?" (The big finale)
+            masterTl.set("#scene4", { opacity: 1 })
+            // Animate letters flying in from wide tracking to normal tracking
+            .fromTo(".s4-char", 
+                { x: (i) => (i - 5) * 100, opacity: 0, scale: 2 }, // Spread them out wildly
+                { x: 0, opacity: 1, scale: 1, duration: 1, stagger: 0.05, ease: "expo.out" }
+            )
+            // Fix letter spacing at the end of the animation
+            .to("#s4-huge", {
+                letterSpacing: "0.05em",
+                marginLeft: "0",
+                duration: 1,
+                ease: "power3.out"
+            }, "<+=0.5")
+            // Fade in the actual math question
+            .to("#s4-math", {
+                opacity: 1,
+                y: -20,
+                duration: 0.8,
+                ease: "back.out(1.5)"
+            }, "-=0.2")
+            // Show replay button
+            .to("#btn-replay", {
+                opacity: 1,
+                pointerEvents: "auto",
+                y: -20,
+                duration: 0.5
+            });
+
+            // Play the timeline
+            masterTl.play();
+
+            // Replay Logic
+            document.getElementById('btn-replay').addEventListener('click', () => {
+                // Hide button immediately
+                gsap.to("#btn-replay", { opacity: 0, pointerEvents: "none", duration: 0.2 });
+                // Reset all custom properties modified by timeline
+                masterTl.restart();
+            });
+        });
+    </script>
+</body>
+</html>

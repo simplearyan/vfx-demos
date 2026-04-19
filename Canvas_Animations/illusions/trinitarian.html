@@ -1,0 +1,64 @@
+<canvas id ='canv'></canvas>
+
+<style>
+    body{
+  margin:0;
+  width:100%; 
+  overflow:hidden;
+}
+
+</style>
+
+
+<script>
+    var c = document.getElementById('canv'),
+    $ = c.getContext('2d'),
+    w = c.width = window.innerWidth,
+    h = c.height = window.innerHeight,
+    t = 0,
+    n = 3,
+    num = 160,
+    s, a, b,
+    x, y, _x, _y,
+    _t = 1 / 200,
+    rot = t /2,
+    u = 0;
+
+var anim = function() {
+  window.requestAnimationFrame(anim);
+  $.fillStyle = 'hsla(0,0%,80%,1)';
+  $.fillRect(0, 0, w, h);
+
+  for (var i = 0; i < n; i++) {
+    a = (i) * Math.PI * 2 / (n);
+    x = 0;
+    $.beginPath();
+    $.rotate(rot);
+    for (var j = 0; j < num; j++) {
+      $.fillStyle = 'hsla('+ i* u +', 55%, 60%, 1)';
+      $.shadowColor = 'hsla(0,0%,10%,.4)';
+      $.shadowBlur = 1;
+      $.shadowOffsetX = 1;
+      $.shadowOffsetY = 1;
+      s = Math.sin(390, Math.pow((3, j * (num-j)), .93));
+      x += 7.4 * s;
+      y = x * Math.sin(a+6*t+x/5)/15;
+      _x = x * Math.cos(b) + y *Math.sin(a);
+      _y = x * Math.sin(b) + y * Math.cos(a);
+      b = j * Math.PI / 12;
+      $.moveTo(_x,_y);
+      $.arc(w / 2 + _x, h / 2 + _y, s+5, 0, 2 * Math.PI);
+    }
+    $.fill();
+    $.rotate(-rot);
+  }
+  t += _t;
+  u-=.2
+};
+anim();
+
+window.addEventListener('resize', function() {
+  c.width = w = window.innerWidth;
+  c.height = h = window.innerHeight;
+}, false);
+</script>

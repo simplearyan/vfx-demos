@@ -1,0 +1,50 @@
+<div style="display:inline-block;
+  text-align:center ">
+  <figure>
+    <img id="theImage" class="fullscreen" src="https://gistcdn.githack.com/Emasoft/24fc90bdc7e72fc1c61a9f87b9bc4675/raw/9aa19eb4d5557800493901c3b8cfe6336961e81f/love_dota_smil_audio.svg" width="800" height="450" />
+    <footer><small>
+        <!-- http://www.tbyrne.org/portfolio/smil/LoveDota.svg -->
+      </small></footer>
+    <figcaption>LOVE DOTA Simple Cartoon Animation in pure svg-smil with synchronized audio. <br> Originally from: http://www.tbyrne.org/portfolio/smil/LoveDota.svg <br> <b>Known issue:</b> audio won't play on Safari (see bug: https://bugs.webkit.org/show_bug.cgi?id=155778 ) </figcaption>
+  </figure>
+  <input style="display:block; margin-left:auto; margin-right:auto; " id="clickbutton" type="button" value="Play Cartoon Fullscreen" onClick="makeFullScreen()" />
+
+</div>
+
+<style>
+    .fullscreen:-webkit-full-screen {
+  width: auto !important;
+  height: auto !important;
+  margin: auto !important;
+}
+.fullscreen:-moz-full-screen {
+  width: auto !important;
+  height: auto !important;
+  margin: auto !important;
+}
+.fullscreen:-ms-fullscreen {
+  width: auto !important;
+  height: auto !important;
+  margin: auto !important;
+}
+
+</style>
+
+<script>
+    function makeFullScreen() {
+  var divObj = document.getElementById("theImage");
+  //Use the specification method before using prefixed versions
+  if (divObj.requestFullscreen) {
+    divObj.requestFullscreen();
+  } else if (divObj.msRequestFullscreen) {
+    divObj.msRequestFullscreen();
+  } else if (divObj.mozRequestFullScreen) {
+    divObj.mozRequestFullScreen();
+  } else if (divObj.webkitRequestFullscreen) {
+    divObj.webkitRequestFullscreen();
+  } else {
+    console.log("Fullscreen API is not supported");
+  }
+}
+
+</script>

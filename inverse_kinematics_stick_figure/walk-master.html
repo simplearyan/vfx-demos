@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walk Cycle Master - Animation Tutorial</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+            color: #0f172a; /* slate-900 */
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Canvas Grid Styling */
+        #anim-canvas {
+            background-color: #ffffff;
+            /* Animation Blueprint Grid */
+            background-image: 
+                linear-gradient(#e2e8f0 1px, transparent 1px),
+                linear-gradient(90deg, #e2e8f0 1px, transparent 1px),
+                linear-gradient(#f8fafc 1px, transparent 1px),
+                linear-gradient(90deg, #f8fafc 1px, transparent 1px);
+            background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+            background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Custom Toggles */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #ef4444; /* red-500 */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #ef4444;
+        }
+        
+        /* Interactive Buttons */
+        .pose-btn {
+            transition: all 0.2s ease;
+        }
+        .pose-btn.active {
+            background-color: #ef4444;
+            color: white;
+            border-color: #ef4444;
+            box-shadow: 0 4px 14px -2px rgba(239, 68, 68, 0.4);
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col md:flex-row antialiased select-none">
+
+    <!-- Left Tutorial & Control Panel -->
+    <aside class="w-full md:w-[400px] h-auto md:h-full bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-xl">
+        
+        <!-- Header -->
+        <div class="px-6 py-5 border-b border-slate-100 flex items-center space-x-4 bg-slate-50 shrink-0">
+            <div class="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-600/20 text-white">
+                <i data-lucide="person-standing" class="w-7 h-7"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tight text-slate-900 leading-none uppercase">Walk Master</h1>
+                <p class="text-[10px] text-red-600 font-bold mt-1 tracking-widest uppercase">Smooth Cycle Engine</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 space-y-8">
+            
+            <!-- Playback & Timing -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center">
+                        <i data-lucide="clock" class="w-4 h-4 mr-2"></i> Timing & Playback
+                    </h2>
+                    <span id="fps-display" class="text-xs font-bold bg-white px-2 py-1 rounded border border-slate-200 text-slate-700">1.0x Speed</span>
+                </div>
+                
+                <button id="btn-play" onclick="togglePlay()" class="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 rounded-lg text-sm transition flex items-center justify-center shadow-md active:scale-95 mb-4 uppercase tracking-wide">
+                    <i data-lucide="pause" class="w-5 h-5 mr-2"></i>
+                    <span>Pause Cycle</span>
+                </button>
+
+                <input type="range" id="speed-slider" min="0.1" max="2" step="0.1" value="1" class="w-full accent-red-600" oninput="updateSpeed(this.value)">
+                <div class="flex justify-between text-[10px] text-slate-400 font-bold mt-1">
+                    <span>Slower (More In-betweens)</span>
+                    <span>Faster</span>
+                </div>
+            </div>
+
+            <!-- The 4 Key Poses -->
+            <div>
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center">
+                    <i data-lucide="key" class="w-4 h-4 mr-2"></i> The 4 Key Poses
+                </h2>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <button onclick="setPose(0)" id="btn-pose-0" class="pose-btn py-2.5 bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs rounded-lg uppercase tracking-wide">Contact</button>
+                    <button onclick="setPose(1)" id="btn-pose-1" class="pose-btn py-2.5 bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs rounded-lg uppercase tracking-wide">Down</button>
+                    <button onclick="setPose(2)" id="btn-pose-2" class="pose-btn py-2.5 bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs rounded-lg uppercase tracking-wide">Passing</button>
+                    <button onclick="setPose(3)" id="btn-pose-3" class="pose-btn py-2.5 bg-white border-2 border-slate-200 text-slate-700 font-bold text-xs rounded-lg uppercase tracking-wide">Up</button>
+                </div>
+                
+                <!-- Dynamic Explanation Box -->
+                <div id="pose-description" class="bg-slate-800 text-white p-4 rounded-xl text-sm leading-relaxed shadow-inner">
+                    <strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Smooth Walk Cycle</strong>
+                    Click a pose above, or play the animation, to see how the 4 fundamental frames blend together to create a realistic wave motion.
+                </div>
+            </div>
+
+            <!-- Visual Guidelines & Emotion -->
+            <div class="space-y-4 border-t border-slate-100 pt-6">
+                <h2 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center">
+                    <i data-lucide="sliders-horizontal" class="w-4 h-4 mr-2"></i> Visual Aids & Style
+                </h2>
+                
+                <!-- Toggle Guidelines -->
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-slate-700">Show Wave Guidelines</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="toggle-guidelines" checked onchange="toggleGuides()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-red-500 z-10"/>
+                        <label for="toggle-guidelines" class="toggle-label block overflow-hidden h-5 rounded-full bg-red-500 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <!-- Toggle Onion Skin -->
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-bold text-slate-700">Onion Skin (Previous Frame)</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="toggle-onion" checked onchange="toggleOnion()" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-red-500 z-10"/>
+                        <label for="toggle-onion" class="toggle-label block overflow-hidden h-5 rounded-full bg-red-500 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <!-- Emotion/Style Dropdown -->
+                <div class="pt-2">
+                    <label class="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Walk Emotion Modifier</label>
+                    <select id="emotion-select" onchange="changeEmotion()" class="w-full bg-white border-2 border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:border-red-500 cursor-pointer appearance-none">
+                        <option value="normal">Normal Walk</option>
+                        <option value="sad">Sad / Tired (Leans forward)</option>
+                        <option value="confident">Confident (Leans back, high arms)</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main Workspace (Canvas) -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 md:p-8 relative">
+        <div class="w-full h-full bg-white rounded-2xl shadow-xl border border-slate-300 overflow-hidden relative">
+            <canvas id="anim-canvas" class="touch-none"></canvas>
+            
+            <!-- UI Overlay Info -->
+            <div class="absolute top-6 left-6 pointer-events-none">
+                <h2 class="text-3xl font-black text-slate-900 tracking-tighter" style="text-shadow: 2px 2px 0px white;">
+                    SMOOTH <span class="text-red-600 block">WALK CYCLE</span>
+                </h2>
+            </div>
+            
+            <!-- Real-time Frame Counter -->
+            <div class="absolute top-6 right-6 bg-slate-900 text-white font-bold mono text-sm px-4 py-2 rounded-lg shadow-lg pointer-events-none flex items-center">
+                <span class="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse" id="record-dot"></span>
+                Frame: <span id="frame-counter" class="ml-2 text-red-400">1</span>/8
+            </div>
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        // --- State Variables ---
+        const canvas = document.getElementById('anim-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        let cw, ch;
+        let cx, cy; // Origin point (pelvis resting height)
+        
+        let isPlaying = true;
+        let playSpeed = 1.0;
+        let showGuidelines = true;
+        let showOnion = true;
+        let emotion = 'normal';
+
+        // Animation timing
+        let t = 0; // Continuous time variable from 0 to 8
+        const TOTAL_FRAMES = 8;
+        let animationReq;
+
+        // --- Core Keyframes for a Realistic Walk Cycle ---
+        // Coordinates are relative to the Pelvis (0,0)
+        // Y goes DOWN positive, UP negative.
+        
+        const keyframes = [
+            // Frame 0: CONTACT (Left leg forward, Right leg back)
+            {
+                name: 'Contact',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Contact Pose</strong> The arms and legs are the farthest apart. This is the starting point of the step. The front foot touches the ground on its heel.',
+                pelvisY: 0,
+                lFootX: -45, lFootY: 65, lKneeX: -20, lKneeY: 35,
+                rFootX: 45,  rFootY: 65, rKneeX: 20,  rKneeY: 35,
+                lHandX: 35,  lHandY: 0,  lElbowX: 20, lElbowY: -15,
+                rHandX: -35, rHandY: 0,  rElbowX: -20,rElbowY: -15
+            },
+            // Frame 1: DOWN (Left leg absorbs weight, Right leg lifts)
+            {
+                name: 'Down',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Down Pose</strong> The body drops slightly as the front foot fully plants to absorb the weight. The back foot lifts off the ground.',
+                pelvisY: 12, // Drops down
+                lFootX: -45, lFootY: 53, lKneeX: -30, lKneeY: 30, // 65 - 12 = 53 relative Y to stay planted
+                rFootX: 35,  rFootY: 40, rKneeX: 25,  rKneeY: 25,
+                lHandX: 20,  lHandY: 5,  lElbowX: 10, lElbowY: -10,
+                rHandX: -20, rHandY: 5,  rElbowX: -10,rElbowY: -10
+            },
+            // Frame 2: PASSING (Left leg straight supporting, Right leg passing middle)
+            {
+                name: 'Passing',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Passing Pose</strong> The arms and legs come close together. The front leg supports the weight while the back leg bends and passes through the middle.',
+                pelvisY: -2, // Rises slightly
+                lFootX: -15, lFootY: 67, lKneeX: -10, lKneeY: 35,
+                rFootX: 5,   rFootY: 45, rKneeX: 15,  rKneeY: 20, // Passing knee high
+                lHandX: 5,   lHandY: 10, lElbowX: 5,  lElbowY: -5,
+                rHandX: -5,  rHandY: 10, rElbowX: -5, rElbowY: -5
+            },
+            // Frame 3: UP (Left leg pushes off, Right leg reaches forward)
+            {
+                name: 'Up',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Up Pose</strong> The body reaches its highest point. The supporting leg pushes up onto its toes, and the other leg reaches out for the next contact.',
+                pelvisY: -10, // Highest point
+                lFootX: 15,  lFootY: 75, lKneeX: 5,   lKneeY: 40, // Pushing off back
+                rFootX: -35, rFootY: 55, rKneeX: -15, rKneeY: 25, // Reaching forward
+                lHandX: -15, lHandY: 5,  lElbowX: -5, lElbowY: -10,
+                rHandX: 15,  rHandY: 5,  rElbowX: 5,  rElbowY: -10
+            },
+            // Frame 4: CONTACT (Right leg forward, Left leg back)
+            {
+                name: 'Contact',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Contact Pose</strong> The mirrored contact pose. Right foot forward, left foot back.',
+                pelvisY: 0,
+                lFootX: 45,  lFootY: 65, lKneeX: 20,  lKneeY: 35,
+                rFootX: -45, rFootY: 65, rKneeX: -20, rKneeY: 35,
+                lHandX: -35, lHandY: 0,  lElbowX: -20,lElbowY: -15,
+                rHandX: 35,  rHandY: 0,  rElbowX: 20, rElbowY: -15
+            },
+            // Frame 5: DOWN
+            {
+                name: 'Down',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Down Pose</strong> The mirrored down pose.',
+                pelvisY: 12,
+                lFootX: 35,  lFootY: 40, lKneeX: 25,  lKneeY: 25,
+                rFootX: -45, rFootY: 53, rKneeX: -30, rKneeY: 30,
+                lHandX: -20, lHandY: 5,  lElbowX: -10,lElbowY: -10,
+                rHandX: 20,  rHandY: 5,  rElbowX: 10, rElbowY: -10
+            },
+            // Frame 6: PASSING
+            {
+                name: 'Passing',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Passing Pose</strong> The mirrored passing pose.',
+                pelvisY: -2,
+                lFootX: 5,   lFootY: 45, lKneeX: 15,  lKneeY: 20,
+                rFootX: -15, rFootY: 67, rKneeX: -10, rKneeY: 35,
+                lHandX: -5,  lHandY: 10, lElbowX: -5, lElbowY: -5,
+                rHandX: 5,   rHandY: 10, rElbowX: 5,  rElbowY: -5
+            },
+            // Frame 7: UP
+            {
+                name: 'Up',
+                desc: '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Up Pose</strong> The mirrored up pose.',
+                pelvisY: -10,
+                lFootX: -35, lFootY: 55, lKneeX: -15, lKneeY: 25,
+                rFootX: 15,  rFootY: 75, rKneeX: 5,   rKneeY: 40,
+                lHandX: 15,  lHandY: 5,  lElbowX: 5,  lElbowY: -10,
+                rHandX: -15, rHandY: 5,  rElbowX: -5, rElbowY: -10
+            }
+        ];
+
+        function resize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            cw = rect.width;
+            ch = rect.height;
+            canvas.width = cw;
+            canvas.height = ch;
+            cx = Math.floor(cw / 2);
+            cy = Math.floor(ch * 0.55); // Center pelvis slightly below middle
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Interaction Handlers ---
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('btn-play');
+            const dot = document.getElementById('record-dot');
+            
+            if (isPlaying) {
+                btn.innerHTML = '<i data-lucide="pause" class="w-5 h-5 mr-2"></i><span>Pause Cycle</span>';
+                btn.classList.replace('bg-slate-700', 'bg-red-600');
+                btn.classList.replace('hover:bg-slate-600', 'hover:bg-red-500');
+                dot.classList.add('animate-pulse');
+                dot.style.opacity = 1;
+                
+                // Clear active pose buttons
+                document.querySelectorAll('.pose-btn').forEach(b => {
+                    b.classList.remove('active');
+                    b.classList.replace('text-white', 'text-slate-700');
+                    b.classList.replace('bg-red-600', 'bg-white');
+                });
+                document.getElementById('pose-description').innerHTML = '<strong class="text-red-400 block mb-1 uppercase tracking-wide text-xs">Smooth Walk Cycle</strong> Click a pose above, or play the animation, to see how the 4 fundamental frames blend together to create a realistic wave motion.';
+                
+            } else {
+                btn.innerHTML = '<i data-lucide="play" class="w-5 h-5 mr-2"></i><span>Play Cycle</span>';
+                btn.classList.replace('bg-red-600', 'bg-slate-700');
+                btn.classList.replace('hover:bg-red-500', 'hover:bg-slate-600');
+                dot.classList.remove('animate-pulse');
+                dot.style.opacity = 0.3;
+                
+                // Snap to nearest integer frame when pausing
+                t = Math.round(t);
+                if(t >= TOTAL_FRAMES) t = 0;
+                updateUIPose();
+            }
+            lucide.createIcons();
+        }
+
+        function setPose(poseIndex) {
+            if (isPlaying) togglePlay();
+            t = poseIndex; // 0, 1, 2, or 3
+            updateUIPose();
+            draw();
+        }
+
+        function updateUIPose() {
+            // Map 0-7 frame to the 4 button indices
+            let btnIndex = Math.round(t) % 4;
+            
+            document.querySelectorAll('.pose-btn').forEach((b, i) => {
+                if(i === btnIndex) {
+                    b.classList.add('active');
+                    b.classList.replace('text-slate-700', 'text-white');
+                    b.classList.replace('bg-white', 'bg-red-600');
+                } else {
+                    b.classList.remove('active');
+                    b.classList.replace('text-white', 'text-slate-700');
+                    b.classList.replace('bg-red-600', 'bg-white');
+                }
+            });
+
+            // Update description
+            let frameData = keyframes[Math.round(t) % TOTAL_FRAMES];
+            document.getElementById('pose-description').innerHTML = frameData.desc;
+        }
+
+        function updateSpeed(val) {
+            playSpeed = parseFloat(val);
+            document.getElementById('fps-display').innerText = playSpeed.toFixed(1) + 'x Speed';
+        }
+
+        function toggleGuides() {
+            showGuidelines = document.getElementById('toggle-guidelines').checked;
+            if(!isPlaying) draw();
+        }
+
+        function toggleOnion() {
+            showOnion = document.getElementById('toggle-onion').checked;
+            if(!isPlaying) draw();
+        }
+
+        function changeEmotion() {
+            emotion = document.getElementById('emotion-select').value;
+            if(!isPlaying) draw();
+        }
+
+        // --- Rendering Engine ---
+        
+        // Linear Interpolation
+        const lerp = (a, b, amt) => (1 - amt) * a + amt * b;
+
+        // Easing for smoother stepping (Sine ease in-out)
+        const easeInOutSine = x => -(Math.cos(Math.PI * x) - 1) / 2;
+
+        function getInterpolatedPose(time) {
+            // Ensure time is positive and loops within 0-8
+            let safeT = time % TOTAL_FRAMES;
+            if(safeT < 0) safeT += TOTAL_FRAMES;
+            
+            let frame1 = Math.floor(safeT);
+            let frame2 = (frame1 + 1) % TOTAL_FRAMES;
+            let blend = safeT - frame1;
+            
+            // Apply easing to the blend for non-linear, smoother motion
+            blend = easeInOutSine(blend);
+
+            let k1 = keyframes[frame1];
+            let k2 = keyframes[frame2];
+            
+            let pose = {};
+            for (let key in k1) {
+                if (typeof k1[key] === 'number') {
+                    pose[key] = lerp(k1[key], k2[key], blend);
+                }
+            }
+            return pose;
+        }
+
+        function applyEmotionOffsets(pose) {
+            // Base setup
+            let headX = 0, headY = -60;
+            let spineEndX = 0, spineEndY = -35;
+            
+            if (emotion === 'sad') {
+                // Lean forward, arms hang down straight
+                headX = -15; headY = -50;
+                spineEndX = -10; spineEndY = -30;
+                
+                // Override arm coordinates to point mostly down
+                pose.lHandX = lerp(pose.lHandX, -5, 0.7);
+                pose.lHandY = lerp(pose.lHandY, 20, 0.7);
+                pose.lElbowX = lerp(pose.lElbowX, -5, 0.7);
+                pose.lElbowY = lerp(pose.lElbowY, -5, 0.7);
+                
+                pose.rHandX = lerp(pose.rHandX, 5, 0.7);
+                pose.rHandY = lerp(pose.rHandY, 20, 0.7);
+                pose.rElbowX = lerp(pose.rElbowX, 5, 0.7);
+                pose.rElbowY = lerp(pose.rElbowY, -5, 0.7);
+                
+            } else if (emotion === 'confident') {
+                // Lean back slightly, puff chest, arms higher
+                headX = 5; headY = -65;
+                spineEndX = 5; spineEndY = -40;
+                
+                pose.lHandX *= 1.3; pose.lHandY -= 15;
+                pose.rHandX *= 1.3; pose.rHandY -= 15;
+            }
+            
+            pose.headX = headX; pose.headY = headY;
+            pose.spineEndX = spineEndX; pose.spineEndY = spineEndY;
+            return pose;
+        }
+
+        function drawGuidelines() {
+            if (!showGuidelines) return;
+
+            // The absolute ground plane where feet touch is relative to pelvis(0) + 65.
+            const groundY = cy + 65; 
+            
+            // Analyze the 4 poses for max/min head heights
+            // Max height is UP pose (-10 offset). Head rests at -60. Total = -70.
+            const highestHeadY = cy - 70;
+            // Min height is DOWN pose (+12 offset). Head rests at -60. Total = -48.
+            const lowestHeadY = cy - 48;
+            
+            // Mid pelvis line
+            const pelvisRestY = cy;
+
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            // Ground
+            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(cw, groundY); ctx.stroke();
+            ctx.fillStyle = '#94a3b8'; ctx.font = '10px monospace'; ctx.fillText('GROUND', 10, groundY - 5);
+
+            // Pelvis Rest
+            ctx.strokeStyle = '#cbd5e1'; // slate-300
+            ctx.beginPath(); ctx.moveTo(0, pelvisRestY); ctx.lineTo(cw, pelvisRestY); ctx.stroke();
+
+            // Head Bounds
+            ctx.strokeStyle = '#f87171'; // red-400
+            ctx.beginPath(); ctx.moveTo(0, highestHeadY); ctx.lineTo(cw, highestHeadY); ctx.stroke();
+            ctx.fillText('UP (Highest)', 10, highestHeadY - 5);
+            
+            ctx.beginPath(); ctx.moveTo(0, lowestHeadY); ctx.lineTo(cw, lowestHeadY); ctx.stroke();
+            ctx.fillText('DOWN (Lowest)', 10, lowestHeadY - 5);
+
+            ctx.setLineDash([]);
+        }
+
+        function drawSkeleton(pose, isBackdrop) {
+            ctx.save();
+            ctx.translate(cx, cy + pose.pelvisY);
+            
+            // Style setup
+            const thick = 12;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            if (isBackdrop) {
+                ctx.strokeStyle = 'rgba(203, 213, 225, 0.5)'; // very faint slate-300
+                ctx.fillStyle = 'rgba(203, 213, 225, 0.5)';
+            } else {
+                ctx.strokeStyle = '#334155'; // slate-700
+                ctx.fillStyle = '#334155';
+            }
+
+            // Draw Background Arm & Leg (Right side)
+            ctx.lineWidth = thick - 2; // slightly thinner for depth
+            ctx.beginPath();
+            ctx.moveTo(pose.spineEndX, pose.spineEndY);
+            ctx.lineTo(pose.rElbowX, pose.rElbowY);
+            ctx.lineTo(pose.rHandX, pose.rHandY);
+            if(!isBackdrop) ctx.strokeStyle = '#64748b'; // Lighter for back arm
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0); // Pelvis
+            ctx.lineTo(pose.rKneeX, pose.rKneeY);
+            ctx.lineTo(pose.rFootX, pose.rFootY);
+            ctx.stroke();
+
+            // Draw Torso & Head
+            if(!isBackdrop) ctx.strokeStyle = '#334155';
+            ctx.lineWidth = thick;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(pose.spineEndX, pose.spineEndY);
+            ctx.stroke();
+
+            // Head (Hollow)
+            ctx.beginPath();
+            ctx.arc(pose.headX, pose.headY, 18, 0, Math.PI * 2);
+            ctx.fillStyle = isBackdrop ? 'transparent' : '#ffffff';
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw Foreground Arm & Leg (Left side)
+            ctx.lineWidth = thick;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); 
+            ctx.lineTo(pose.lKneeX, pose.lKneeY);
+            ctx.lineTo(pose.lFootX, pose.lFootY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(pose.spineEndX, pose.spineEndY);
+            ctx.lineTo(pose.lElbowX, pose.lElbowY);
+            ctx.lineTo(pose.lHandX, pose.lHandY);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // --- Engine Loop ---
+        function update() {
+            if (isPlaying) {
+                // Standard cycle takes 24 frames at 1.0x speed = 0.0416 per tick
+                t += 0.15 * playSpeed;
+                if (t >= TOTAL_FRAMES) t = 0;
+                
+                // Update UI counter based on integer frame
+                let intFrame = Math.floor(t) + 1;
+                document.getElementById('frame-counter').innerText = intFrame;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, cw, ch);
+            
+            drawGuidelines();
+
+            // 1. Draw Onion Skin (Previous Frame - approx 1.0 frames behind)
+            if (showOnion && isPlaying) {
+                let prevT = t - 1.0;
+                let poseRaw = getInterpolatedPose(prevT);
+                let pose = applyEmotionOffsets(poseRaw);
+                drawSkeleton(pose, true);
+            }
+
+            // 2. Draw Current Frame
+            let currentPoseRaw = getInterpolatedPose(t);
+            let currentPose = applyEmotionOffsets(currentPoseRaw);
+            drawSkeleton(currentPose, false);
+        }
+
+        function loop() {
+            update();
+            draw();
+            animationReq = requestAnimationFrame(loop);
+        }
+
+        // --- Init ---
+        resize();
+        // Start on Frame 0, but play automatically
+        setPose(0); 
+        togglePlay(); // Re-trigger to start
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>

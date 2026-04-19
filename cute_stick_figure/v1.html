@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Stick Figure Animator</title>
+    <!-- Tailwind CSS for quick, beautiful UI styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- GSAP for smooth, bouncy animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa; /* Off-white paper look */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* SVG Styling for the "Thick Stroke & Cute" aesthetic */
+        svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: 60vh;
+            overflow: visible;
+        }
+
+        .stroke-main {
+            stroke: #2d3436; /* Dark ink color */
+            stroke-width: 18; /* THICK stroke */
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .fill-main {
+            fill: #2d3436;
+        }
+
+        .head-fill {
+            fill: #f8f9fa;
+        }
+
+        /* Setup transform origins for accurate rotation */
+        #arm-left { transform-origin: 200px 190px; }
+        #arm-right { transform-origin: 200px 190px; }
+        #head-group { transform-origin: 200px 120px; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+
+    <!-- Title Area -->
+    <div class="text-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 tracking-tight">2D Educational Avatar</h1>
+        <p class="text-gray-500">Thick-stroke SVG + GSAP Animation</p>
+    </div>
+
+    <!-- The Character Canvas -->
+    <div id="canvas-container" class="relative w-full max-w-2xl bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+        
+        <svg viewBox="0 0 400 400" id="character">
+            <!-- Legs -->
+            <line x1="200" y1="280" x2="140" y2="380" class="stroke-main" />
+            <line x1="200" y1="280" x2="260" y2="380" class="stroke-main" />
+
+            <!-- Body -->
+            <line x1="200" y1="170" x2="200" y2="280" class="stroke-main" />
+
+            <!-- Arms -->
+            <g id="arm-left">
+                <path d="M 200 190 Q 130 200 120 280" class="stroke-main" />
+            </g>
+            <g id="arm-right">
+                <path d="M 200 190 Q 270 200 280 280" class="stroke-main" />
+            </g>
+
+            <!-- Head Group (Moves together) -->
+            <g id="head-group">
+                <!-- Head Circle -->
+                <circle cx="200" cy="120" r="60" class="stroke-main head-fill" />
+                
+                <!-- Eyes Group (Moves to follow mouse) -->
+                <g id="eyes">
+                    <circle cx="175" cy="110" r="10" class="fill-main" id="eye-l" />
+                    <circle cx="225" cy="110" r="10" class="fill-main" id="eye-r" />
+                </g>
+
+                <!-- Mouth -->
+                <path id="mouth" d="M 185 140 Q 200 155 215 140" stroke="#2d3436" stroke-width="10" stroke-linecap="round" fill="none" />
+            </g>
+        </svg>
+
+    </div>
+
+    <!-- Control Panel -->
+    <div class="mt-8 flex gap-4 flex-wrap justify-center">
+        <button id="btn-wave" class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors shadow-sm">
+            👋 Wave
+        </button>
+        <button id="btn-confused" class="px-6 py-3 bg-purple-500 hover:bg-purple-600 text-white font-semibold rounded-xl transition-colors shadow-sm">
+            🤔 Confused
+        </button>
+        <button id="btn-talk" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-colors shadow-sm">
+            💬 Simulate Talking
+        </button>
+        <button id="btn-reset" class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-colors shadow-sm">
+            Reset
+        </button>
+    </div>
+
+    <script>
+        // --- 1. The Blinking Engine ---
+        // Creates a random, life-like blinking loop
+        function blink() {
+            gsap.to(["#eye-l", "#eye-r"], {
+                scaleY: 0.1,
+                transformOrigin: "center",
+                duration: 0.1,
+                yoyo: true,
+                repeat: 1,
+                onComplete: () => {
+                    // Schedule next blink between 2 and 5 seconds
+                    setTimeout(blink, Math.random() * 3000 + 2000);
+                }
+            });
+        }
+        setTimeout(blink, 2000); // Start blinking
+
+        // --- 2. Mouse Tracking (Eyes follow cursor) ---
+        document.addEventListener("mousemove", (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20; // Max move 20px
+            const y = (e.clientY / window.innerHeight - 0.5) * 15; // Max move 15px
+            
+            gsap.to("#eyes", {
+                x: x,
+                y: y,
+                duration: 0.3,
+                ease: "power2.out"
+            });
+            
+            // Slight head tilt based on mouse X
+            gsap.to("#head-group", {
+                rotation: x * 0.5,
+                duration: 0.5,
+                ease: "power2.out"
+            });
+        });
+
+        // --- 3. Animation: Waving ---
+        document.getElementById("btn-wave").addEventListener("click", () => {
+            // Kill any active animations on the right arm
+            gsap.killTweensOf("#arm-right");
+            
+            // Waving sequence
+            gsap.timeline()
+                .to("#arm-right", { rotation: -130, duration: 0.3, ease: "back.out(1.5)" })
+                .to("#arm-right", { rotation: -90, duration: 0.2, yoyo: true, repeat: 3 })
+                .to("#arm-right", { rotation: 0, duration: 0.4, ease: "power2.inOut" });
+        });
+
+        // --- 4. Animation: Confused (Scratching Head) ---
+        document.getElementById("btn-confused").addEventListener("click", () => {
+            gsap.killTweensOf("#arm-left");
+            gsap.killTweensOf("#head-group");
+            gsap.killTweensOf("#mouth");
+
+            gsap.timeline()
+                // Arm goes up to head
+                .to("#arm-left", { rotation: 140, duration: 0.4, ease: "power2.out" }, 0)
+                // Head tilts
+                .to("#head-group", { rotation: -15, duration: 0.4 }, 0)
+                // Mouth turns to a flat line
+                .to("#mouth", { attr: { d: "M 185 145 Q 200 145 215 145" }, duration: 0.2 }, 0)
+                // Arm scratches
+                .to("#arm-left", { rotation: 120, duration: 0.15, yoyo: true, repeat: 3 })
+                // Return to normal
+                .to("#arm-left", { rotation: 0, duration: 0.5, ease: "power2.inOut" }, "+=0.2")
+                .to("#head-group", { rotation: 0, duration: 0.5, ease: "power2.inOut" }, "<")
+                .to("#mouth", { attr: { d: "M 185 140 Q 200 155 215 140" }, duration: 0.5 }, "<");
+        });
+
+        // --- 5. Animation: Talking Simulation ---
+        let isTalking = false;
+        let talkInterval;
+
+        document.getElementById("btn-talk").addEventListener("click", (e) => {
+            isTalking = !isTalking;
+            const btn = e.target;
+
+            if (isTalking) {
+                btn.classList.replace("bg-green-500", "bg-red-500");
+                btn.classList.replace("hover:bg-green-600", "hover:bg-red-600");
+                btn.innerText = "🛑 Stop Talking";
+                
+                // Randomly open and close mouth
+                talkInterval = setInterval(() => {
+                    const isOpen = Math.random() > 0.4;
+                    const d = isOpen 
+                        ? "M 185 140 Q 200 170 215 140" // Wide open
+                        : "M 185 140 Q 200 145 215 140"; // Almost closed
+                    
+                    gsap.to("#mouth", { attr: { d: d }, duration: 0.1 });
+                    
+                    // Add a tiny bit of bouncy body movement while talking
+                    if (isOpen) {
+                        gsap.to("#head-group", { y: -2, duration: 0.1, yoyo: true, repeat: 1 });
+                    }
+                }, 120);
+            } else {
+                btn.classList.replace("bg-red-500", "bg-green-500");
+                btn.classList.replace("hover:bg-red-600", "hover:bg-green-600");
+                btn.innerText = "💬 Simulate Talking";
+                clearInterval(talkInterval);
+                // Reset mouth to default smile
+                gsap.to("#mouth", { attr: { d: "M 185 140 Q 200 155 215 140" }, duration: 0.2 });
+            }
+        });
+
+        // --- 6. Reset Button ---
+        document.getElementById("btn-reset").addEventListener("click", () => {
+            gsap.to(["#arm-left", "#arm-right", "#head-group"], { rotation: 0, y: 0, duration: 0.5, ease: "power2.out" });
+            gsap.to("#mouth", { attr: { d: "M 185 140 Q 200 155 215 140" }, duration: 0.5 });
+        });
+
+    </script>
+</body>
+</html>

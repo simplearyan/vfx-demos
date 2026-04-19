@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math & Geometry Animation Studio</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- GSAP Core & MotionPathPlugin -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/MotionPathPlugin.min.js"></script>
+    
+    <!-- Anime.js for Timeline and Path Drawing/Morphing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    
+    <!-- Rough.js for sketchy SVG shapes -->
+    <script src="https://unpkg.com/roughjs@latest/bundled/rough.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617; /* Slate 950 */
+            color: #f8fafc;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .math-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* SVG Workspace grid background */
+        #workspace-wrapper {
+            background-color: #0f172a; /* Slate 900 */
+            background-image: 
+                radial-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* Standard custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Animation Classes */
+        .glow-cyan { filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.8)); }
+        .glow-fuchsia { filter: drop-shadow(0 0 10px rgba(217, 70, 239, 0.8)); }
+        .glow-emerald { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.8)); }
+
+        .tool-btn {
+            transition: all 0.2s ease;
+        }
+        .tool-btn:hover {
+            transform: translateY(-2px);
+        }
+        .tool-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Rough.js generated paths need this to work with anime.js stroke animation */
+        .rough-path path {
+            stroke-dasharray: 2000;
+            stroke-dashoffset: 2000;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="h-16 bg-slate-950 border-b border-slate-800 flex items-center justify-between px-6 shrink-0 shadow-lg z-20">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                <i data-lucide="function-square" class="text-white w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-black tracking-tight text-white leading-none">Geometry Studio</h1>
+                <p class="text-[10px] text-cyan-400 font-bold mt-1 tracking-widest uppercase">Multi-Library Animation Engine</p>
+            </div>
+        </div>
+
+        <div class="flex space-x-3">
+            <button onclick="clearWorkspace()" class="flex items-center px-4 py-2 bg-slate-900 hover:bg-red-500/20 border border-slate-700 hover:border-red-500/50 text-slate-300 hover:text-red-400 rounded-lg text-sm font-bold transition">
+                <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i> Clear Canvas
+            </button>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar: Element Generators -->
+        <aside class="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 overflow-y-auto z-10 shadow-xl">
+            <div class="p-5 border-b border-slate-800">
+                <h2 class="text-[10px] font-black tracking-widest text-slate-500 uppercase mb-4 flex items-center">
+                    <i data-lucide="shapes" class="w-3.5 h-3.5 mr-2"></i> Construct Elements
+                </h2>
+                
+                <div class="space-y-3">
+                    <button onclick="buildCartesianGrid()" class="tool-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl flex items-center text-left transition">
+                        <div class="w-8 h-8 bg-indigo-500/20 text-indigo-400 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="grid-3x3" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-200">Cartesian Grid</p>
+                            <p class="text-[10px] text-slate-500 font-medium mt-0.5">Powered by Rough.js</p>
+                        </div>
+                    </button>
+
+                    <button onclick="plotSineWave()" class="tool-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl flex items-center text-left transition">
+                        <div class="w-8 h-8 bg-fuchsia-500/20 text-fuchsia-400 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="activity" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-200">Sine Wave</p>
+                            <p class="text-[10px] text-slate-500 font-medium mt-0.5">y = sin(x)</p>
+                        </div>
+                    </button>
+
+                    <button onclick="plotParabola()" class="tool-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl flex items-center text-left transition">
+                        <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-200">Parabola</p>
+                            <p class="text-[10px] text-slate-500 font-medium mt-0.5">y = x²</p>
+                        </div>
+                    </button>
+
+                    <button onclick="spawnMorphingShape()" class="tool-btn w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 p-3 rounded-xl flex items-center text-left transition">
+                        <div class="w-8 h-8 bg-amber-500/20 text-amber-400 rounded-lg flex items-center justify-center mr-3">
+                            <i data-lucide="hexagon" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-200">Morph Polygon</p>
+                            <p class="text-[10px] text-slate-500 font-medium mt-0.5">4-Point Transformation</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-5">
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 math-font text-xs text-slate-400 space-y-2">
+                    <p class="text-slate-300 font-bold mb-2">Math Log:</p>
+                    <div id="math-log" class="space-y-1 h-32 overflow-y-auto">
+                        <p class="text-emerald-500">> System initialized.</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Workspace -->
+        <main id="workspace-wrapper" class="flex-1 relative overflow-hidden flex items-center justify-center">
+            <!-- Centralized SVG Viewport for math plotting -->
+            <svg id="math-canvas" width="1000" height="800" viewBox="0 0 1000 800" class="overflow-visible drop-shadow-2xl">
+                <!-- Elements will be injected here via JS -->
+            </svg>
+            
+            <!-- Realtime Coordinte display -->
+            <div class="absolute bottom-6 right-6 bg-slate-900/80 backdrop-blur border border-slate-700 p-3 rounded-xl shadow-2xl pointer-events-none math-font text-xs font-bold">
+                <span class="text-slate-500">CANVAS_W:</span> <span class="text-cyan-400">1000px</span><br>
+                <span class="text-slate-500">CANVAS_H:</span> <span class="text-cyan-400">800px</span>
+            </div>
+        </main>
+
+        <!-- Right Sidebar: Animation Triggers -->
+        <aside class="w-72 bg-slate-900 border-l border-slate-800 flex flex-col shrink-0 overflow-y-auto z-10 shadow-xl">
+            <div class="p-5">
+                <h2 class="text-[10px] font-black tracking-widest text-slate-500 uppercase mb-4 flex items-center">
+                    <i data-lucide="play-circle" class="w-3.5 h-3.5 mr-2"></i> Animation Engines
+                </h2>
+                
+                <div class="space-y-5">
+                    
+                    <!-- Anime.js Actions -->
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center"><span class="w-2 h-2 rounded-full bg-cyan-500 mr-2"></span> Anime.js Engine</h3>
+                        <div class="space-y-2">
+                            <button onclick="animDrawGrid()" class="w-full bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 py-2 rounded-lg text-xs font-bold transition">
+                                Line Draw (Stagger)
+                            </button>
+                            <button onclick="animMorphShape()" class="w-full bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-400 border border-cyan-500/30 py-2 rounded-lg text-xs font-bold transition">
+                                Start Shape Morph
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- GSAP Actions -->
+                    <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                        <h3 class="text-xs font-bold text-slate-300 mb-3 flex items-center"><span class="w-2 h-2 rounded-full bg-fuchsia-500 mr-2"></span> GSAP Engine</h3>
+                        <div class="space-y-2">
+                            <button onclick="animDrawCurves()" class="w-full bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-400 border border-fuchsia-500/30 py-2 rounded-lg text-xs font-bold transition">
+                                Draw Math Curves
+                            </button>
+                            <button onclick="animRunTracers()" class="w-full bg-fuchsia-600/20 hover:bg-fuchsia-600/30 text-fuchsia-400 border border-fuchsia-500/30 py-2 rounded-lg text-xs font-bold transition">
+                                Run Path Tracers
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Global Actions -->
+                    <button onclick="triggerAllAnimations()" class="w-full mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3 rounded-xl text-sm transition shadow-lg shadow-emerald-500/25 flex items-center justify-center">
+                        <i data-lucide="rocket" class="w-4 h-4 mr-2"></i> Execute All Sequences
+                    </button>
+
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+        gsap.registerPlugin(MotionPathPlugin);
+
+        // SVG Canvas references
+        const svgCanvas = document.getElementById('math-canvas');
+        const rc = rough.svg(svgCanvas); // Initialize Rough.js
+        const logPanel = document.getElementById('math-log');
+
+        const width = 1000;
+        const height = 800;
+        const cx = width / 2;
+        const cy = height / 2;
+
+        function logMsg(msg, colorClass = 'text-slate-400') {
+            const p = document.createElement('p');
+            p.className = colorClass;
+            p.innerText = `> ${msg}`;
+            logPanel.prepend(p);
+        }
+
+        function clearWorkspace() {
+            svgCanvas.innerHTML = '';
+            logMsg('Canvas cleared.', 'text-red-400');
+        }
+
+        // --- 1. ROUGH.JS BUILDERS (Constructing the Grid) ---
+        
+        function buildCartesianGrid() {
+            logMsg('Building Cartesian plane...', 'text-indigo-400');
+            
+            const gridGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            gridGroup.setAttribute("id", "cartesian-grid");
+
+            const step = 50;
+            
+            // Draw minor grid lines
+            for (let x = 0; x <= width; x += step) {
+                let line = rc.line(x, 0, x, height, { stroke: '#334155', strokeWidth: 1, roughness: 1.5, bowing: 0.5 });
+                line.setAttribute("class", "rough-path grid-line-minor");
+                gridGroup.appendChild(line);
+            }
+            for (let y = 0; y <= height; y += step) {
+                let line = rc.line(0, y, width, y, { stroke: '#334155', strokeWidth: 1, roughness: 1.5, bowing: 0.5 });
+                line.setAttribute("class", "rough-path grid-line-minor");
+                gridGroup.appendChild(line);
+            }
+
+            // Draw major axes (X and Y)
+            let xAxis = rc.line(0, cy, width, cy, { stroke: '#94a3b8', strokeWidth: 2.5, roughness: 1.2 });
+            xAxis.setAttribute("class", "rough-path grid-axis");
+            gridGroup.appendChild(xAxis);
+
+            let yAxis = rc.line(cx, 0, cx, height, { stroke: '#94a3b8', strokeWidth: 2.5, roughness: 1.2 });
+            yAxis.setAttribute("class", "rough-path grid-axis");
+            gridGroup.appendChild(yAxis);
+
+            svgCanvas.appendChild(gridGroup);
+        }
+
+        // --- 2. MATH CURVE BUILDERS ---
+
+        function plotSineWave() {
+            logMsg('Plotting f(x) = sin(x)', 'text-fuchsia-400');
+            
+            const amplitude = 150;
+            const frequency = 0.02;
+            let pathData = `M 0 ${cy + Math.sin((0 - cx) * frequency) * amplitude} `;
+            
+            for (let x = 0; x <= width; x += 5) {
+                let y = cy - Math.sin((x - cx) * frequency) * amplitude;
+                pathData += `L ${x} ${y} `;
+            }
+
+            const pathId = 'path-sine-' + Date.now();
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("id", pathId);
+            path.setAttribute("d", pathData);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "#d946ef"); // fuchsia
+            path.setAttribute("stroke-width", "4");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("class", "math-curve glow-fuchsia");
+            
+            // Set dash array for GSAP drawing later
+            path.style.strokeDasharray = "4000";
+            path.style.strokeDashoffset = "4000";
+            
+            svgCanvas.appendChild(path);
+
+            // Add Tracer Dot for this curve
+            addTracerDot(pathId, "#d946ef");
+        }
+
+        function plotParabola() {
+            logMsg('Plotting f(x) = x²', 'text-emerald-400');
+            
+            const scaleY = 0.002;
+            let pathData = `M 0 ${cy - Math.pow(0 - cx, 2) * scaleY + 200} `;
+            
+            for (let x = 0; x <= width; x += 10) {
+                // +200 offsets the vertex lower on the screen
+                let y = cy - Math.pow(x - cx, 2) * scaleY + 200; 
+                pathData += `L ${x} ${y} `;
+            }
+
+            const pathId = 'path-parabola-' + Date.now();
+            const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            path.setAttribute("id", pathId);
+            path.setAttribute("d", pathData);
+            path.setAttribute("fill", "none");
+            path.setAttribute("stroke", "#10b981"); // emerald
+            path.setAttribute("stroke-width", "4");
+            path.setAttribute("stroke-linecap", "round");
+            path.setAttribute("class", "math-curve glow-emerald");
+            
+            path.style.strokeDasharray = "4000";
+            path.style.strokeDashoffset = "4000";
+            
+            svgCanvas.appendChild(path);
+
+            // Add Tracer Dot for this curve
+            addTracerDot(pathId, "#10b981");
+        }
+
+        function addTracerDot(targetPathId, color) {
+            const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            dot.setAttribute("r", "8");
+            dot.setAttribute("fill", color);
+            dot.setAttribute("class", "curve-tracer hidden"); // Hidden until animated
+            // Store path selector directly on the element for GSAP
+            dot.dataset.targetId = "#" + targetPathId;
+            svgCanvas.appendChild(dot);
+        }
+
+        // --- 3. ANIME.JS MORPHING SHAPE ---
+        
+        function spawnMorphingShape() {
+            logMsg('Spawned morphing polygon', 'text-amber-400');
+            
+            // 4 points mapping for perfect morphing
+            // Square
+            const squarePts = `${cx-80},${cy-80} ${cx+80},${cy-80} ${cx+80},${cy+80} ${cx-80},${cy+80}`;
+            
+            const polygon = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            polygon.setAttribute("points", squarePts);
+            polygon.setAttribute("fill", "rgba(245, 158, 11, 0.2)"); // amber
+            polygon.setAttribute("stroke", "#f59e0b");
+            polygon.setAttribute("stroke-width", "4");
+            polygon.setAttribute("id", "morph-poly");
+            
+            // Store target states as datasets for anime.js
+            const trianglePts = `${cx},${cy-100} ${cx+100},${cy+80} ${cx-100},${cy+80} ${cx-100},${cy+80}`; // Double last point to keep 4 points
+            const diamondPts = `${cx},${cy-120} ${cx+90},${cy} ${cx},${cy+120} ${cx-90},${cy}`;
+            
+            polygon.dataset.square = squarePts;
+            polygon.dataset.triangle = trianglePts;
+            polygon.dataset.diamond = diamondPts;
+
+            svgCanvas.appendChild(polygon);
+        }
+
+        // --- 4. ANIMATION ENGINES ---
+
+        function animDrawGrid() {
+            logMsg('Anime.js: Staggering grid lines', 'text-cyan-400');
+            
+            // Anime.js beautifully handles nested SVG paths generated by Rough.js
+            anime({
+                targets: '.rough-path path',
+                strokeDashoffset: [anime.setDashoffset, 0],
+                easing: 'easeInOutSine',
+                duration: 1500,
+                delay: function(el, i) { return i * 30 }, // Stagger effect
+                direction: 'normal'
+            });
+        }
+
+        function animMorphShape() {
+            const poly = document.getElementById('morph-poly');
+            if(!poly) {
+                logMsg('Error: No morph shape spawned', 'text-red-500');
+                return;
+            }
+            logMsg('Anime.js: Polygon morph loop started', 'text-cyan-400');
+
+            anime({
+                targets: poly,
+                points: [
+                    { value: poly.dataset.triangle },
+                    { value: poly.dataset.diamond },
+                    { value: poly.dataset.square }
+                ],
+                easing: 'easeInOutQuad',
+                duration: 4000,
+                loop: true
+            });
+            
+            // Add a continuous slow rotation to the shape using GSAP
+            gsap.to(poly, {
+                rotation: 360,
+                transformOrigin: "50% 50%",
+                repeat: -1,
+                duration: 10,
+                ease: "linear"
+            });
+        }
+
+        function animDrawCurves() {
+            const curves = document.querySelectorAll('.math-curve');
+            if(curves.length === 0) {
+                logMsg('Error: No curves to draw', 'text-red-500');
+                return;
+            }
+            logMsg('GSAP: Stroking math functions', 'text-fuchsia-400');
+
+            gsap.to(curves, {
+                strokeDashoffset: 0,
+                duration: 2.5,
+                ease: "power2.inOut",
+                stagger: 0.5
+            });
+        }
+
+        function animRunTracers() {
+            const tracers = document.querySelectorAll('.curve-tracer');
+            if(tracers.length === 0) {
+                logMsg('Error: No tracers found', 'text-red-500');
+                return;
+            }
+            logMsg('GSAP: MotionPath activated', 'text-fuchsia-400');
+
+            tracers.forEach(tracer => {
+                tracer.classList.remove('hidden'); // Show dots
+                
+                // Using MotionPathPlugin to traverse the specific ID selector we saved
+                gsap.to(tracer, {
+                    duration: 4,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut",
+                    motionPath: {
+                        path: tracer.dataset.targetId,
+                        align: tracer.dataset.targetId,
+                        alignOrigin: [0.5, 0.5]
+                    }
+                });
+            });
+        }
+
+        function triggerAllAnimations() {
+            logMsg('Executing Master Sequence...', 'text-emerald-400');
+            animDrawGrid();
+            setTimeout(animDrawCurves, 1000);
+            setTimeout(animRunTracers, 2500);
+            setTimeout(animMorphShape, 500);
+        }
+
+    </script>
+</body>
+</html>
