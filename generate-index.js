@@ -67,9 +67,10 @@ function renderHierarchy(items, depth = 0) {
             
             const hasSubDirectories = item.children.some(c => c.type === 'directory');
             const hasFiles = item.children.some(c => c.type === 'file');
+            const relPath = item.path.replace(/\\/g, '/');
             
             html += `
-            <div class="section depth-${depth}">
+            <div class="section depth-${depth}" data-name="${label.toLowerCase()}" data-path="${relPath}">
                 <div class="section-header">
                     <div class="section-title-group">
                         <span class="section-icon">${icon}</span>
@@ -77,6 +78,9 @@ function renderHierarchy(items, depth = 0) {
                             <h2 class="section-title">${label}</h2>
                             ${desc ? `<p class="section-desc">${desc}</p>` : ''}
                         </div>
+                    </div>
+                    <div class="section-toggle">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
                     </div>
                 </div>
                 <div class="${hasSubDirectories ? 'section-nested' : 'section-content'}">
@@ -206,17 +210,37 @@ function generateHTML(hierarchy) {
         .stat-pill { background: var(--surface); border: 1px solid var(--border); padding: 0.4rem 1rem; border-radius: 999px; font-size: 0.8rem; color: var(--text-2); }
 
         /* ── Hierarchy Rendering ── */
-        .section { margin-bottom: 4rem; }
-        .section-header { margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .section-header { 
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem; 
+            padding-bottom: 1rem; 
+            border-bottom: 1px solid var(--border); 
+            cursor: pointer;
+            user-select: none;
+        }
+        .section-header:hover { border-color: var(--border-h); }
+        .section-header:hover .section-title { color: #fff; }
+
         .section-title-group { display: flex; align-items: center; gap: 1rem; }
         .section-icon { font-size: 2rem; }
-        .section-title { font-size: 1.75rem; font-weight: 700; }
+        .section-title { font-size: 1.75rem; font-weight: 700; transition: color 0.2s; }
         .section-desc { color: var(--text-3); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        .section-toggle { color: var(--text-3); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+        
+        .section.collapsed > .section-content,
+        .section.collapsed > .section-nested { display: none; }
+        .section.collapsed { margin-bottom: 1rem; }
+        .section.collapsed .section-header { border-bottom-color: transparent; margin-bottom: 0; }
 
         .section-content {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 2rem;
+            margin-bottom: 2rem;
         }
 
         .section-nested {
@@ -307,20 +331,92 @@ function generateHTML(hierarchy) {
 
     <script>
         const searchInput = document.getElementById('search');
+        const sections = document.querySelectorAll('.section');
         const cards = document.querySelectorAll('.card');
 
-        searchInput.addEventListener('input', (e) => {
-            const q = e.target.value.toLowerCase();
-            cards.forEach(card => {
-                const name = card.dataset.name;
-                const match = name.includes(q);
-                card.style.display = match ? 'flex' : 'none';
-            });
+        // ─── Search Logic ───
+        function performSearch() {
+            const q = searchInput.value.toLowerCase().trim();
             
-            // Hide empty sections
-            document.querySelectorAll('.section').forEach(section => {
-                const visibleInContent = Array.from(section.querySelectorAll('.card')).some(c => c.style.display !== 'none');
-                section.style.display = visibleInContent ? 'block' : 'none';
+            if (!q) {
+                // Restore normal visibility and collapsed state
+                sections.forEach(s => {
+                    s.style.display = 'block';
+                    const isCollapsed = localStorage.getItem('vfx-collapsed-' + s.dataset.path) === 'true';
+                    s.classList.toggle('collapsed', isCollapsed);
+                });
+                cards.forEach(c => c.style.display = 'flex');
+                return;
+            }
+
+            // 1. Hide everything initially
+            sections.forEach(s => s.style.display = 'none');
+            cards.forEach(c => c.style.display = 'none');
+
+            // 2. Find matches
+            sections.forEach(section => {
+                const folderName = section.dataset.name || '';
+                const path = section.dataset.path || '';
+                
+                // If folder matches, show it and all its children
+                if (folderName.includes(q)) {
+                    showHierarchy(section);
+                    // Explicitly show all cards inside a matching folder
+                    section.querySelectorAll('.card').forEach(c => c.style.display = 'flex');
+                    section.querySelectorAll('.section').forEach(s => s.style.display = 'block');
+                }
+            });
+
+            cards.forEach(card => {
+                const name = card.dataset.name || '';
+                if (name.includes(q)) {
+                    card.style.display = 'flex';
+                    // Show all parents
+                    let parent = card.closest('.section');
+                    while (parent) {
+                        parent.style.display = 'block';
+                        parent.classList.remove('collapsed'); // Auto-expand to show match
+                        parent = parent.parentElement.closest('.section');
+                    }
+                }
+            });
+        }
+
+        function showHierarchy(el) {
+            el.style.display = 'block';
+            el.classList.remove('collapsed');
+            let parent = el.parentElement.closest('.section');
+            while (parent) {
+                parent.style.display = 'block';
+                parent.classList.remove('collapsed');
+                parent = parent.parentElement.closest('.section');
+            }
+        }
+
+        searchInput.addEventListener('input', performSearch);
+
+        // ─── Toggle & Persistence Logic ───
+        document.addEventListener('click', (e) => {
+            const header = e.target.closest('.section-header');
+            if (!header) return;
+
+            const section = header.closest('.section');
+            const isCollapsed = section.classList.toggle('collapsed');
+            
+            // Persist to localStorage
+            const path = section.dataset.path;
+            if (path) {
+                localStorage.setItem('vfx-collapsed-' + path, isCollapsed);
+            }
+        });
+
+        // Initialize state from localStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            sections.forEach(s => {
+                const path = s.dataset.path;
+                if (path && localStorage.getItem('vfx-collapsed-' + path) === 'true') {
+                    s.classList.add('collapsed');
+                }
             });
         });
     </script>
